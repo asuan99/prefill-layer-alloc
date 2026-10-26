@@ -266,6 +266,22 @@ class TestAJ4(unittest.TestCase):
         self.assertTrue(r["T2"]["status"].startswith("NOT_EVALUATED"))
         self.assertTrue(AJ.aj2_jh1(jh1_analysis(self.T1, self.T2, w1="WEIGHT_DEPENDENT"))["status"].startswith("NOT_EVALUATED"))
 
+    def test_aj2_jh1_na_form_gate(self):
+        """result audit r1: a variant whose harness T1 fit is FORM_INADEQUATE_* -> NA_FORM (§1-9 공통), slope / b_a31 NA."""
+        A = jh1_analysis(self.T1, self.T2)
+        A["fits"] = {"t1": {f"J-H1|r1|dummy_a{n}|108v|cap128": {"label": "FORM_INADEQUATE_T1_108v" if n in (22, 31) else None}
+                            for n in AJ.VARIANTS}}
+        r = AJ.aj2_jh1(A)
+        self.assertEqual(r["status"], "NA_FORM")
+        self.assertEqual(r["na_form"], ["a22", "a31"])
+        self.assertEqual(r["b_by_variant"]["a22"], "NA_FORM")
+        self.assertIsNone(r["slope_b_vs_nM"])
+        self.assertIsNone(r["b_a31"])
+        self.assertAlmostEqual(r["b_by_variant"]["a4"], 0.05 + 0.002 * 27, places=9)
+        A["fits"]["t1"]["J-H1|r1|dummy_a22|108v|cap128"]["label"] = None
+        A["fits"]["t1"]["J-H1|r1|dummy_a31|108v|cap128"]["label"] = None
+        self.assertEqual(AJ.aj2_jh1(A)["status"], "OK")       # accepted fits keep the side table
+
     def test_aj2_jh1_side_table(self):
         r = AJ.aj2_jh1(jh1_analysis(self.T1, self.T2))
         self.assertEqual(r["status"], "OK")

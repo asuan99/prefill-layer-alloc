@@ -393,16 +393,20 @@
  },
  "AJ-2": {
   "J-H1": {
-   "b_a31": 0.07684440376802644,
+   "b_a31": null,
    "b_by_variant": {
     "a13": 0.2085224492682217,
-    "a22": 0.1460568920045645,
-    "a31": 0.07684440376802644,
+    "a22": "NA_FORM",
+    "a31": "NA_FORM",
     "a4": 0.2668456464765489
    },
    "descriptive": true,
-   "slope_b_vs_nM": 0.007027436504324717,
-   "status": "OK"
+   "na_form": [
+    "a22",
+    "a31"
+   ],
+   "slope_b_vs_nM": null,
+   "status": "NA_FORM"
   },
   "cross_job": {
    "108u": {
@@ -888,5 +892,5 @@
   "AJ-3": "theta' is a composite of one co-resident decode and SM reduction (L >= 32k); does not support 'prefill throughput proportional to P'.",
   "AJ-4": "beta1 = total effect of a layer swap (weight bytes and KV pool included), 4 points / 2 dof, descriptive; not a separation of eta_A, eta_M."
  },
- "version": "aj-analysis-v1 (2026-10-26, PREREG rev3.6' \u00a71-9)"
+ "version": "aj-analysis-v1.1 (2026-10-27: AJ-2 J-H1 NA_FORM gate, result audit r1; PREREG rev3.6' \u00a71-9)"
 }

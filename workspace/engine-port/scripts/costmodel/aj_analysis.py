@@ -32,7 +32,7 @@ sys.path.insert(0, str(HARNESS))
 import analytic_terms as AT  # noqa: E402
 import ct_fit as F  # noqa: E402  (harness fit functions, read-only)
 
-VERSION = "aj-analysis-v1 (2026-10-26, PREREG rev3.6' §1-9)"
+VERSION = "aj-analysis-v1.1 (2026-10-27: AJ-2 J-H1 NA_FORM gate, result audit r1; PREREG rev3.6' §1-9)"
 
 # ---------------------------------------------------------------- §1-9 sealed constants
 D_STICKY = (16, 24, 34, 44, 64)
@@ -353,11 +353,18 @@ def aj2_jh1(A):
     wl = windep(A, "T1")
     if wl != "WEIGHT_INDEP_HELD":
         return {"status": f"NOT_EVALUATED (T1 W-INDEP {wl})"}
-    b = {}
+    b, na_form = {}, []
+    fits_t1 = (A.get("fits") or {}).get("t1") or {}
     for n in VARIANTS:
         t = jh1_t1_cells(A, n)
         if not t:
             b[n] = None
+            continue
+        # §1-9 공통 규칙(result audit r1, 2026-10-27): the harness T1 fit of this variant is FORM_INADEQUATE_* -> NA_FORM
+        fk = _jh1_key(fits_t1, n, 5, CAP_MAIN)
+        if fk and str((fits_t1[fk] or {}).get("label") or "").startswith("FORM_INADEQUATE"):
+            b[n] = None
+            na_form.append(f"a{n}")
             continue
         pts = []
         for bs, c in JH_COMMON_CELLS:
@@ -368,8 +375,9 @@ def aj2_jh1(A):
         b[n] = ft["coef"][1] if ft else None
     full = all(b[n] is not None for n in VARIANTS)
     o = _ols([N_LAYERS_AM - n for n in VARIANTS], [b[n] for n in VARIANTS]) if full else None
-    return {"b_by_variant": {f"a{n}": v for n, v in b.items()}, "slope_b_vs_nM": o[1] if o else None,
-            "b_a31": b[31], "status": "OK" if full else "NA_POINTS", "descriptive": True}
+    return {"b_by_variant": {f"a{n}": ("NA_FORM" if f"a{n}" in na_form else v) for n, v in b.items()},
+            "slope_b_vs_nM": o[1] if o else None, "b_a31": b[31], "na_form": na_form,
+            "status": "OK" if full else ("NA_FORM" if na_form else "NA_POINTS"), "descriptive": True}
 
 
 # ============================================================================ AJ-3

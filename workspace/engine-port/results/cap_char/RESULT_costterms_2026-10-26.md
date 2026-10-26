@@ -1,15 +1,17 @@
 # RESULT — 비용 항 측정 캠페인(T1–T4·T2′·T2-ext·TP2·조성) 전체 분석, 데이터 2026-10-26 / 분석 2026-10-27
 
-> **지위**: result-analyst 분석. **미감사**(claims-auditor 전). 결정 38에 따라 **봉인 PREREG 규칙대로만** 라벨·적합도를 냈다 — 새 설계·새 지표 없음. 확정 결론 재도출 없음. 정책·goodput·HE0·Claim 등급에 관한 판정 **0건**(이 PREREG는 항 측정이며 V는 이월, §0).
+> **rev1 (감사 r1 반영, 2026-10-27)**: `AUDIT_costterms_result_r1_2026-10-27.md`(커밋 `66267558`, 판정 PLAUSIBLE(조건부), 라벨·수치 재현) 의 문장 수정 F-1…F-10을 반영했다. 라벨·수치 변경 0. 함께 `aj_analysis.py` v1.1(AJ-2 J-H1 NA\_FORM 게이트)로 `AJ_full_2026-10-26.json`을 재생성했다 — AJ-1·AJ-3·AJ-4·AJ-2 J-A 쪽 불변, AJ-2 J-H1 병기표만 a22·a31 `NA_FORM`·기울기·b(a31) NA. 끝에 "promote 후보(감사 r1 등급)" 절 추가.
+
+> **지위**: result-analyst 분석. 감사 r1 완료(PLAUSIBLE 조건부, F-1…F-10 반영본). 결정 38에 따라 **봉인 PREREG 규칙대로만** 라벨·적합도를 냈다 — 새 설계·새 지표 없음. 확정 결론 재도출 없음. 정책·goodput·HE0·Claim 등급에 관한 판정 **0건**(이 PREREG는 항 측정이며 V는 이월, §0).
 > **규칙 정본**: `PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(rev3.11, 봉인 S1′; 이하 PREREG).
 > **데이터**: `costterms_runs/<job>/analysis.json`(봉인 하네스가 Job 안에서 낸 적합·라벨) 6개 — J-A1 `pdmux-costterms-ja1-af28dfe-20261026083233`, J-A2 `…ja2-7d4b142-20261026121455`, J-H1 `…jh1-6180cfd-20261026121507`, J-H2 `…jh2-6673ac8-20261026121517`, J-B2 `…jb2-aff07e3-20261026121528`, J-C `…jc-f2fdf8c-20261026121538`(전부 RUN_DONE·SHA256SUMS·ENGINE\_DIGEST `99bbef91…` MATCH, boot 65개 전부 `usable`). Job 메타 `results/costterms_*/vessl/*/meta/`. AJ 결과 `costterms_analysis/AJ_full_2026-10-26.json`(fetch 전 커밋된 `scripts/costmodel/aj_analysis.py`).
-> **분석가 보충**: `costterms_analysis/supplement_costterms_2026-10-27.py` → `supplement_costterms_2026-10-27.json`. **fetch 뒤 작성된 코드**임을 공시한다(PREREG §8-6). 하는 일은 하네스가 내지 않은 **등록 규칙의 적용**뿐이다 — S-1 §1-5 `CLOCK_SENSITIVE`(A-22가 분석기로 미룸), S-2 두 round 계수 차(§1-1 (iv)), S-3 J-C N=1 앵커 T2/T2′ 적합(하네스 키 충돌 보완, §12-1), S-4 Job 단위 power cap 노출, S-5 셀 상태 전수, S-6 analytic-v1 사전값 대비 비, S-7 T2′ 내부 L 제외 오차. 적합·라벨 함수는 모두 봉인 하네스 `ct_fit`·`ct_extract`를 읽기 전용으로 불렀다.
+> **분석가 보충**: `costterms_analysis/supplement_costterms_2026-10-27.py` → `supplement_costterms_2026-10-27.json`. **fetch 뒤 작성된 코드**임을 공시한다(PREREG §8-6). 하는 일은 하네스가 내지 않은 **등록 규칙의 적용**이다(단 **S-6은 fetch 뒤 정한 미등록 기술 비(analytic-v1 사전값 대비)이며 어떤 라벨도 이 비에 걸려 있지 않다**) — S-1 §1-5 `CLOCK_SENSITIVE`(A-22가 분석기로 미룸), S-2 두 round 계수 차(§1-1 (iv)), S-3 J-C N=1 앵커 T2/T2′ 적합(하네스 키 충돌 보완, §12-1), S-4 Job 단위 power cap 노출, S-5 셀 상태 전수, S-6 analytic-v1 사전값 대비 비(미등록 기술 비), S-7 T2′ 내부 L 제외 오차. 적합·라벨 함수는 모두 봉인 하네스 `ct_fit`·`ct_extract`를 읽기 전용으로 불렀다.
 > **원자료**: boot 원자료(server log·decode probe·telemetry)는 클러스터 볼륨에만 있다(`RAW_LOCATION.txt`). 이 문서는 요약만으로 냈다 — 원자료가 필요한 점(T1·T2 이외 창별 클럭 정렬 등)은 `NOT_COMPUTED`로 남긴다.
 > **등록 caveat(문자 그대로)**: "이 비용 모델은 Nemotron-Nano-9B-v2 한 모델의 것이며 'hybrid 서빙 비용 모델' 일반이 아니다." · 항 값은 **고정 배치·저부하 전력 상태**에서 Job별로 잰 기술값이다. 조립·예측에 쓰이기 전까지 어떤 서빙 성능 주장의 근거도 아니다. T4 산식 대조는 구현 사실 확인이다.
 
 ## 0. 한 줄 요약
 
-**채택 기준 관점**: T1은 J-A 7모드 × 2 round 모두 어떤 형이 채택됐다(FORM\_INADEQUATE 0) — F1은 `108u`·`108v`만 통과하고 sticky-D 5개는 bs 96 외삽(13.6–18.3% > 10%; D16·D24는 LOO 중앙도 > 3%)에서 F1이 떨어져 F2(D16·34·44·64)·F3(D24, β 1.26–1.27)가 두 round 같은 형으로 채택됐다. T2(P = 108)는 전부 채택, q 라벨은 Nano `PREFILL_NEAR_LINEAR_SCOPED`(q 1.088–1.097)·Llama와 attention-증가 변형은 `_SUPERLINEAR_SCOPED`. T3는 σ′ 전부 수집·`T3_WINDOW_SHORT` 0이지만 **동거 창 SW power cap 노출 96–100% 대 단독 창 0–4%**라 ρ(1.13–1.19)는 등록대로 **총효과**로만 읽힌다. T4는 산식 B가 판정 가능 셀 10/16에서 `CMEM_ACCT_HELD` 9·`CMEM_ACCT_MISS` 1(cap = C\_A, L 8,800: n\_real 92 대 n\_B 78), `FILL_INCOMPLETE` 6/16. 조성 P1–P4 전부 HELD/MONOTONE, W-INDEP T1·T2 HELD. TP2 F1·F2·F5 HELD, F4는 cap 128 boot에서 `F4_STRIDE_DERIVED`·cap 48 장문 boot에서 `_MISS`, F3은 `FILL_INCOMPLETE`로 판정 없음. 두 round(J-A1 대 J-A2, 서로 다른 GPU)의 T1 F1 계수 차 ≤ 2.7%, 라벨 불일치 0.
+**채택 기준 관점**: T1은 J-A 7모드 × 2 round 모두 어떤 형이 채택됐다(FORM\_INADEQUATE 0) — F1은 `108u`·`108v`만 통과하고 sticky-D 5개는 bs 96 한 셀(ctx 2k) 외삽(13.6–18.3% > 10%; D16·D24는 LOO 중앙도 > 3%)에서 F1이 떨어져 F2(D16·34·44·64)·F3(D24, β 1.26–1.27)가 두 round 같은 형으로 채택됐다. T2(P = 108)는 전부 채택, q 라벨은 Nano `PREFILL_NEAR_LINEAR_SCOPED`(q 1.088–1.097)·Llama와 attention-증가 변형은 `_SUPERLINEAR_SCOPED`. T3는 σ′ 전부 수집·`T3_WINDOW_SHORT` 0이지만 **동거 창 SW power cap 노출 96–100% 대 단독 창 0–4%**라 ρ(1.13–1.19)는 등록대로 **총효과**로만 읽힌다. T4 판정 가능 10셀 중 9셀이 `CMEM_ACCT_HELD`이나, 그중 8셀(cap 48 6·cap = C_B 2)은 cap이 구속해 n_A = n_B = cap인 셀이라 원식 A와 산식 B를 가르지 않고 B의 과대예측만 검출한다. cap이 구속하지 않은 판정 점은 2개다 — fused cap 48 L 65,536에서 n_real 21 = n_B 21(`CMEM_ACCT_HELD`, 원식 24 과대), PD-mux cap = C_A 114 L 8,800에서 n_real 92(n_B 78과 n_A 114 사이, `CMEM_ACCT_MISS`). 이 점의 사전 봉인 ratio_A 예측 0.68(±0.05)은 실측 0.81로 벗어났다. `FILL_INCOMPLETE` 6/16. 조성 P1–P4 전부 HELD/MONOTONE, W-INDEP T1·T2 HELD. TP2 F1·F2·F5 HELD, F4는 cap 128 boot에서 `F4_STRIDE_DERIVED`·cap 48 장문 boot에서 `_MISS`, F3은 `FILL_INCOMPLETE`로 판정 없음. 두 round(J-A1 대 J-A2, 서로 다른 GPU)의 T1 F1 계수 차 ≤ 2.7%, 라벨 불일치 0.
 
 ## 1. 기판·Job 동일성 (항 측정은 Job별 값 — §0: 서로 다른 Job의 수준값을 비교·결합하지 않음)
 
@@ -23,9 +25,11 @@
 | J-C | `GPU-863da0f1…` + `GPU-b3d1ba2a…` | job-9xo4xfosbb1q | 580.178.04 | `1e0d335b…` | MATCH | 14 (14) | 19:26–21:55 | GPU0 75.4% · GPU1 72.6% | 1350 · 1365 |
 
 - 전 Job VESSL A100-SXM4-80GB, power limit 400 W, `clk_summary.throttle_flag` = true(전 Job), `SUBSTRATE_WARNING` 없음. KISTI 수치와 섞지 않는다.
-- **J-A1과 J-A2는 다른 GPU·다른 노드**다. 등록 설계(§7-2)가 "round 간 차는 Job 효과 포함"으로 이미 정했으므로 아래 round 차는 Job·GPU 효과를 포함한 값이다. J-H2와 J-B2는 같은 GPU UUID(다른 pod)지만 둘을 비교하는 등록 항목은 없다.
+- **J-A1과 J-A2는 다른 GPU UUID·다른 pod**다(물리 노드 동일 여부는 메타로 확인 불가); round 차는 GPU·pod·시각을 포함한 Job 효과 한 번의 실현값이다. 등록 설계(§7-2)가 "round 간 차는 Job 효과 포함"으로 이미 정했으므로 아래 round 차는 Job·GPU 효과를 포함한 값이다. J-H2와 J-B2는 같은 GPU UUID(다른 pod)지만 둘을 비교하는 등록 항목은 없다.
 
 ## 2. T1 — CM-1 `T_dec(D, bs, ctx)` (§1-1; 1차 = 엔진 `S_eng`, 적합 입력 = 창 안 실제 평균 ctx)
+
+> **감사 승계 문장(PREREG §9-2, 문자 그대로)**: "J-A의 T1·T2·OFF 값은 context 131,072 boot의 값이며, KV 풀 −0.2% 외에 context에 비례하는 비정적 버퍼(flashinfer cudagraph kv_indices)도 함께 바뀐다 — context 73,728 boot 값과 같은 조건이라고 쓰지 않는다." · "jc_tp2_long_108u의 PDMUX_R2_FIXED_DSM=44는 단일 요청 장문 셀에서 쓰이지 않는 값이며, 이 boot는 D44가 아니다."
 
 ### 2-1. 적합도와 채택 (J-A, cap 128, context 131,072 boot)
 
@@ -41,8 +45,8 @@
 | D44 | 1.84·6.2 · **14.2**·1.4% / 1.58·6.1 · **13.6**·1.1% — 탈락 | F2 / F2 | 0.55·2.1 · 2.5·0.5% / 0.72·2.0 · 3.2·0.8% | 없음 |
 | D64 | 1.78·7.5 · **14.2**·1.5% / 1.65·6.7 · **14.4**·1.4% — 탈락 | F2 / F2 | 1.68·4.2 · 7.1·1.6% / 1.43·3.8 · **9.6**·1.4% | 없음 |
 
-- `FORM_INADEQUATE_T1_D*` **0건**(J-A). F1은 5개 sticky-D 전부에서 **bs 수준 외삽(bs 96 제외, 13.6–18.3%)**이 10%를 넘어 떨어졌고, D16·D24는 LOO 중앙(3.3–4.1%)도 3%를 넘었다. ctx 외삽은 전부 ≤ 3.9%다. D64 F2의 J-A2 bs 외삽 9.6%는 문턱 10%에 0.4%p 거리다(라벨은 바뀌지 않으나 경계 근접 공시).
-- J-C(bs ≤ 48, n = 7–8): TP2·앵커 × {D44, 108v} × 2 round 8개 적합 **전부 F1 통과**(LOO 중앙 0.6–2.7%, bs 외삽은 bs 96이 없어 bs 32 제외로 2.4–4.5%). J-A D44의 F1 탈락이 bs 96 셀 때문이라는 위 관찰과 모순되지 않는다(같은 Job이 아니므로 수준 비교는 하지 않는다).
+- `FORM_INADEQUATE_T1_D*` **0건**(J-A). F1은 5개 sticky-D 전부에서 **bs 96 한 셀(ctx 2k) 외삽(13.6–18.3%)**이 10%를 넘어 떨어졌고, D16·D24는 LOO 중앙(3.3–4.1%)도 3%를 넘었다. ctx 외삽은 전부 ≤ 3.9%다. D64 F2의 J-A2 bs 외삽 9.6%는 문턱 10%에 0.4%p 거리다(라벨은 바뀌지 않으나 경계 근접 공시).
+- J-C(bs ≤ 48, n = 7–8): TP2·앵커 × {D44, 108v} × 2 round 8개 적합 **전부 F1 통과**(LOO 중앙 0.6–2.7%, bs 외삽은 bs 96이 없어 bs 32 제외로 2.4–4.5%). (J-A 해석과 엮지 않는다 — 다른 Job.)
 - J-H1(공통 5셀, vanilla `108v`): real a4·dummy a4·a13 F1 통과(LOO 중앙 0.53·0.96·2.31%), **a22·a31 `FORM_INADEQUATE_T1_108v`**(LOO 중앙 3.16%·4.90%; F2/F3도 미통과). 등록 규칙상 이 두 변형의 T1을 쓰는 후속 예측기는 격자 안 표 보간만 허용된다.
 
 ### 2-2. 계수와 두 round 일치 (§1-1 (iv), S-2)
@@ -90,6 +94,8 @@
 
 ### 3-1. 장문 측정점 (§1-2′, 결정 30·33)
 
+> **감사 승계 문장(PREREG §9-2, 문자 그대로)**: "J-A의 T1·T2·OFF 값은 context 131,072 boot의 값이며, KV 풀 −0.2% 외에 context에 비례하는 비정적 버퍼(flashinfer cudagraph kv_indices)도 함께 바뀐다 — context 73,728 boot 값과 같은 조건이라고 쓰지 않는다." · "jc_tp2_long_108u의 PDMUX_R2_FIXED_DSM=44는 단일 요청 장문 셀에서 쓰이지 않는 값이며, 이 boot는 D44가 아니다."
+
 | boot | L = 65,536 / 98,304 / 126,976 TTFT 중앙 (ms) | 서빙 라벨 | 연결비 65,536 (장문/격자) | 격자 이차식 외삽 오차 98k / 124k |
 |---|---|---|---|---|
 | J-A1 `ja1_long_108v` (N=1, cap 48) | 7,886 / 12,485 / 16,862 | `LONG_SERVED_L*` 3/3 | 1.000 (격자 `ja1_108v`, context 131,072) | −0.6% / −0.9% |
@@ -122,7 +128,7 @@
 - θ′(하네스, 전 L 풀링, 기술값): 0.883 / 0.888. AJ-3(L ≥ 32k 풀링) θ′ = 0.983 / 0.999 → §4·§10.
 - J-C D44 T2′(P = 64): TP2/N=1 비 0.519–0.540, 4 L 모두 CONFIRMED, 적합 채택(S-7 오차 ≤ 0.64%).
 
-## 5. T3 — CM-4 ρ·σ′ (§1-3; **총효과**: 400 W 한도 아래 클럭 하락을 포함한 동거 감속)
+## 5. T3 — CM-4 ρ·σ′ (§1-3; **총효과** = 동거 + 400 W 한도 클럭 하락 + 부하 의존 관측자 비용(T3 boot TEL ON, 미분리))
 
 ρ = 동거 간격 중앙 / 단독 간격 중앙(ABA), σ′ = 같은 T3 boot·L·P의 엔진 span 시간 동거 / decode 1개 기준. 셀당 rep 2(한 Job = 한 round, Job 간 풀링 금지).
 
@@ -146,10 +152,10 @@
 | J-A2 | a4 D44 | (32, 32k) | 2/2 | 1.135 | 1.009 | 0.007 | 0 | 469 | 0.99 / 0.01–0.02 | 1320–1335 / 1410 |
 
 - 셀 상태: J-A1·J-A2 16/16 VALID. `T3_WINDOW_SHORT` **0**(최소 n\_it\_obs 152; J-H2 최소 128 = 문턱 그대로), `SIGMA_NOT_COLLECTED` **0**, `RHO_CLAMPED`·`RHO_D_INTERP` 해당 없음(보간 사용 없음).
-- **전력 교락(I-1, A-34)**: 동거 창의 SW power cap 노출 0.96–1.00, SM 클럭 중앙 1,275–1,365 MHz 대 단독 창 0.00–0.04·1,410 MHz. 동거와 power cap이 **완전히 함께 움직이므로** ρ 안의 두 성분은 이 설계로 분리되지 않는다(등록 estimand가 합성값이라 라벨은 바뀌지 않음). 인용은 "400 W 한도 아래 클럭 하락을 포함한 동거 감속"으로만.
+- **전력 교락(I-1, A-34)**: 동거 창의 SW power cap 노출 0.96–1.00, SM 클럭 중앙 1,275–1,365 MHz 대 단독 창 0.00–0.04·1,410 MHz. 동거와 power cap이 **완전히 함께 움직이고** T3 boot는 TEL ON이라, ρ의 합성 성분(동거 + 400 W 한도 클럭 하락 + 부하 의존 관측자 비용)은 이 설계로 분리되지 않는다(등록 estimand가 합성값이라 라벨은 바뀌지 않음). 인용은 "400 W 한도 아래 클럭 하락을 포함한 동거 감속"으로만.
 - σ′ 해석 한계: σ′ − 1(0.3–3.4%)이 `span_obs_lag_bound_rel` 상한보다 작은 rep이 J-A1 8/16·J-A2 12/16·J-H2 26/41이다 → 그 rep들의 σ′ 차는 해석하지 않는다(§9-2).
 - 정지: 단독 중앙값 5배 문턱을 넘는 동거 간격 0건(q\_stall 0, 연속 정지 0). 동거 p99 / 단독 p50 최대 1.40(J-A)·1.44(J-H2). 이것은 등록 문턱 기준 기술 표이며 "꼬리가 없다"는 문장으로 쓰지 않는다.
-- 두 round: ln ρ 차 D44 0.003–0.004, **D24 0.010–0.024**(J-A1이 일관되게 큼, ρ로 1–2.4%). round 간 차는 Job·GPU 효과를 포함한다.
+- 두 round: ln ρ 차 D44 0.003–0.004, **D24 0.010–0.024**(ρ로 1–2.4%). round 간 차는 Job·GPU 효과를 포함한다.
 - J-H2(조성 의존, 기술값): 공통 격자 bs 8 × L {8k, 32k} × D {24, 44}에서 ρ 1.139–1.178(a4·a13·a22·a31), 전 셀 VALID; bs 32는 a4(+a13 D24 1셀)만. 1 rep `FOREIGN_RESIDUAL`(a4 D44 (32, 8k) rep 0 → 그 셀 n = 1). 변형 간 ρ 차를 "간섭의 조성 의존 크기"로 쓰지 않는다(§4′). a31은 attention 전용 decode라 σ′ 해석이 다르다(하네스 표기). 전체 표는 `supplement`가 아니라 `analysis.json` `tables.t3`에 있다.
 
 ## 6. T4 — CM-5 C\_mem 산식 대조 (§1-4; **구현 사실 확인**, 독립 예측의 성공 아님)
@@ -171,8 +177,8 @@
 | cap = C\_B 68 | 16,384 | 4,096 | 66 | 68 | 68 | 68 | `FILL_INCOMPLETE`(제외) | 0 / 0 / 0.34 |
 | cap = C\_B 24 | 65,536 | 8,000 | 24 | 24 | 24 | 24 | `FILL_INCOMPLETE`(제외) | 0 / 0.15 / 0.23 |
 
-- 판정 가능 10셀(PD-mux cap 48 3 · fused 4 · cap = C\_A 1 · cap = C\_B 2): `CMEM_ACCT_HELD` 9 · `CMEM_ACCT_MISS` 1. `FILL_INCOMPLETE` **6/16**(cap = C\_A 4개 중 3개 포함) → 원식 A와 B를 가르는 판별 부팅(cap = C\_A)은 **L 8,800 한 점만** 판정 가능했고 그 점에서 n\_real이 n\_B보다 컸다(92 대 78).
-- MISS의 방향(실현 > B) [가설, 검증 안 함]: §3-1 근거 문단이 적듯 `ignore_eos` 입장 검사는 진행 중 요청의 **남은** 토큰만 예약하므로, 앞선 요청이 생성을 진행하면 B(아무도 생성하지 않은 최악)보다 많이 입장할 수 있다. 채우기 규칙은 "가장 이른 완료 전 마지막 첫 토큰"만 막으므로 이 효과를 막지 않는다. 산식 B는 이 점에서 엔진 회계의 **하한**처럼 동작했다 — 원자료(admission 기록) 확인 전에는 원인으로 쓰지 않는다.
+- T4 판정 가능 10셀 중 9셀이 `CMEM_ACCT_HELD`이나, 그중 8셀(cap 48 6·cap = C_B 2)은 cap이 구속해 n_A = n_B = cap인 셀이라 원식 A와 산식 B를 가르지 않고 B의 과대예측만 검출한다. cap이 구속하지 않은 판정 점은 2개다 — fused cap 48 L 65,536에서 n_real 21 = n_B 21(`CMEM_ACCT_HELD`, 원식 24 과대), PD-mux cap = C_A 114 L 8,800에서 n_real 92(n_B 78과 n_A 114 사이, `CMEM_ACCT_MISS`). 이 점의 사전 봉인 ratio_A 예측 0.68(±0.05)은 실측 0.81로 벗어났다. `FILL_INCOMPLETE` **6/16**(cap = C\_A 4개 중 3개 포함) → 원식 A와 B를 가르는 판별 부팅(cap = C\_A)은 **L 8,800 한 점만** 판정 가능했고 그 점에서 n\_real이 n\_B보다 컸다(92 대 78).
+- MISS의 방향(실현 > B) [가설, 검증 안 함]: §3-1 근거 문단이 적듯 `ignore_eos` 입장 검사는 진행 중 요청의 **남은** 토큰만 예약하므로, 앞선 요청이 생성을 진행하면 B(아무도 생성하지 않은 최악)보다 많이 입장할 수 있다. 채우기 규칙은 "가장 이른 완료 전 마지막 첫 토큰"만 막으므로 이 효과를 막지 않는다. [가설] 이 한 점에서 실현 > B, 원인 미확인(원자료 필요).
 - J-H1(vanilla boot A, cap 128, I-5 OFF라 사유 몫 `NOT_COLLECTED`): 4 변형 × L {4k, 16k} 8셀 + real a4 2셀 + Llama 1셀 전부 `CMEM_ACCT_HELD`(ratio\_B 0.99–1.00)와 `CMEM_ORIG_OVERPREDICTS`(ratio\_A 0.49–0.84). Llama L 4,096: n\_real 32 = 등록 예측 n\_B 32, n\_A 64 = 등록 예측 64.
 - J-C TP2 T4(F3): L 16,384·65,536 둘 다 `FILL_INCOMPLETE` → **F3 판정 없음**(n\_real 110 대 n\_B 128 · 55 대 52).
 - 금지 준수: "비용 모델이 C\_mem을 예측/검증했다"고 쓰지 않는다. 원식 A는 B와 같은 비중의 경쟁 가설이 아니다.
@@ -249,17 +255,17 @@
 | AJ-4 조성 회귀 | J-H1: W-INDEP T1·T2 HELD → 수행 | — | — | 재현됨(4점·자유도 2, 기술값) |
 
 확인 중 발견한 점(감사 대상으로 넘김):
-1. **AJ-2 J-H1 병기표의 NA\_FORM 미적용**: §1-9 공통 규칙("원 적합이 `FORM_INADEQUATE_*`이면 해당 판정은 `NA_FORM`")에 따르면 하네스 라벨이 `FORM_INADEQUATE_T1_108v`인 a22·a31의 b(n)은 `NA_FORM`이어야 하고, 4변형 전부를 요구하는 b(n)–n\_M 기울기(0.0070)와 b(a31)(0.077 ms/요청)도 따라서 NA다. `aj_analysis.aj2_jh1`은 W-INDEP만 확인하고 형 라벨은 보지 않는다. **이 세 값은 인용하지 않는다.** J-A 쪽(AJ-1·AJ-2)은 J-A에 FORM\_INADEQUATE가 없어 영향 없음.
+1. **AJ-2 J-H1 병기표의 NA\_FORM 미적용**: §1-9 공통 규칙("원 적합이 `FORM_INADEQUATE_*`이면 해당 판정은 `NA_FORM`")에 따르면 하네스 라벨이 `FORM_INADEQUATE_T1_108v`인 a22·a31의 b(n)은 `NA_FORM`이어야 하고, 4변형 전부를 요구하는 b(n)–n\_M 기울기(0.0070)와 b(a31)(0.077 ms/요청)도 따라서 NA다. `aj_analysis.aj2_jh1`은 W-INDEP만 확인하고 형 라벨은 보지 않는다. **이 세 값은 인용하지 않는다.** J-A 쪽(AJ-1·AJ-2)은 J-A에 FORM\_INADEQUATE가 없어 영향 없음. **rev1 수리**: `aj_analysis.aj2_jh1`이 하네스 `fits.t1`의 형 라벨을 확인하도록 고쳐(v1.1) `AJ_full_2026-10-26.json`을 재생성했다 — J-H1 병기표 status `NA_FORM`, a22·a31 `NA_FORM`, 기울기·b(a31) null; b(a4) 0.267·b(a13) 0.209 ms/요청은 개별 기술값만. AJ-1·AJ-3·AJ-4와 AJ-2 J-A 쪽은 재생성 전후 값이 같다(JSON 비교).
 2. AJ-1·AJ-2의 a\_D·b\_D·c\_D는 해석 I-1대로 **F1 계수**다. J-A sticky-D 5개는 F1이 채택 기준에서 떨어졌고(F2/F3 채택) 규칙상 NA\_FORM은 아니지만, 1/D 잔차·c\_knee는 "데이터가 기각한 형의 계수"에서 나온 값임을 함께 적는다.
 3. AJ-4 비 β1/Δ\_ideal은 Δ\_ideal이 0 근처인 셀에서 의미가 없다: T1 (8, 8k) 61.5(Δ\_ideal −0.0006 ms), T2 L 32k −1.74(부호 반대), 16k 19.5. ctx 차의 차(β1 차/Δ\_ideal 차)는 1.31 (32: 8k−2k) · 1.17 (8: 32k−2k) · 1.13 (8: 8k−2k). 해석 제한 [봉인] 그대로 — β1은 층 교체 총효과이고 η 분리가 아니다.
 
 ## 12. 하네스·분석 결함과 주의 (분석 판정을 바꾸지 않는 것만 확인)
 
-1. **J-C T2/T2′ 키 충돌**: 하네스 `tables.t2`·`fits.t2`·`tables.t2prime`·`fits.t2prime`·`labels.q`·`theta_prime`의 키(`job|r|tag|mode`)에 tp가 없어 같은 round의 TP2 boot가 N=1 앵커를 덮어썼다(T1 키 `_tkey`에는 tp가 있다). `jc.ratios_t2`·`ratios_t2p`는 boot 자료에서 직접 계산해 영향이 없다. 앵커 T2·T2′ 적합은 S-3에서 같은 함수로 보충했다(§3 표 마지막 행). 하네스 수정은 봉인 바이트 변경이라 하지 않았다.
-2. AJ-2 J-H1 NA\_FORM 미적용(§11-1).
+1. **J-C T2/T2′ 키 충돌**: 하네스 `tables.t2`·`fits.t2`·`tables.t2prime`·`fits.t2prime`·`labels.q`·`theta_prime`의 키(`job|r|tag|mode`)에 tp가 없어 같은 round의 TP2 boot가 N=1 앵커를 덮어썼다(T1 키 `_tkey`에는 tp가 있다). `labels.q`도 키에 tp·round가 없어 J-C TP2와 앵커 4 boot의 q를 한 구간으로 묶었다(1.065–1.087, 라벨 불변). 충돌 범위는 J-C의 t2·t2prime·theta_prime·q뿐이며 T1·agreement·t2_long·J-A·J-H1은 영향 없음. `jc.ratios_t2`·`ratios_t2p`는 boot 자료에서 직접 계산해 영향이 없다. 앵커 T2·T2′ 적합은 S-3에서 같은 함수로 보충했다(§3 표 마지막 행). 하네스 수정은 봉인 바이트 변경이라 하지 않았다.
+2. AJ-2 J-H1 NA\_FORM 미적용(§11-1) → rev1에서 `aj_analysis.py` v1.1로 수리·`AJ_full` 재생성(시험 `test_aj2_jh1_na_form_gate` 추가).
 3. T4 판별 부팅의 FILL\_INCOMPLETE 3/4: smoke 공시가 예고한 현상이 본 측정에서도 반복됐다(L 16,384 n\_real 71은 smoke와 같은 값). 원식 A 대 산식 B 판별은 사실상 L 8,800 한 점과 cap 48 64k(fused) 한 점뿐이다.
 4. `CLOCK_SENSITIVE`는 J-A T1에서만 계산 가능했다(§10).
-5. J-A1·J-A2 round 차는 GPU·노드 차를 포함한다(§1).
+5. J-A1·J-A2 round 차는 다른 GPU UUID·다른 pod(물리 노드 동일 여부는 메타로 확인 불가)에서 나온 값이며, GPU·pod·시각을 포함한 Job 효과 한 번의 실현값이다(§1).
 
 ## 13. 실행 안 된 셀 (등록 규칙에 따른 비실행 — 실패 아님)
 
@@ -286,7 +292,7 @@
 ## 15. 판정 한 줄과 다음에 필요한 것
 
 **판정**: 항 측정 라벨·적합도 = 위 표대로 **기술값으로 성립**(정책 판정 아님, n = 2 round는 D 사다리 기술 적합의 등록 하한 O-10′과 일치). T3 ρ는 **confounded(전력 — 등록상 총효과로만)**. T4 원식 대 산식 판별은 **판정 가능 점 부족**(FILL\_INCOMPLETE 3/4). TP2 F3 **판정 없음**.
-다음: (1) claims-auditor 감사(특히 §11-1 AJ-2 NA\_FORM, §12-1 키 충돌, P3 조건부, T4 MISS의 방향). (2) 원자료(클러스터 볼륨)에서 T2·T2′ 창 시각을 꺼내야 T2 `CLOCK_SENSITIVE`가 계산된다. (3) T4 MISS 원인 확인은 admission 기록(I-5) 원자료로만. 새 Job·새 지표는 제안하지 않는다(결정 38).
+다음: (1) 감사 r1 완료(F-1…F-10 반영) — promote는 아래 등급표대로. (2) 원자료(클러스터 볼륨)에서 T2·T2′ 창 시각을 꺼내야 T2 `CLOCK_SENSITIVE`가 계산된다. (3) T4 MISS 원인 확인은 admission 기록(I-5) 원자료로만. 새 Job·새 지표는 제안하지 않는다(결정 38).
 
 ## 16. cost model 기여 (`prefill-layer-alloc/COSTMODEL.md` 기준 — 정본 반영은 promote 몫, 여기서는 제안)
 
@@ -305,25 +311,44 @@
 | TP2 F1 s/2 · F2 k/2 | 71.77 MB · 8,192 B | 71.75 MB · 8,190–8,193 B | −0.03% · ≤ 0.02% |
 | TP2 F4 in\_proj/rank | 11,328 (±3%) | 11,368 (cap 128) · 12,470 (cap 48) | +0.35% · **+10.1%** |
 | AJ-1 s\_108 사전 | 꺾임 없음 0.136 / D\_sat 80 0.067 / ≤ 64 0 | 0.132 / 0.136 | "꺾임 없음" 사전값에 −3% / 0% |
-| AJ-2 2s/k | 17,523 토큰 | c\_knee 28k–85k | 비 1.6–4.9 (라벨 없음) |
+| AJ-2 2s/k (등록 예측 아님 — §1-9 AJ-2 기술값, 라벨 없음, 원고 §3.2 행을 닫지 않음) | 17,523 토큰 | c\_knee 28k–85k | 비 1.6–4.9 |
 | AJ-3 θ′ | [0.9, 1.1] 선형 구간 | 0.983 / 0.999 | 구간 안 |
 
-**정본 수식(analytic-v1) 사전값 대 측정 계수의 비** (S-6; 사전 = HBM 2.039 TB/s 하한·bf16 312 TFLOP/s, `analytic_terms.py`로만 계산)
+**정본 수식(analytic-v1) 사전값 대 측정 계수의 비** (S-6; 사전 = HBM 2.039 TB/s 하한·bf16 312 TFLOP/s, `analytic_terms.py`로만 계산). S-6은 fetch 뒤 정한 미등록 기술 비(analytic-v1 사전값 대비)이며 어떤 라벨도 이 비에 걸려 있지 않다.
 
 | 계수 | 사전값 | `108u`·`108v` (J-A1 / J-A2) | D16 | D44 | D64 |
 |---|---|---|---|---|---|
 | a / a₀ (가중치 읽기 고정항) | 8.14 ms | 1.61·1.60 / 1.60·1.59 | 4.38 / 4.37 | 2.06 / 2.06 | 1.93 / 1.93 |
-| b / b₀ (요청당 state 읽기·쓰기 하한) | 0.141 ms | 1.94·1.91 / 1.95·1.94 | 8.71 / 8.73 | 3.68 / 3.73 | 2.40 / 2.43 |
+| b / b₀ (b₀ = 2s/BW, analytic-v1) | 0.141 ms | 1.94·1.91 / 1.95·1.94 | 8.71 / 8.73 | 3.68 / 3.73 | 2.40 / 2.43 |
 | c / c₀ (KV 읽기) | 8.0 ns/요청·토큰 | 1.18·1.21 / 1.19·1.19 | 1.93 / 1.94 | 1.13 / 1.16 | 1.28 / 1.26 |
-| T2 v / (α/312T) | 0.0502 ms/토큰 | 2.14·2.15 / 2.12·2.11 (→ 실효 약 47% 피크) | — | — | — |
+| T2 v / (α/312T) | 0.0502 ms/토큰 | 2.14·2.15 / 2.12·2.11 | — | — | — |
 | T2 w / (γ/312T) | 1.31e-7 ms/토큰² | 1.43·1.43 / 1.47·1.48 | — | — | — |
 
-(sticky-D 열은 F1 계수 — F1이 형 채택에서 떨어진 모드다.)
+(sticky-D 열은 F1 계수 — F1이 형 채택에서 떨어진 모드다.) b는 요청당 항 전체이며 b/b₀는 state 항이 decode 시간에 보인다는 증거가 아니다(PREREG §1-9 해석 제한 승계). c/c₀는 사전 하한 대비 비일 뿐 'KV 항이 HBM 하한에 가깝다'로 쓰지 않는다. T2 계수의 `CLOCK_SENSITIVE`는 `NOT_COMPUTED`(400 W 한도 아래 값일 가능성)이다.
 
-- **CM-1(decode step)** — 알게 된 것: 함수형 `a + b·bs + c·bs·ctx`는 **비분할(`108u`·`108v`)에서만 채택**, sticky-D ≤ 64에서는 bs 96 외삽이 깨져 bs 비선형항(F2 d·bs² 또는 F3 β ≈ 1.27)이 필요 — **깨진 가정: "F1이 D 전 범위에 맞는다"**. 계수(108 SM): a ≈ 13.0 ms(a₀의 1.6배), b ≈ 0.27 ms/요청(b₀의 1.9배), c ≈ 9.5e-6 ms/요청·토큰(c₀의 1.2배 — KV 항은 HBM 하한에 가깝다). D 축: a\_D는 1/D 형과 최대 5.7% 어긋나고(MISS) 64→108에서 꺾임 없음(AJ-1), γ\_j a 0.44·b 0.75·c 0.11(기술값). 범위: Nano-9B-v2, cap 128, context 131,072 boot, 실제 ctx ≤ 68k·bs ≤ 96 박스 안, T1 창 power cap 노출 0%.
-- **CM-2(prefill span)** — 알게 된 것: P = 108 이차형 채택, v ≈ 0.107 ms/토큰(J1 floor 0.111과 ≤ 5% — mem 0.6에서 재현), w ≈ 1.9e-7 ms/토큰²(γ 사전의 1.4–1.5배), q 1.088–1.097(NEAR\_LINEAR, 경계 근접 1점). 장문 98k·124k는 격자 이차식 외삽과 ≤ 1.2% 차 — 함수 형태가 124k까지 연장됨(N=1·TP2 각 Job 안). prefill SM 축(T2′, decode 1개 동거): θ′(L ≥ 32k) 0.98–1.00. 범위: chunk −1, power cap 노출 미계산(`NOT_COMPUTED`) — **계수가 400 W 한도 아래 값일 가능성 공시 필요**.
-- **CM-4(동거 간섭)** — 알게 된 것: ρ 1.13–1.19, σ′ 1.003–1.034(대부분 관측 지연 상한 이하), 등록 문턱 정지 0건, 셀 간 차 작음(D24 > D44 소폭). **깨진/확인된 가정: 동거 = power cap 노출(96–100% 대 0–4%)이 이 기판에서 한 몸** — CM-4 진척판의 "크기는 전력 한도와 교락"을 항 측정 수준에서 재확인(분리 불가).
-- **CM-5(메모리·admission)** — 알게 된 것: s·k·풀 배너가 analytic-v1과 ±0.05% 일치(4 조성·TP2 포함), 풀 합은 cap과 독립(`C_MEM_DRIFT` 없음 — "KV + mamba 바이트 = 상수" 가정 확인), 산식 B는 cap 구속·C\_B 고정점에서 정확(9/10), **cap = C\_A L 8,800에서는 실현이 B보다 18% 많음** — 깨진 가정 후보: "ignore\_eos 입장은 출력 전량을 예약"이 동적으로는 하한(원인 미확인). 사유 몫: cap 구속 셀은 cap 0.27–0.59, 64k는 KV 0.34–0.48(시간 가중).
+- **CM-1(decode step)** — 알게 된 것: 함수형 `a + b·bs + c·bs·ctx`는 **비분할(`108u`·`108v`)에서만 채택**, sticky-D ≤ 64에서는 bs 96 한 셀(ctx 2k) 외삽이 깨져 bs 비선형항(F2 d·bs² 또는 F3 β ≈ 1.27)이 필요 — **깨진 가정: "F1이 D 전 범위에 맞는다"**. 계수(108 SM): a ≈ 13.0 ms(a₀의 1.6배), b ≈ 0.27 ms/요청(b₀의 1.9배), c ≈ 9.5e-6 ms/요청·토큰(c₀의 1.2배; 미등록 기술 비, 해석하지 않음). D 축: a\_D는 1/D 형과 최대 5.7% 어긋나고(MISS) 64→108에서 꺾임 없음(AJ-1), γ\_j a 0.44·b 0.75·c 0.11(기술값). sticky-D의 γ\_j·AJ-1은 형 채택에서 기각된 F1의 계수에서 나온 값이다. 범위: Nano-9B-v2, cap 128, context 131,072 boot, 실행 셀의 볼록껍질 안(bs 96은 ctx 2k뿐), T1 창 power cap 노출 0%.
+- **CM-2(prefill span)** — 알게 된 것: P = 108 이차형 채택, v ≈ 0.107 ms/토큰; L ≤ 16k 기울기 0.108–0.110 ms/토큰과 J1 기울기(0.111, mem 0.82 결과)의 차는 ≤ 5%로 `T2_J1_SLOPE_DEVIATES` 없음 — 기술값이며 결과·보정 근거가 아니다, w ≈ 1.9e-7 ms/토큰²(γ 사전의 1.4–1.5배), q 1.088–1.097(NEAR\_LINEAR, 경계 근접 1점). 같은 Job 격자 boot 이차식의 98k·124k 외삽과 장문 boot 값의 차는 Nano −0.9…+1.2%(65,536 연결비 0.991–1.000; 장문 boot cap 48·격자 boot cap 128), Llama −1.8·−3.1%였다. prefill SM 축(T2′, decode 1개 동거): θ′(L ≥ 32k) 0.98–1.00. 범위: chunk −1, power cap 노출 미계산(`NOT_COMPUTED`) — **계수가 400 W 한도 아래 값일 가능성 공시 필요**.
+- **CM-4(동거 간섭)** — 알게 된 것: ρ 1.13–1.19, σ′ 1.003–1.034(대부분 관측 지연 상한 이하), 등록 문턱 정지 0건; ρ 합성 성분 = 동거 + 400 W 한도 클럭 하락 + 부하 의존 관측자 비용(T3 boot TEL ON, 미분리). D 간 차는 rep 2·차 < 3%이고 동거 SM 클럭도 D24가 낮아 분리 불가. **깨진/확인된 가정: 동거 = power cap 노출(96–100% 대 0–4%)이 이 기판에서 한 몸** — CM-4 진척판의 "크기는 전력 한도와 교락"을 항 측정 수준에서 재확인(분리 불가).
+- **CM-5(메모리·admission)** — 알게 된 것: s·k·풀 배너가 analytic-v1과 ±0.05% 일치(4 조성·TP2 포함), 풀 합은 cap과 독립(`C_MEM_DRIFT` 없음 — "KV + mamba 바이트 = 상수" 가정 확인), T4 판정 가능 10셀 중 9셀이 `CMEM_ACCT_HELD`이나, 그중 8셀(cap 48 6·cap = C_B 2)은 cap이 구속해 n_A = n_B = cap인 셀이라 원식 A와 산식 B를 가르지 않고 B의 과대예측만 검출한다. cap이 구속하지 않은 판정 점은 2개다 — fused cap 48 L 65,536에서 n_real 21 = n_B 21(`CMEM_ACCT_HELD`, 원식 24 과대), PD-mux cap = C_A 114 L 8,800에서 n_real 92(n_B 78과 n_A 114 사이, `CMEM_ACCT_MISS`). 이 점의 사전 봉인 ratio_A 예측 0.68(±0.05)은 실측 0.81로 벗어났다. [가설] 이 한 점에서 실현 > B, 원인 미확인(원자료 필요). 사유 몫: cap 구속 셀은 cap 0.27–0.59, 64k는 KV 0.34–0.48(시간 가중).
 - **(확장 TP)** — 알게 된 것: TP2 샤딩 산술(s/2·k/2) 확인, T1 계수 비 a 0.63–0.67·b 0.55–0.57·c 0.49–0.55, prefill 총합 비 0.52–0.57(all-reduce 미분해). TP2 PD-mux 비분할 경로 124k 서빙 확인. 범위: N = 2만, 앵커 cap 48.
 - **(확장 조성)** — 알게 된 것: 같은 골격에서 attention 층 수 n에 대해 decode ctx 기울기 c ∝ n(±1.2%, a22·a31 조건부), prefill q는 n과 단조 증가(1.09→2.36), 요청당 state s는 Mamba 층 수에 선형으로 0까지. 가중치 무관(W-INDEP) 확인으로 dummy 가중치 측정이 유효. AJ-4 β1은 Δ\_ideal 0 근처 셀에서 비가 무의미 — "층 교체 총효과" 기술값까지만.
-- **제안(promote용, 정본 문구 아님)**: CM-1 상태에 "F1은 비분할에서만, sticky-D는 F2/F3" 한 줄; CM-2에 "mem 0.6 재현 v 0.107 ms/토큰·124k까지 이차형 연장, power cap 미계산"; CM-4에 "항 측정에서도 동거 = cap 노출"; CM-5에 "산식 B 9/10 HELD, C\_A 8.8k MISS(실현 > B)·판별 점 부족"; 확장 칸에 TP2 F1·F2·F5 HELD·조성 P1–P4. 모두 미감사 상태로 표기.
+- **제안(promote용, 정본 문구 아님)**: CM-1 상태에 "F1은 비분할에서만, sticky-D는 F2/F3" 한 줄; CM-2에 "v 0.107 ms/토큰(J1 대비 기술값), 장문 외삽 차 Nano −0.9…+1.2%, power cap 미계산"; CM-4에 "항 측정에서도 동거 = cap 노출(합성 성분 미분리)"; CM-5에 F-1 문안(cap 비구속 판정 점 2개, ratio\_A 예측 0.68 → 0.81 이탈); 확장 칸에 TP2 F1·F2·F5 HELD·조성 P1–P4. 등급은 아래 "promote 후보(감사 r1 등급)"를 따른다.
+
+## 17. promote 후보(감사 r1 등급) — `AUDIT_costterms_result_r1_2026-10-27.md`(커밋 `66267558`) 전사
+
+| # | 등급 | 후보 |
+|---|---|---|
+| 1 | CONFIRMED | CM-5 부팅 로그 사실(s·k ±0.05%, 풀 합 2% 안) |
+| 2 | CONFIRMED(scoped) | CM-1 F1은 P = 108만, sticky-D는 bs 96 한 셀 외삽 13.6–18.3%로 F2/F3 |
+| 3 | CONFIRMED / NYS | J-A T1 `CLOCK_SENSITIVE` 없음 / T2·T2′·T4 전력 상태는 NYS |
+| 4 | CONFIRMED(라벨) | T2 q 라벨 |
+| 5 | CONFIRMED(scoped) | 장문 `LONG_SERVED`, TP2 PD-mux는 `108u` 한정 124k |
+| 6 | CONFIRMED / NYS | T3 power cap 노출 대비·ρ 총효과 / 간섭 크기·D 순서는 NYS |
+| 7 | NYS | 산식 B 재현(F-1 문안만) |
+| 8 | CONFIRMED(J-H1 한 Job) | 조성 P1·P2·P4, P3 조건부 |
+| 9 | CONFIRMED / NYS | TP2 F1·F2·F5 / F4·F3은 NYS |
+| 10 | CONFIRMED(라벨) | AJ-1·AJ-3 |
+| 11 | 인용 금지 | AJ-2 J-H1 |
+| 12 | PLAUSIBLE | 두 Job T1 F1 계수 차 ≤ 2.7% |
+
+**promote 금지**: "산식 B 9/10", "mem 0.6에서 J1 재현", "실효 47% 피크", "KV 항 HBM 하한 근접", "124k까지 함수 형태 연장", "ρ D24 > D44", J-H2 조성별 SM 민감도 단조.
