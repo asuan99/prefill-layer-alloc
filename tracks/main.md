@@ -47,7 +47,7 @@
 - **논문 방향** / static 결론만으로는 제안이 아님 / ② 비용 모델 기반 static 설정(권고, V + oracle 격차) · ① 특성화 · ③ 메커니즘
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- **J-A1** `pdmux-costterms-ja1-af28dfe-20261026083233`(`job-4euwgpvd00ao`, A100×1) — 실행 중 (1차 `job-bnkxoji00zmy` failed rc 13, 측정 0), 회수 = `scripts/vessl/fetch.sh costterms_ja1 …`
+- **J-A1** `pdmux-costterms-ja1-af28dfe-20261026083233`(`job-4euwgpvd00ao`) — **완료·회수**(2026-10-26 11:31Z, 2.35 h, DONE + sha256 OK). 하네스 건강: 13 boot 전부 실행, T1 창 VALID 전부(오염 0), 실현 SM 일치, 클라이언트·엔진 AGREE, 장문 LONG_SERVED, T3 셀 산출. 요약 `cap_char/costterms_runs/…`(boot 원자료는 클러스터 볼륨 `/data/costterms/J-A_r1`에만 — 요약 SHA256SUMS의 boot 항목은 로컬 검증 불가, m12) (1차 `job-bnkxoji00zmy` failed rc 13, 측정 0), 회수 = `scripts/vessl/fetch.sh costterms_ja1 …`
 - 없음. Workspace 둘 다 standby(조성 프로브 후 정지 확인).
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 문장 · telemetry 비대칭 감사 §3(6건) · PREREG §9-2(T1 명목 ctx·장문 경계 시험 혼동 포함) · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장
