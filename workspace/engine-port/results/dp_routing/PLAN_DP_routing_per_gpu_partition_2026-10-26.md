@@ -1,4 +1,4 @@
-# 설계 초안 rev1 — 복제본별 SM 분할 + 길이 기반 라우팅 DP (2026-10-26)
+# 설계 초안 rev1 (+ 감사 r2 PREREG 작성 조건) — 복제본별 SM 분할 + 길이 기반 라우팅 DP (2026-10-26)
 
 > **지위**: 설계 초안(PREREG 아님, 미봉인). 측정 0, GPU 0, 성능 판정 0. 사용자 지시("SM 분할은 GPU별로 하면서 DP", 결정 35)와 multi-GPU 증거 검토 `reports/hymux_review/MULTIGPU_EVIDENCE_REVIEW_2026-10-26.md`에서 나왔다.
 > **감사 이력**: 규칙층 r1 `AUDIT_dp_routing_r1_2026-10-26.md`(rev0 NO-GO: 死因 N1 Llama τ 항등식·결정 14·24 충돌·N3 τ = 2c\* 퇴화) → **rev1 = 수리 1–12 반영본**(수리 1·2는 결정 36). r2는 수리 diff만 본다. 수리 위치는 `[r1 수리 n]`.
@@ -90,3 +90,6 @@
 3. "G_SLO의 N 간 비교는 Job·노드가 달라 기술값이다."
 4. "N 배율·GPU당 goodput은 복제 처리율의 재표현이라 PD-mux·라우팅 이득의 근거가 아니다."
 5. "M3 rev12(`--dp-size`) DP 자료와 결합하지 않는다."
+
+## 6. 감사 r2(최종) — `GO-with-caveats`, PREREG 작성 조건
+`AUDIT_dp_routing_r2_2026-10-26.md`. PREREG로 옮길 때 N-1(변화 trace 확인 판정·q 규칙)·N-2(분모 arm 교차적합 선택)·N-3(decode floor = cm_predict ITL 식, `RHO_CLAMPED`·`FLOOR_INFEASIBLE`)·N-4(n_long은 `108v` 예측으로 한 번)·N-5(R4-D는 R3 cap 아래, D̂_LEN = max 집합별 최소 적격 D)·N-6(클래스 정의 전 arm·Llama·변화 trace 공통) 문장을 원문 그대로 넣고, caveat 6–9를 §5에 승계한다. 하네스층 감사가 반영을 확인한다. 열린 사용자 결정: **U-1 Llama 참조점 arm**(감사 기록 끝).
