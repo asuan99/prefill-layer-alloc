@@ -48,6 +48,7 @@
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - **2026-10-26 12:15Z 제출(5개, 봉인 S1′ 하네스)**: J-A2 `job-x9zcfha1sdx9` · J-H1 `job-jklucsag4hmk` · J-H2 `job-6hq8ql4roro0` · J-B2 `job-5qyeghkdskal` · J-C `job-9xo4xfosbb1q`(A100×2) — 회수 = 각 campaign `scripts/vessl/fetch.sh`
+- 진행(17:05Z): **J-A2·J-H2 완료·회수**(전 boot usable, sm 일치, T1 창 VALID 전부) · J-H1·J-B2 실행 중 · J-C(A100×2) scheduling. AJ 부분 계산(J-A1·J-A2, 봉인 규칙, 미감사·기술값) `cap_char/costterms_analysis/AJ_partial_JA1_JA2_2026-10-26.json`: AJ-1 두 Job 모두 `BWD_INV_D_MISS_LE64`(최대 잔차 5.6–5.7%)·`BWD_NO_KNEE_TO_108`(s_108 0.132/0.136), r_a 2.27/2.26, t0 8.55/8.58 ms · AJ-3 θ′ 0.983/0.999 `T2P_COEXIST_EXP_LINEAR_SCOPED` · AJ-2 계수 안정(c_knee 108u 약 28.6k, 사전값 대비 1.63)
 - **J-A1** `pdmux-costterms-ja1-af28dfe-20261026083233`(`job-4euwgpvd00ao`) — **완료·회수**(2026-10-26 11:31Z, 2.35 h, DONE + sha256 OK). 하네스 건강: 13 boot 전부 실행, T1 창 VALID 전부(오염 0), 실현 SM 일치, 클라이언트·엔진 AGREE, 장문 LONG_SERVED, T3 셀 산출. 요약 `cap_char/costterms_runs/…`(boot 원자료는 클러스터 볼륨 `/data/costterms/J-A_r1`에만 — 요약 SHA256SUMS의 boot 항목은 로컬 검증 불가, m12) (1차 `job-bnkxoji00zmy` failed rc 13, 측정 0), 회수 = `scripts/vessl/fetch.sh costterms_ja1 …`
 - 없음. Workspace 둘 다 standby(조성 프로브 후 정지 확인).
 ## 금지 서술 (링크만)
