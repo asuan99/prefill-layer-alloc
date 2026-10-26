@@ -26,7 +26,7 @@ BOOT_H = 0.072
 TP2_BOOT_H = (400 + 60) / 3600
 TP2_PF = 1.7
 CELL_OVH_S = 15.5
-FILL_H = 0.1
+FILL_H = 485 / 3600          # decision 38: Workspace smoke S-B, one 16k fill (cap 80, 88 requests) took 485 s (was 0.1 h = 6 min); applied to every fill [유도, smoke 비측정]
 POOL_CAP128 = 895781          # §3-1 [유도]
 POOL_CAP48 = 1588000          # §5-2 [유도] (33.04 GB - 49 x 143.5 MB) / 16,379 B  [CS-OK] 33.04는 풀 GB 값(우연 일치)
 POOL_TP2_CAP128 = 3720000     # [유도] per-rank pool ~ 39.7 GB at k/2, s/2 (§5-1 F3)
@@ -124,7 +124,7 @@ def main():
         tot += h * ngpu
         print(f"{job} r{rnd}: {h:.2f} h (T3 boots {t3:.2f} h), hard cap x1.2 = {1.2 * h:.2f} h = "
               f"{math.ceil(1.2 * h * 60)} min, reserved GPU-h {h * ngpu:.2f}")
-    print(f"total reserved GPU-h {tot:.2f} (J-B2 at its time-model 2.32 h; the registered J-B2 cap stays 78 min until the smoke)")
+    print(f"total reserved GPU-h {tot:.2f} (J-B2 at its time-model; decision 38: the registered J-B2 cap now follows the model)")
     return rows
 
 

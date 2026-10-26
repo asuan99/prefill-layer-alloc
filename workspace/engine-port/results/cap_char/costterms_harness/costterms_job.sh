@@ -29,11 +29,11 @@ raw="${PDMUX_COSTTERMS_OUT:-${data}/runs/${name}/raw}"
 summary="${PDMUX_COSTTERMS_SUMMARY:-${here}/../costterms_runs/${name}}"
 
 case "${job}" in              # hard caps (min) = ct_spec.HARD_CAP_MIN; GPUs = ct_spec.JOB_GPUS
-  J-H1) cap_min=271; ngpu_want=1 ;;
+  J-H1) cap_min=298; ngpu_want=1 ;;
   J-A)  if [[ "${rnd}" == 1 ]]; then cap_min=275; else cap_min=253; fi; ngpu_want=1 ;;
-  J-B2) cap_min=78;  ngpu_want=1 ;;
+  J-B2) cap_min=208; ngpu_want=1 ;;
   J-H2) cap_min=126; ngpu_want=1 ;;
-  J-C)  cap_min=307; ngpu_want=2 ;;
+  J-C)  cap_min=312; ngpu_want=2 ;;
   *) echo "ABORT_CONFIG: PDMUX_COSTTERMS_JOB must be J-H1, J-A, J-B2, J-H2 or J-C; got '${job}'" >&2; exit 16 ;;
 esac
 if [[ "${PDMUX_COSTTERMS_SEALED:-}" != 1 && "${PDMUX_COSTTERMS_TEST_MODE:-}" != 1 ]]; then

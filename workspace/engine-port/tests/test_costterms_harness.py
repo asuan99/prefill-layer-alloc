@@ -58,8 +58,9 @@ class TestSpec(unittest.TestCase):
         """rev3.4 §1-1 / §3-1: O = O_BASE + ramp bound; single-span cells have no ramp; J-A O is uniform over modes."""
         self.assertEqual(S.span_batches(32, 8192 - 166), [3] * 10 + [2])           # closes after crossing 16,384
         self.assertEqual(S.span_batches(9, 2048 - 166), [9])
-        for cell in ((1, 2 * K), (8, 2 * K), (1, 64 * K)):
+        for cell in ((1, 2 * K), (1, 64 * K)):
             self.assertEqual(S.o_tokens(*cell, "JA"), S.O_BASE)
+        self.assertEqual(S.o_tokens(8, 2 * K, "JA"), 738)                           # decision 38: PD-mux single-batch burst has a ramp floor
         self.assertEqual(S.ja_pmin(8, 8 * K), 44)                                   # base grid includes D64
         self.assertEqual(S.ja_pmin(32, 16 * K), 64)                                 # 16k column: D44 / 108u
         self.assertEqual(S.ja_pmin(16, 16 * K), 64)                                 # was OFF-only (44); decision 34 ON pair: D44's P
@@ -649,7 +650,7 @@ class TestStage2Spec(unittest.TestCase):
         self.assertAlmostEqual(h["J-A|1"] - long_h, 3.4 + 0.26, delta=0.05)         # §7-4' J-A1 3.4 h + decision 33 L-7 (+0.22)
         self.assertAlmostEqual(long_h, 0.17, delta=0.02)                            # decision 30 long boot [유도]
         self.assertAlmostEqual(h["J-A|2"], 3.3 + 0.26, delta=0.05)
-        self.assertAlmostEqual(h["J-H1|1"], 3.4 + 0.35, delta=0.05)                 # decision 33 L-8: Llama + real-a4 long boots
+        self.assertAlmostEqual(h["J-H1|1"], 3.4 + 0.35 + 0.38, delta=0.05)          # decision 33 L-8 + decision 38 fill 485 s (+0.38): Llama + real-a4 long boots
         for k in ("J-A|1", "J-A|2", "J-H1"):
             self.assertGreaterEqual(S.HARD_CAP_MIN[k], 1.2 * h[k if "|" in k else f"{k}|1"] * 60, k)
         self.assertGreaterEqual(S.HARD_CAP_MIN["J-H2"], 1.2 * h["J-H2|1"] * 60)
@@ -770,7 +771,7 @@ class TestStage2E2E(unittest.TestCase):
         with self.assertRaises(SystemExit):
             R.select_cells(b, select=["ja1_D44:t2:4096"])                     # T2 is not registered in sticky D44
         keep = R.select_cells(b, cells_per_boot=2)
-        self.assertEqual([k for k in keep if k.startswith("t1|")], ["t1|1x2048|0", "t1|8x2048|0"])
+        self.assertEqual([k for k in keep if k.startswith("t1|")], ["t1|1x2048|0", "t1|1x8192|0"])        # O order: (8, 2k) now carries the ramp floor
         with self.assertRaises(SystemExit):
             R.run_job("J-A", tmpdir(self), plan=p, select=["ja1_D44:t1:8x2048"])   # subsets are smoke-only
         d = tmpdir(self)
@@ -980,20 +981,20 @@ class TestDecision33(unittest.TestCase):
         tm = importlib.import_module("ct_timemodel")
         h = {k: v[0] for k, v in tm.main().items()}
         self.assertEqual({k: round(v, 2) for k, v in h.items()},
-                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
-        self.assertEqual(S.HARD_CAP_MIN, {"J-H1": 271, "J-A|1": 275, "J-A|2": 253, "J-B2": 78, "J-H2": 126, "J-C": 307})
+                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 4.13, "J-H2|1": 1.74, "J-B2|1": 2.88, "J-C|1": 4.33})
+        self.assertEqual(S.HARD_CAP_MIN, {"J-H1": 298, "J-A|1": 275, "J-A|2": 253, "J-B2": 208, "J-H2": 126, "J-C": 312})
         for k, cap in S.HARD_CAP_MIN.items():
             hh = h[k if "|" in k else f"{k}|1"]
-            if k != "J-B2":                                           # J-B2's cap is the smoke-pending 78 min (O-22)
+            if True:                                                  # decision 38: J-B2 follows the model too (smoke fill 485 s)
                 self.assertEqual(cap, math.ceil(1.2 * hh * 60), k)
             self.assertLessEqual(cap, 6 * 60, k)                      # the <= 6 h per Job principle, cap included
             self.assertLessEqual(hh, 6.0, k)
         txt = (H / "costterms_job.sh").read_text()
-        for pat in (r"J-H1\) cap_min=271;", r"then cap_min=275; else cap_min=253;", r"J-C\)  cap_min=307;"):
+        for pat in (r"J-H1\) cap_min=298;", r"then cap_min=275; else cap_min=253;", r"J-C\)  cap_min=312;"):
             import re
             self.assertRegex(txt, pat)
         launch = (ENG / "scripts" / "vessl" / "launch.sh").read_text()
-        for frag in ("J-H1:*) ctcap=271", "J-A:1) ctcap=275", "J-A:2) ctcap=253", "J-C:*) ctcap=307"):
+        for frag in ("J-H1:*) ctcap=298", "J-A:1) ctcap=275", "J-A:2) ctcap=253", "J-C:*) ctcap=312"):
             self.assertIn(frag, launch)
 
 
@@ -1137,6 +1138,10 @@ class TestDecision34(unittest.TestCase):
         self.assertEqual(S.HARD_CAP_MIN["J-A|1"], 275)
         self.assertEqual(S.HARD_CAP_MIN["J-A|2"], 253)
 
+    def test_ramp_floor_covers_smoke_bs8(self):
+        """Decision 38: PD-mux bs 8 x 2k bound >= the 118 ramp records the Workspace smoke saw; bs 32 does not shrink."""
+        self.assertEqual(M.o_ramp_floor(), [])
+
     def test_n2_n3_oracles(self):
         d, A = TestDecision34Runs.runs["NOVAN"]
         self.assertEqual(M.o_novan_fallback(d, A), [])
@@ -1146,7 +1151,7 @@ class TestDecision34(unittest.TestCase):
         tm = importlib.import_module("ct_timemodel")
         h = {k: v[0] for k, v in tm.main().items()}
         self.assertEqual({k: round(v, 2) for k, v in h.items()},
-                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 3.75, "J-H2|1": 1.74, "J-B2|1": 2.32, "J-C|1": 4.26})
+                         {"J-A|1": 3.81, "J-A|2": 3.51, "J-H1|1": 4.13, "J-H2|1": 1.74, "J-B2|1": 2.88, "J-C|1": 4.33})
         for k, cap in S.HARD_CAP_MIN.items():
             self.assertLessEqual(cap + 30, 360, k)                              # cap + 30 min setup allowance (A-58)
 

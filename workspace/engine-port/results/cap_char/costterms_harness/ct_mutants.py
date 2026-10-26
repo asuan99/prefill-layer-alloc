@@ -756,6 +756,33 @@ def _windows_engine_only(orig, usable):
     return [w for w in orig(usable) if w.get("S_eng_ms") is not None]
 
 
+def _ramp_no_floor(orig, bs, c, p_min, arch=None, sigma=None, theta=None, tp=1):
+    """pre-decision-38: sum of the spans after the first batch only (0 when the burst fits one prefill batch)"""
+    c_in = c - S.X_TOKENS
+    batches = S.span_batches(bs, c_in)
+    steps, done = 0, batches[0]
+    for n in batches[1:]:
+        t = S.span_ms_ub(c_in, p_min, arch, sigma, theta, n=n)
+        steps += math.ceil(t / S.step_ms_lb(done, c_in, arch, tp)) + S.RAMP_INTERSPAN_STEPS
+        done += n
+    return steps
+
+
+def o_ramp_floor(_run=None, _A=None):
+    """Decision 38 (smoke S-A): the PD-mux ramp bound of a burst that fits ONE prefill batch is not 0 -- bs 8 x c 2k D44 observed 118
+    ramp records (smoke, not citable); the bound must cover it, and the bs 32 bound (780 before the floor) must not shrink."""
+    bad = []
+    if S.ramp_steps_ub(8, 2048, 64) < 118:
+        bad.append(f"bs 8 c 2k bound {S.ramp_steps_ub(8, 2048, 64)} < the 118 records the smoke saw")
+    if S.ramp_steps_ub(32, 2048, 64) < 780:
+        bad.append(f"bs 32 c 2k bound {S.ramp_steps_ub(32, 2048, 64)} shrank below 780")
+    if S.ramp_steps_ub(1, 2048, 64) != 0:
+        bad.append("bs 1 has no ramp")
+    if S.o_tokens(8, 2048, "JA") <= S.O_BASE:
+        bad.append("O of (8, 2k) has no ramp term")
+    return bad
+
+
 def o_realized_axis(run, A):
     bad = []
     for bid, want in (("ja1_D34", 36),):
@@ -1839,6 +1866,8 @@ MUTANTS = [
      lambda: _wrap(X, "instrumentation_problems", _novan_violation), o_novan_fallback, ("J-H1", ["jh1_llama"])),
     ("M68", "엔진 기록 없는 창을 2차 표·일치 판정에서 제외(fallback 경로 도달 불가)", "analysis", "NOVAN",
      lambda: _wrap(R, "agreement_windows", _windows_engine_only), o_novan_fallback, None),
+    ("M70", "PD-mux 소-bs ramp 하한 항 제거(burst가 한 batch면 상한 0)", "unit", None,
+     lambda: _wrap(S, "ramp_steps_ub", _ramp_no_floor), o_ramp_floor, None),
     ("M51", "OFF 진단 비교가 비교 셀 수·빠진 셀을 산출에 남기지 않음(A-49)", "analysis", "OFFJA",
      lambda: _wrap(F, "instrument_effect", _instr_no_registered), o_instr_scope, None),
     ("M52", "사망 boot의 미실행 등록 셀에 NOT_RUN_AFTER_SERVER_DEATH 행을 남기지 않음", "analysis", "DEATHGRID",

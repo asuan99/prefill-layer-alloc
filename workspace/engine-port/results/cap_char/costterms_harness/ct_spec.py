@@ -377,7 +377,11 @@ def ramp_steps_ub(bs, c, p_min, arch=None, sigma=None, theta=None, tp=1):
         t_span = span_ms_ub(c_in, p_min, arch, sigma, theta, n=n)
         steps += math.ceil(t_span / step_ms_lb(done, c_in, arch, tp)) + RAMP_INTERSPAN_STEPS
         done += n
-    return steps
+    # Decision 38 (smoke S-A): PD-mux admits the requests of a burst one prefill seat at a time even when the whole burst fits
+    # one prefill batch (bs 8 x 1,882 <= 16,384 gave an upper bound of 0 against 118 observed ramp records), so the
+    # remaining bs - 1 requests each cost at least one single-request span at the bound step time.
+    floor = (bs - 1) * math.ceil(span_ms_ub(c_in, p_min, arch, sigma, theta, n=1) / step_ms_lb(bs, c_in, arch, tp))
+    return max(steps, floor)
 
 
 def o_tokens(bs, c, family):
@@ -534,11 +538,11 @@ ENGINE_DIGEST_EXPECTED = "99bbef91fe680b4d4b8a8fd0a08b8cc65426518c99baca0b3e18e4
 SUMMARY_FILES = ("analysis.json", "plan.json", "RUN_DONE", "SHA256SUMS", "RESUME_LOG.json", "SMOKE_UNSEALED",
                  "t3_iterations.json", "SMOKE_ENGINE_DIGEST.json")          # what goes under results/ (raw data stays on the cluster volume, H-3)
 SMOKE_MARKER = "SMOKE_UNSEALED"
-HARD_CAP_MIN = {"J-H1": 271, "J-A|1": 275, "J-A|2": 253, "J-B2": 78, "J-H2": 126, "J-C": 307}
+HARD_CAP_MIN = {"J-H1": 298, "J-A|1": 275, "J-A|2": 253, "J-B2": 208, "J-H2": 126, "J-C": 312}   # decision 38: fill 485 s (smoke S-B) -> J-H1 / J-B2 / J-C
 #   minutes, self-enforced by costterms_job.sh; = ceil(1.2 x ct_timemodel hours) [유도, rev3.7 = decision 33]: J-A r1 3.81 h,
 #   J-A r2 3.51 h (L-7 context 131,072: +0.22 h each; decision 34 A-49 ON pair (16, 16k): +0.04 h each), J-H1 3.75 h (L-8 Llama + real-a4 long boots: +0.35 h), J-C 4.26 h on
 #   2 GPUs (L-15 bs 48 row +0.50 h, L-14 cap-32 anchors +0.39 h, TP2 108u long boot +0.20 h).  All Jobs <= 6 h incl. the cap.
-#   J-B2 stays 78 until the smoke S-B fill time re-derives it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time
+#   [decision 38: J-B2 78 -> 208 min from the smoke fill time, J-H1 271 -> 298, J-C 307 -> 312.]  Old note: J-B2 stayed 78 until the smoke S-B fill time re-derives it (decision 30: O-22 (a), PREREG §12 seal checklist) -- the time
 #   model alone says 2.32 h / 168 min.
 JOB_GPUS = {"J-H1": 1, "J-A": 1, "J-B2": 1, "J-H2": 1, "J-C": 2}
 

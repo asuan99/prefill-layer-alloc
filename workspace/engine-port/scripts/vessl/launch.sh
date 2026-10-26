@@ -117,11 +117,11 @@ if [[ "${target}" == */costterms_job.sh ]]; then
     case "${kv}" in PDMUX_COSTTERMS_JOB=*) ctj="${kv#*=}" ;; PDMUX_COSTTERMS_ROUND=*) ctr="${kv#*=}" ;;
       PDMUX_COSTTERMS_SEALED=1) ctsealed="yes" ;; esac
   done
-  # caps = ct_spec.HARD_CAP_MIN (rev3.7 = decisions 30 + 33 long boots / restored points, ct_timemodel x 1.2; J-B2 78 until the smoke re-derives
+  # caps = ct_spec.HARD_CAP_MIN (rev3.7 = decisions 30 + 33 long boots / restored points, ct_timemodel x 1.2; J-B2 208 = smoke fill time (decision 38; was 78 until the smoke re-derived
   # it, O-22); J-C runs on 2 GPUs (resourcespec-a100x2)
   ctg=1
-  case "${ctj}:${ctr}" in J-H1:*) ctcap=271 ;; J-A:1) ctcap=275 ;; J-A:2) ctcap=253 ;; J-B2:*) ctcap=78 ;;
-    J-H2:*) ctcap=126 ;; J-C:*) ctcap=307; ctg=2 ;; *) ctcap="" ;; esac
+  case "${ctj}:${ctr}" in J-H1:*) ctcap=298 ;; J-A:1) ctcap=275 ;; J-A:2) ctcap=253 ;; J-B2:*) ctcap=208 ;;
+    J-H2:*) ctcap=126 ;; J-C:*) ctcap=312; ctg=2 ;; *) ctcap="" ;; esac
   if [[ -n "${ctcap}" ]]; then
     echo "costterms: job=${ctj} round=${ctr} gpus=${ctg} sealed_env=${ctsealed} hardcap=${ctcap} min (self-enforced), cost bound <= \$$(awk -v c="${ctcap}" -v r="${PDMUX_VESSL_RATE_USD_H}" 'BEGIN{printf "%.2f", c/60*r}') (rate x cap)"
     # audit r1 m11: the hard cap (timeout) covers ct_runner only; image pull + install_runtime + analysis are NOT inside it and there
