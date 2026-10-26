@@ -15,7 +15,7 @@
 | `--dp-size`에서 복제본별 다른 분할 | **안 된다** [코드]: `--pdmux-config-path`(`manual_divisions`)와 `PDMUX_R2_FIXED_DSM`이 서버 전체에 하나 |
 | 독립 서버 N개(GPU당 1개)의 green context | 각 서버가 `CUDA_VISIBLE_DEVICES=i`로 device 0만 보므로 **N=1 경로와 같은 코드 경로** [코드]. `manual_divisions` 경로는 auto grid의 GPU id 단언(`pdmux_context.py:112-118`)을 타지 않는다. 한 노드 N개 동시 실측은 smoke 필요 |
 | 라우터 | 이미지에 `sglang_router` 없음 [코드: `env/venv_packages_2026-09-17.txt`]. 엔진 내장 DP 분배는 `ROUND_ROBIN`·`TOTAL_REQUESTS`·`TOTAL_TOKENS`·`FOLLOW_BOOTSTRAP_ROOM`뿐이고 `--dp-size` 안에서만(`data_parallel_controller.py:70-76`). `trace_loadgen.py`는 단일 endpoint → **클라이언트 측 라우팅으로 확장**(아래 2-2) |
-| M3 J2·J4·J8 9.5 h 정지 | **같은 순간 외부 종료**: `completedAt` 21:14:02.986Z(J2)·21:14:03.027Z(J4)·21:14:03.065Z(J8) — 80 ms 안, 시작 시각이 달라 경과 시간 상한이 아님(9h30m55 s·45 s·40 s), 하네스 캡 16 h 미도달. 종료 사유 필드 없음, Job 로그는 preflight 직후에서 끊김. 원인(수동·API 일괄 종료 또는 플랫폼 사건)은 VESSL 쪽 확인 필요. **설계 함의**: 플랫폼 경과 시간 상한의 증거는 아니지만, 원인 미확인이므로 Job ≤ 6 h 원칙 유지 |
+| M3 J2·J4·J8 9.5 h 정지 | ★정정(감사 r1 REFUTED): J2·J4·J8은 2026-10-18 21:14:03Z ±40 ms에 함께 종료됐고(`terminated`) 경과는 9.511–9.515 h다. Job별 정밀 타이머는 배제되지만 주기적으로 집행되는 9.5 h 경과 상한이나 계정 단위 일괄 종료와는 구분되지 않는다(계정 이력에 9.515 h를 넘긴 Job 없음). 원인 미확인, Job ≤ 6 h 유지. |
 
 ## 2. 설계
 
