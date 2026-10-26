@@ -1,0 +1,1 @@
+libnuma: Workspace (c85fc198 image) had no libnuma1 -> pre-install import: ModuleNotFoundError common_ops; apt-get install libnuma1 done at 2026-10-26T05:43:15Z ; Job image 1e0d335b has libnuma1 (per ops model 10-04)
