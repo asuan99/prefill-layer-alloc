@@ -34,3 +34,4 @@ python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file 
 - 2026-10-22 v8: §6 "코드 실행 흐름과 연구의 개입 지점" 신설(코드 읽기, 새 판정 0, 개입 종류 A–F 칩), E2 흐름 노드 정정(decode 비면 (108,0) 무분할 — 코드 `multiplexing_mixin.py:1151`; 이전 '(0,108) 복귀'는 방향 오기). 재발행 Version 9.
 - 2026-10-22 v9: §8 "비용 수식 (고정본)" 신설 — 기호·층별 식·모델 전체·조성 변형 표, `scripts/costmodel/render_formula_tables.py`가 `analytic_terms.py`에서 생성(손편집 금지, <!-- ANALYTIC:BEGIN/END --> 블록). 재발행 Version 10.
 - 2026-10-27 v10: promote 5차 — §0 현재 상태·기준일, main·multigpu 트랙 카드, 축 카드 E2·E4·E5·H9·M7 사실/열린 것(비용 항 6 Job 결과 감사 r1 후보), COSTMODEL 줄 포인터 재매핑. 새 판정 0, claim 표 변경 0, 재발행은 main 세션이 한다.
+- 2026-10-27 v11: promote 6차 — §0 현재 상태, main 트랙 카드(st·결정 대기 목록), E1 lockstep 열린 항목. 새 판정 0, claim 표 변경 0. 재발행 Version 12.
