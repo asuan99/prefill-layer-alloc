@@ -39,6 +39,8 @@
 
 ### 2.2 decode step이 span보다 짧은가
 
+> ★정정(2026-10-27, claims-auditor `anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md` P3): 아래 'lockstep에서 ITL ≈ span 시간(decode step의 10–20배)'은 코드 독해에서 나온 유도값이며, VESSL·Nano-9B·flashinfer·예산 65536 서빙 telemetry에서는 성립하지 않았다(동거 간격 ≈ decode step × 약 1.16, host가 chunk를 선발행). §1-24의 KISTI Ha8 정지와의 기전 동일성은 미확인이다.
+
 대체로 그렇다. 크기를 맞춰 보면 다음과 같다 [유도값 I].
 
 | 양 | 값 | 근거 |
