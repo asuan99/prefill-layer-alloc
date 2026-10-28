@@ -79,6 +79,10 @@ class FakeTimedEvent:
         self.idx = None
 
     def record(self, stream=None):
+        if self.idx is not None and not getattr(self, "released", False):
+            # an event re-recorded before its pair was resolved: the earlier chunk's timing is lost
+            raise BlockingCall("event re-recorded while its pair is still pending")
+        self.released = False
         self.gpu.n_records += 1
         self.idx = self.gpu.n_records
         self.stream = stream
@@ -93,6 +97,7 @@ class FakeTimedEvent:
     def elapsed_time(self, end):
         if not end.query():
             raise BlockingCall("elapsed_time before completion")
+        self.released = end.released = True
         return (end.at - self.at) * 1000.0 + 0.25  # +0.25 ms: distinguishable from host ms
 
     def synchronize(self):
@@ -464,6 +469,105 @@ class DiagLoopTest(LoopTestBase):
                     r"\.wait_stream\(", r"cuda\.synchronize"):
             self.assertIsNone(re.search(pat, code), pat)
 
+    # -- audit r1 K1: launch/GPU-bound flags --------------------------------
+    def test_issue_flags_follow_gpu_lag(self):
+        for lag, want in ((0, True), (1, False), (9, False)):
+            with self.subTest(lag=lag):
+                on = self._run(True, True, lag=lag)
+                recs = [e[2] for e in on.events("prefill_chunk")]
+                self.assertGreater(len(recs), 0)
+                for f in recs:
+                    self.assertIsInstance(f["start_done_at_issue_start"], bool)
+                    self.assertIsInstance(f["end_done_at_issue_end"], bool)
+                # lag 0: the GPU keeps up -> both True; a long lag: the end is never done at issue end
+                self.assertTrue(all(f["end_done_at_issue_end"] is want for f in recs))
+                if want:
+                    self.assertTrue(all(f["start_done_at_issue_start"] for f in recs))
+
+    def test_r_is_computable_from_the_iteration_key(self):
+        # R = t_sync - t_issue_end needs the same-step decode_iteration; the key is decode_iter_seq == iter_seq
+        on = self._run(True, True, lag=3)
+        dec = {e[2]["iter_seq"]: e[2] for e in on.events("decode_iteration")}
+        paired = [f for f in (e[2] for e in on.events("prefill_chunk")) if f["decode_launched"]]
+        self.assertGreater(len(paired), 0)
+        for f in paired:
+            self.assertGreaterEqual(dec[f["decode_iter_seq"]]["t_sync"] - f["t_issue_end"], 0.0)
+
+    # -- MAX_PENDING overflow accounting (audit r1 M7d) ------------------------
+    def test_overflow_drops_are_counted(self):
+        with unittest.mock.patch.object(mixin_module, "PHASE_DIAG_MAX_PENDING", 2):
+            on = self._run(True, True, lag=10**6)       # chunks complete only via stream order (span end)
+            on._phase_diag_close()
+        close = on.events("phase_diag_close")[-1][2]
+        self.assertGreater(close["n_chunks_dropped"], 0)
+        self.assertLessEqual(close["n_chunks_unresolved"], 2)
+        self.assertEqual(close["n_chunks_issued"],
+                         close["n_chunks_resolved"] + close["n_chunks_unresolved"] + close["n_chunks_dropped"])
+
+    # -- GPU-gate sync audit (audit r1 M7a) -------------------------------------
+    def test_sync_audit_attributes_calls_to_diag_frames(self):
+        import torch
+
+        saved = {k: getattr(o(), a) for k, o, a in mixin_module._PHASE_DIAG_SYNC_TARGETS}
+        saved_attr = getattr(torch, "_pdmux_phase_diag_sync_audit", None)
+        try:
+            if saved_attr is not None:
+                del torch._pdmux_phase_diag_sync_audit
+            counts = mixin_module._phase_diag_install_sync_audit()
+            torch.tensor(3).item()                                   # outside any diag hook
+            self.assertEqual((counts["total_tensor_item"], counts["diag_tensor_item"]), (1, 0))
+            sched = self.install(_build(True, True))
+
+            class ItemEvent(FakeTimedEvent):                         # a diag-side blocking call
+                def query(self):
+                    torch.tensor(1).item()
+                    return super().query()
+
+            sched._phase_diag_event_factory = lambda _g=sched.gpu: ItemEvent(_g)
+            sched._phase_diag_audit = counts
+            run_loop(sched)
+            self.assertGreater(counts["diag_tensor_item"], 0)
+            self.assertTrue(any(e[1] == "phase_diag_sync_audit" for e in sched.log if e[0] == "telemetry"))
+        finally:
+            for (k, o, a) in mixin_module._PHASE_DIAG_SYNC_TARGETS:
+                setattr(o(), a, saved[k])
+            if hasattr(torch, "_pdmux_phase_diag_sync_audit"):
+                del torch._pdmux_phase_diag_sync_audit
+            if saved_attr is not None:
+                torch._pdmux_phase_diag_sync_audit = saved_attr
+
+    def test_sync_audit_flag(self):
+        r = mixin_module.resolve_phase_diag_sync_audit
+        self.assertFalse(r({}))
+        self.assertFalse(r({"PDMUX_PHASE_DIAG_SYNC_AUDIT": "0"}))
+        self.assertTrue(r({"PDMUX_PHASE_DIAG_SYNC_AUDIT": "1"}))
+        with self.assertRaises(ValueError):
+            r({"PDMUX_PHASE_DIAG_SYNC_AUDIT": "yes"})
+
+    # -- user decision 49: static arm = PDMUX_R2_POLICY=fixed, sticky OFF -------------
+    def test_static_nonsticky_partition_and_drains(self):
+        from sglang.srt.multiplex.controller import FixedPolicy
+
+        sched = self.install(_build(True, True, lag=0))
+        sched.r2_policy, sched.r2_policy_name = FixedPolicy(44), "fixed"
+        run_loop(sched)
+        dec = [e[2] for e in sched.events("decode_iteration")]
+        co = [d for d in dec if d["prefill_in_flight"] and not d["prefill_kernel_done_wait"]]
+        solo = [d for d in dec if not d["prefill_in_flight"]]
+        self.assertTrue(co and solo)
+        self.assertEqual({d["decode_sms"] for d in co}, {44})             # decode + prefill -> target D
+        self.assertEqual({d["decode_sms"] for d in solo}, {108})          # decode only -> (0, 108)
+        pchunks = [e[2] for e in sched.events("prefill_chunk") if not e[2]["decode_launched"]]
+        self.assertTrue(pchunks)
+        self.assertEqual({c["prefill_sms"] for c in pchunks}, {108})      # prefill only -> (108, 0)
+        drains = [e[2] for e in sched.events("drain")]
+        spans = sched.events("prefill_span_start")
+        # drains are NOT one per prefill boundary: a span admitted while decode runs on D is decided by the
+        # R2 branch (target == current -> no drain, adjust flag cleared); drains happen on partition changes
+        self.assertLess(len(drains), len(spans))
+        self.assertTrue(any(d["reason"] == "slo_switch" and d["stream_idx_to"] == 4 for d in drains))
+        self.assertTrue(any(d["reason"] == "adjust" and d["stream_idx_to"] == 5 for d in drains))
+
     # -- isolation --------------------------------------------------------
     def test_event_failure_disables_diag_only(self):
         base = self._run(True, False)
@@ -514,6 +618,18 @@ _MUTANTS = {
     "gpu_ms_is_host_ms": (
         '                item.fields["chunk_gpu_ms"] = gpu_ms\n',
         '                item.fields["chunk_gpu_ms"] = item.fields["issue_host_ms"]\n',
+    ),
+    "pool_return_before_resolve": (
+            "            pending.append(self._phase_diag_pending_cls(fields, pair[0], pair[1]))\n",
+            "            pending.append(self._phase_diag_pending_cls(fields, pair[0], pair[1])); self._phase_diag_pool.append(pair)\n",
+    ),
+    "overflow_drop_uncounted": (
+            '                self._phase_diag_counts["n_chunks_dropped"] += 1\n',
+            "                pass\n",
+    ),
+    "issue_end_flag_from_start_event": (
+            '            fields["end_done_at_issue_end"] = bool(pair[1].query())\n',
+            '            fields["end_done_at_issue_end"] = bool(pair[0].query())\n',
     ),
     "unresolved_counted_after_drain": (
         "                prefill_chunks_unresolved=len(self._phase_diag_pending),\n",

@@ -14,6 +14,7 @@ import tempfile
 import time
 import unittest
 from pathlib import Path
+from unittest import mock
 
 HERE = Path(__file__).resolve().parent
 sys.path.insert(0, str(HERE))
@@ -45,10 +46,13 @@ class StampingTelemetry:
 
 
 class ScorerTest(LoopTestBase):
-    def _records(self, slo=False):
+    def _records(self, slo=False, diag=True, static_d=None):
         if slo:
             os.environ["PDMUX_SLO_SCHED"] = "1"
-        sched = self.install(TPD._build(True, True, lag=3, slo=slo))
+        sched = self.install(TPD._build(True, diag, lag=3, slo=slo))
+        if static_d is not None:                      # user decision 49: static arm = fixed policy, NON-sticky
+            from sglang.srt.multiplex.controller import FixedPolicy
+            sched.r2_policy, sched.r2_policy_name = FixedPolicy(static_d), "fixed"
         tel = StampingTelemetry(sched.log)
         sched.pdmux_telemetry = tel
         run_loop(sched)
@@ -100,7 +104,60 @@ class ScorerTest(LoopTestBase):
         self.assertEqual(GD.check_slo_switch(none)["verdict"], GD.UNRESOLVED)
 
 
+    def test_phase_only_scorer(self):
+        recs, _ = self._records(diag=False)
+        self.assertEqual(GD.check_phase_only(recs)["verdict"], GD.PASS)
+        on, _ = self._records()
+        self.assertEqual(GD.check_phase_only(on)["verdict"], GD.FAIL)       # diag events leak -> FAIL
+
+    def test_static_nonsticky_scorer_on_real_loop(self):
+        recs, sm = self._records(static_d=44)
+        res = GD.check_static_nonsticky(recs, 44)
+        self.assertEqual(res["verdict"], GD.PASS, res)
+        self.assertEqual(GD.check_diag_records(recs, sm)["verdict"], GD.PASS)
+        self.assertEqual(GD.check_static_nonsticky(recs, 34)["verdict"], GD.FAIL)   # wrong D detected
+        sticky_like = copy.deepcopy(recs)                 # sticky would keep D44 on decode-only steps
+        for r in sticky_like:
+            if r["event"] == "decode_iteration" and not r["prefill_in_flight"]:
+                r["decode_sms"] = 44
+        self.assertEqual(GD.check_static_nonsticky(sticky_like, 44)["verdict"], GD.FAIL)
+        no_solo = [r for r in recs if not (r["event"] == "decode_iteration" and not r["prefill_in_flight"])]
+        self.assertEqual(GD.check_static_nonsticky(no_solo, 44)["verdict"], GD.UNRESOLVED)
+
+
 class PureScorerTest(unittest.TestCase):
+    def test_sync_audit(self):
+        ok = {"event": "phase_diag_sync_audit", "total_stream_synchronize": 10, "diag_stream_synchronize": 0,
+              "total_tensor_item": 5, "diag_tensor_item": 0}
+        self.assertEqual(GD.check_sync_audit([ok])["verdict"], GD.PASS)
+        self.assertEqual(GD.check_sync_audit([dict(ok, diag_tensor_item=1)])["verdict"], GD.FAIL)
+        self.assertEqual(GD.check_sync_audit([dict(ok, total_stream_synchronize=0)])["verdict"], GD.FAIL)
+        self.assertEqual(GD.check_sync_audit([])["verdict"], GD.FAIL)
+
+    def test_rollup_split_d1_tolerates_d6_unresolved_d3_does_not(self):
+        with mock.patch.object(GD, "check_slo_switch", return_value={"verdict": GD.UNRESOLVED, "why": []}), \
+                mock.patch.object(GD, "check_identity", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_diag_records", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_decode_probe", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_clocks", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_sync_audit", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_phase_only", return_value={"verdict": GD.PASS}), \
+                mock.patch.object(GD, "check_static_nonsticky", return_value={"verdict": GD.PASS}), \
+                tempfile.TemporaryDirectory() as td:
+            root = Path(td)
+            for d in ("off", "on", "on_slo", "static_ns"):
+                (root / d).mkdir()
+            (root / "on" / "tel.jsonl").write_text('{"event": "x"}\n')
+            (root / "on" / "decode_probe.jsonl").write_text("")
+            (root / "on_slo" / "tel.jsonl").write_text('{"event": "x"}\n')
+            (root / "static_ns" / "tel.jsonl").write_text('{"event": "x"}\n')
+            (root / "plan.json").write_text(json.dumps({"sm_counts": [[108, 0], [0, 108]]}))
+            out = GD.score_dir(root)
+        self.assertEqual(out["verdict_for_D1"], GD.PASS)
+        self.assertEqual(out["verdict_for_D3"], GD.UNRESOLVED)
+        self.assertEqual(out["verdict"], GD.PASS)
+
+
     def test_identity(self):
         a = {"x": [1, 2, 3], "y": [4]}
         self.assertEqual(GD.check_identity(a, dict(a))["verdict"], GD.PASS)

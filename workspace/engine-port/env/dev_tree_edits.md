@@ -646,3 +646,22 @@ CPU regression: `tests/test_phase_diag.py` (resolve/OFF/ON content/drain/rids/no
 events that raise on synchronize/wait; 9 mixin mutants killed with the unmutated control), `tests/test_engine_gate_diag.py`
 (gate scorers on real fake-loop records + 11 single-defect corruptions), `tests/test_loadgen_abs_mono.py` (wrapper exactness vs StreamState stamps, source pin, early-anchor mutant).
 GPU gate prepared, NOT RUN / NOT SUBMITTED: `scripts/vessl/engine_gate_diag.{sh,py}` (D0-D6).
+
+## Diag audit r1 repairs (2026-10-28, GPU 0) — `results/lockstep_diag/AUDIT_harness_diag_r1_2026-10-28.md`
+
+38. `multiplex/multiplexing_mixin.py` (diag block only, no line above it moves) + `multiplex/decode_probe.py`
+    (manifest entries 3 and 30). **ENGINE_DIGEST `3ab5295e...` -> `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`**
+    (same scratch-install method; reproduced by `tests/run_diag_tests_with_stub.sh`).
+    - K1: `prefill_chunk.start_done_at_issue_start` (`pair[0].query()` right after the start record) and
+      `end_done_at_issue_end` (`pair[1].query()` right after `t_issue_end`); non-blocking. R = `decode_iteration.t_sync`
+      - `t_issue_end` joins on `decode_iter_seq == iter_seq` (both fields existed already).
+    - M4: decode probe `decode_forward.decode_iter_seq` (PD-mux: `scheduler._r2_decode_iterations`, incremented right
+      before the decode `run_batch`; None on fused arms).
+    - M7a: `PDMUX_PHASE_DIAG_SYNC_AUDIT=1` (GPU-gate only, requires DIAG ON): wraps Stream/Event/cuda synchronize and
+      Tensor.item process-wide, counts calls with a diag hook on the stack, emits `phase_diag_sync_audit` (<= 1/s).
+      Not for measurement boots (stack walk per wrapped call).
+    - Gate `scripts/vessl/engine_gate_diag.py`: D7 sync audit, D8 PHASE-only boot, D9 static NON-sticky boot (decision
+      49), split roll-ups `verdict_for_D1` / `verdict_for_D3`, first-token lag after span end reported (M3), hard cap 120 min.
+    - Tests: 3 new mixin mutants (pool return before resolve, overflow drop uncounted, end flag from start event) killed;
+      fake events refuse re-record while pending; `tests/run_diag_tests_with_stub.sh` + `tests/cpu_stub/` reproduce the
+      CPU suites without sgl_kernel.

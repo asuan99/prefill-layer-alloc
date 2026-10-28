@@ -445,6 +445,28 @@ class TestBehaviour(unittest.TestCase):
         seqs = [r["seq"] for r in fwd_records(s.probe)]
         self.assertEqual(sorted(seqs), list(range(1, 401)))
 
+    def test_decode_iter_seq_recorded(self):
+        # diag audit r1 M4: PD-mux decode records carry the loop's decode iteration (join key), None otherwise
+        it = {"n": 0}
+        s = make()
+        s.probe.decode_iter_fn = lambda: it["n"]
+        for k in (1, 2, 3):
+            it["n"] = k
+            s.runner.forward(FB(4))
+        s.gpu.complete_all()
+        s.probe.maybe_flush(force=True)
+        self.assertEqual([r["decode_iter_seq"] for r in fwd_records(s.probe)], [1, 2, 3])
+        s2 = make()
+        s2.runner.forward(FB(4))
+        s2.gpu.complete_all()
+        s2.probe.maybe_flush(force=True)
+        self.assertIsNone(fwd_records(s2.probe)[0]["decode_iter_seq"])
+
+    def test_install_wires_decode_iter_for_pdmux_only(self):
+        src = PROBE_PY.read_text()
+        self.assertIn('decode_iter_fn = lambda: getattr(scheduler, "_r2_decode_iterations", None)', src)
+        self.assertIn("decode_iter_fn=decode_iter_fn,", src)
+
     def test_stream_idx_recorded(self):
         s = make(stream_idx_fn=lambda: 3)
         s.runner.forward(FB(4))

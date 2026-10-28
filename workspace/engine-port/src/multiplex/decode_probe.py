@@ -287,6 +287,7 @@ class DecodeProbe:
         capturing_fn: Optional[Callable[[], bool]] = None,
         stream_idx_fn: Optional[Callable[[], Optional[int]]] = None,
         max_pending: int = MAX_PENDING_DEFAULT,
+        decode_iter_fn: Optional[Callable[[], Optional[int]]] = None,
     ) -> None:
         self.boot = dict(boot or {})
         self.window_s = float(window_s)
@@ -295,6 +296,7 @@ class DecodeProbe:
         self.event_factory = event_factory
         self.capturing_fn = capturing_fn or (lambda: False)
         self.stream_idx_fn = stream_idx_fn
+        self.decode_iter_fn = decode_iter_fn
         self.max_pending = max(1, int(max_pending))
         self.capture_bs = [int(b) for b in (self.boot.get("capture_bs") or [])]
         self.disable_padding = bool(self.boot.get("disable_cuda_graph_padding", False))
@@ -375,6 +377,7 @@ class DecodeProbe:
             pair = self._take_pair()
             bs_real = int(getattr(fb, "batch_size", 0) or 0)
             sidx = self.stream_idx_fn() if self.stream_idx_fn is not None else None
+            diter = self.decode_iter_fn() if self.decode_iter_fn is not None else None
         except Exception as exc:  # probe-side failure: never break the forward
             self._disable(exc)
             return orig(*args, **kwargs)
@@ -407,6 +410,10 @@ class DecodeProbe:
                     "bs_real": bs_real,
                     **gf,
                     "pdmux_stream_idx": sidx,
+                    # PD-mux only (2026-10-28, diag audit r1 M4): the loop's decode iteration counter at this
+                    # forward == `decode_iteration.iter_seq` == `prefill_chunk.decode_iter_seq` of the same step,
+                    # so I-4 joins the phase events without a host-time join.  None on fused arms.
+                    "decode_iter_seq": diter,
                     "t_host_start": t0,
                     I4_HOST_FIELD: (t1 - t0) * 1000.0,
                     I4_FIELD: None,
@@ -553,10 +560,13 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
         path = path.with_name(f"{path.stem}{rank_suffix(tp_size, tp_rank, dp_size, dp_rank)}{path.suffix}")
         static = rank_fields(tp_size, tp_rank, dp_size, dp_rank)
     stream_idx_fn = None
+    decode_iter_fn = None
     if bool(getattr(scheduler, "enable_pdmux", False)):
         from sglang.srt.multiplex.pdmux_context import get_current_stream_idx
 
         stream_idx_fn = get_current_stream_idx
+        # incremented by event_loop_pdmux right BEFORE the decode run_batch, read inside that forward
+        decode_iter_fn = lambda: getattr(scheduler, "_r2_decode_iterations", None)  # noqa: E731
     boot = build_boot_record(scheduler, runner)
     probe = DecodeProbe(
         path,
@@ -569,6 +579,7 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
         event_factory=(lambda: torch.cuda.Event(enable_timing=True)) if events else None,
         capturing_fn=torch.cuda.is_current_stream_capturing,
         stream_idx_fn=stream_idx_fn,
+        decode_iter_fn=decode_iter_fn,
     )
     set_probe(probe)
     install_on_runner(runner)

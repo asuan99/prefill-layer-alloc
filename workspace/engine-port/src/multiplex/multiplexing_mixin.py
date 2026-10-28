@@ -2323,6 +2323,17 @@ def resolve_phase_events(trace_path: str, env=None) -> bool:
 #                     state at drain start (split_index / num_layers, chunk
 #                     events still unresolved after a non-blocking poll).
 #   prefill_span_start  gains `rids` (request ids of the admitted batch).
+#   prefill_chunk also carries two non-blocking `query()` flags (audit r1 K1):
+#                     start_done_at_issue_start (start event already complete
+#                     right after it was recorded = prefill stream idle at issue)
+#                     and end_done_at_issue_end (chunk kernels already done when
+#                     the host issue returned = GPU kept up; False = launch ran
+#                     ahead).  R = decode_iteration.t_sync - t_issue_end joins
+#                     on decode_iter_seq == iter_seq (decode probe records carry
+#                     the same decode_iter_seq).
+#   phase_diag_sync_audit  GPU-gate only (PDMUX_PHASE_DIAG_SYNC_AUDIT=1): counts
+#                     of Stream/Event/cuda synchronize and Tensor.item calls,
+#                     total and with a diag hook on the stack (must be 0).
 #   phase_diag_boot / phase_diag_close  clock pairs (perf_counter, which is
 #                     CLOCK_MONOTONIC on Linux, + an explicit CLOCK_MONOTONIC
 #                     and wall-clock read) and chunk-accounting counters.
@@ -2361,7 +2372,7 @@ def resolve_phase_events(trace_path: str, env=None) -> bool:
 # observer cost is not claimed to be zero; the diag PREREG measures it with a
 # symmetric OFF arm.
 
-PHASE_DIAG_EVENT_TYPES = ("prefill_chunk", "drain", "phase_diag_boot", "phase_diag_close")
+PHASE_DIAG_EVENT_TYPES = ("prefill_chunk", "drain", "phase_diag_boot", "phase_diag_close", "phase_diag_sync_audit")
 PHASE_DIAG_SCHEMA = "pdmux.phase_diag/v1"
 PHASE_DIAG_MAX_PENDING = 4096
 PHASE_DIAG_DRAIN_REASONS = ("slo_switch", "adjust")
@@ -2407,6 +2418,65 @@ def _phase_diag_clock_pair() -> dict:
     )
 
 
+def resolve_phase_diag_sync_audit(env=None) -> bool:
+    """PDMUX_PHASE_DIAG_SYNC_AUDIT (GPU-gate only, audit r1 M7a): unset/"0" OFF, "1" ON, else refused."""
+    env = os.environ if env is None else env
+    raw = (env.get("PDMUX_PHASE_DIAG_SYNC_AUDIT", "") or "").strip()
+    if raw in ("", "0"):
+        return False
+    if raw != "1":
+        raise ValueError(f"PDMUX_PHASE_DIAG_SYNC_AUDIT={raw!r}: only unset, '0' or '1' are defined")
+    return True
+
+
+_PHASE_DIAG_SYNC_TARGETS = (
+    ("stream_synchronize", lambda: torch.cuda.Stream, "synchronize"),
+    ("event_synchronize", lambda: torch.cuda.Event, "synchronize"),
+    ("tensor_item", lambda: torch.Tensor, "item"),
+    ("cuda_synchronize", lambda: torch.cuda, "synchronize"),
+)
+
+
+def _phase_diag_frame_names() -> frozenset:
+    return frozenset(n for n in vars(_PhaseDiagHooks) if n.startswith(("_phase_", "_init_phase_diag")))
+
+
+def _phase_diag_install_sync_audit(max_depth: int = 16) -> dict:
+    """Wrap the blocking calls process-wide and count them, split by whether a PDMUX_PHASE_DIAG hook is on the
+    calling stack (the gate requires the `diag_*` counts to stay 0 and the `total_*` counts to be > 0, which
+    shows the wrappers were live).  A GATE INSTRUMENT: it adds a stack walk to every wrapped call, so a boot
+    that sets it is not a measurement boot.  Idempotent per process."""
+    import sys as _sys
+
+    existing = getattr(torch, "_pdmux_phase_diag_sync_audit", None)
+    if existing is not None:
+        return existing
+    counts = {"record_kind": "sync_audit"}
+    names = _phase_diag_frame_names()
+    for key, owner_fn, attr in _PHASE_DIAG_SYNC_TARGETS:
+        owner = owner_fn()
+        orig = getattr(owner, attr)
+        counts[f"total_{key}"] = 0
+        counts[f"diag_{key}"] = 0
+
+        def wrapper(*args, _orig=orig, _key=key, **kwargs):
+            counts[f"total_{_key}"] += 1
+            f = _sys._getframe(1)
+            for _ in range(max_depth):
+                if f is None:
+                    break
+                if f.f_code.co_name in names:
+                    counts[f"diag_{_key}"] += 1
+                    break
+                f = f.f_back
+            return _orig(*args, **kwargs)
+
+        wrapper.__wrapped__ = orig  # type: ignore[attr-defined]
+        setattr(owner, attr, wrapper)
+    torch._pdmux_phase_diag_sync_audit = counts
+    return counts
+
+
 class _PhaseDiagHooks:
     """Methods attached to SchedulerMultiplexMixin below (see block comment)."""
 
@@ -2435,6 +2505,8 @@ class _PhaseDiagHooks:
         )
         self._phase_diag_boot_emitted = False
         self._phase_diag_error_logged = False
+        self._phase_diag_audit = _phase_diag_install_sync_audit() if resolve_phase_diag_sync_audit() else None
+        self._phase_diag_audit_t = 0.0
         self.pdmux_phase_diag = True
 
     def _phase_diag_disable(self: Scheduler, exc: BaseException) -> None:
@@ -2467,6 +2539,10 @@ class _PhaseDiagHooks:
         if not getattr(self, "pdmux_phase_diag", False):
             return
         try:
+            audit = self._phase_diag_audit
+            if audit is not None and time.perf_counter() - self._phase_diag_audit_t >= 1.0:
+                self._phase_diag_audit_t = time.perf_counter()
+                self._phase_diag_emit("phase_diag_sync_audit", dict(audit))
             ready = self._phase_diag_drain_ready(self._phase_diag_pending)
             if not ready:
                 return
@@ -2517,6 +2593,9 @@ class _PhaseDiagHooks:
             pair = self._phase_diag_take_pair()
             t0 = time.perf_counter()
             pair[0].record(stream)
+            # audit r1 K1: non-blocking launch-bound / GPU-bound discriminators.  True here = the prefill
+            # stream had already drained everything queued before this chunk when its issue began.
+            fields["start_done_at_issue_start"] = bool(pair[0].query())
         except Exception as exc:
             self._phase_diag_disable(exc)
             return None
@@ -2531,6 +2610,8 @@ class _PhaseDiagHooks:
             t1 = time.perf_counter()
             if not self.pdmux_phase_diag:  # disabled while the chunk ran
                 return
+            # True = the chunk's kernels had already finished when its host issue ended (GPU kept up with launch).
+            fields["end_done_at_issue_end"] = bool(pair[1].query())
             fields["t_issue_start"] = t0
             fields["t_issue_end"] = t1
             fields["issue_host_ms"] = (t1 - t0) * 1000.0

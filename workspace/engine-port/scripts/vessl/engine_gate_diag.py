@@ -24,7 +24,17 @@ What the gate asks (P-3: "ON/OFF greedy output identity, no new synchronisation,
       string names CLOCK_MONOTONIC); client (benchmarks/pdmux_eval/abs_mono_loadgen.py) stamps are causally ordered against
       the server records of the same rid: t_sent_mono <= span_start, span_start <= first token.
   D6  slo_switch drains (boot ON + PDMUX_SLO_SCHED=1, library defaults): >= 1 drain with reason slo_switch and
-      from != to.  No switch under this load -> UNRESOLVED (not FAIL): the path is then CPU-tested only.
+      from != to.  No switch under this load -> UNRESOLVED.  Two roll-ups (audit r1 M7c): `verdict_for_D1`
+      tolerates D6 UNRESOLVED (D-1 runs no controller); `verdict_for_D3` requires D3_records_slo AND D6 = PASS.
+  D7  no blocking call from the instrument on the GPU (audit r1 M7a): boot ON runs with PDMUX_PHASE_DIAG_SYNC_AUDIT=1,
+      which wraps torch.cuda.Stream/Event.synchronize, torch.cuda.synchronize and Tensor.item process-wide and counts
+      calls with a diag hook on the stack.  PASS iff every diag_* count == 0 AND total_stream_synchronize > 0 (the
+      wrappers were live).  This boot is a gate boot, not a measurement boot (the wrappers walk the stack).
+  D8  PHASE_EVENTS ON + DIAG OFF (audit r1 M8): phase events present, no diag event, no `rids`.
+  D9  static NON-sticky arm (user decision 49; PDMUX_R2_POLICY=fixed, PDMUX_R2_FIXED_DSM=STATIC_D, sticky unset):
+      decode steps co-resident with a prefill chunk run on decode_sms == STATIC_D, decode-only steps on 108, chunks
+      without decode on prefill_sms == 108; all three states must be seen (missing state -> UNRESOLVED).
+  D1 covers SEQUENTIAL requests only; concurrent requests are recorded (conc_requests.jsonl), never compared.
 NOT in this gate: the observer cost (PREREG D-1 OFF arm measures it, paired); "no new synchronisation" on the GPU is
 argued from code + CPU tests (fakes that raise on synchronize/wait, source scan), not measured here.
 """
@@ -50,6 +60,7 @@ SEQ_LENGTHS = (512, 2048, 8192)     # sequential greedy identity inputs (synthet
 SEQ_REPS = 2
 SEQ_MAX_NEW = 64
 CONC_N, CONC_LENGTHS, CONC_MAX_NEW, CONC_RATE = 24, (2048, 8192), 128, 2.0
+STATIC_D = 34                       # D9: a division of pdmux_agnostic_manual.yml ([74, 34], [54, 54])
 
 
 # ---------------------------------------------------------------- pure scorers (CPU-tested)
@@ -186,6 +197,13 @@ def check_clocks(recs, client_recs):
         if r.get("event") == "prefill_span_start":
             for rid in r.get("rids") or []:
                 span_of.setdefault(str(rid), []).append(r["timestamp_monotonic_s"])
+    span_seq_of = {}
+    for r in recs:
+        if r.get("event") == "prefill_span_start":
+            for rid in r.get("rids") or []:
+                span_seq_of[str(rid)] = r.get("span_seq")
+    end_t = {r.get("span_seq"): r["timestamp_monotonic_s"] for r in recs if r.get("event") == "prefill_span_end"}
+    lags = []
     n_ok, bad, missing = 0, [], []
     for c in client_recs:
         rid = str(c.get("request_id"))
@@ -199,13 +217,74 @@ def check_clocks(recs, client_recs):
             bad.append(rid)
         else:
             n_ok += 1
+        te = end_t.get(span_seq_of.get(rid))
+        if te is not None:
+            lags.append((c["token_t_mono"][0] - te) * 1000.0)   # audit r1 M3: client-server lag, report only
     if missing:
         why.append(f"{len(missing)} client rids not in exactly one prefill_span_start.rids: {missing[:5]}")
     if bad:
         why.append(f"{len(bad)} rids violate t_sent_mono <= span_start <= first token: {bad[:5]}")
     if n_ok == 0:
         why.append("no successful client request to pair")
-    return {"verdict": FAIL if why else PASS, "why": why, "facts": {"n_paired": n_ok}}
+    lags.sort()
+    q = (lambda f: lags[min(len(lags) - 1, int(f * len(lags)))] if lags else None)
+    return {"verdict": FAIL if why else PASS, "why": why,
+            "facts": {"n_paired": n_ok, "first_token_lag_after_span_end_ms": {"n": len(lags), "p50": q(0.5),
+                                                                              "p99": q(0.99)}}}
+
+
+def check_sync_audit(recs):
+    a = [r for r in recs if r.get("event") == "phase_diag_sync_audit"]
+    if not a:
+        return {"verdict": FAIL, "why": ["no phase_diag_sync_audit record (audit not live)"], "facts": {}}
+    last = a[-1]
+    diag = {k: v for k, v in last.items() if k.startswith("diag_")}
+    why = [f"{k} = {v}" for k, v in diag.items() if v]
+    if not last.get("total_stream_synchronize"):
+        why.append("total_stream_synchronize == 0: wrappers not live")
+    return {"verdict": FAIL if why else PASS, "why": why, "facts": {k: v for k, v in last.items() if k != "event"}}
+
+
+def check_phase_only(recs):
+    ev = {r.get("event") for r in recs}
+    why = []
+    if "decode_iteration" not in ev or "prefill_span_start" not in ev:
+        why.append("phase events missing")
+    leaked = sorted(ev & {"prefill_chunk", "drain", "phase_diag_boot", "phase_diag_close", "phase_diag_sync_audit"})
+    if leaked:
+        why.append(f"diag events with DIAG OFF: {leaked}")
+    if any("rids" in r for r in recs if r.get("event") == "prefill_span_start"):
+        why.append("rids present with DIAG OFF")
+    return {"verdict": FAIL if why else PASS, "why": why}
+
+
+def check_static_nonsticky(recs, static_d, total_sm=108):
+    dec = [r for r in recs if r.get("event") == "decode_iteration"]
+    co = [r for r in dec if r.get("prefill_in_flight") and not r.get("prefill_kernel_done_wait")]
+    solo = [r for r in dec if not r.get("prefill_in_flight")]
+    pchunk = [r for r in recs if r.get("event") == "prefill_chunk" and not r.get("decode_launched")]
+    why, missing = [], []
+    for name, xs in (("co-resident decode", co), ("decode-only", solo), ("prefill-only chunk", pchunk)):
+        if not xs:
+            missing.append(name)
+    bad_co = sum(1 for r in co if r.get("decode_sms") != static_d)
+    bad_solo = sum(1 for r in solo if r.get("decode_sms") != total_sm)
+    bad_p = sum(1 for r in pchunk if r.get("prefill_sms") != total_sm)
+    if bad_co:
+        why.append(f"{bad_co}/{len(co)} co-resident decode steps not on D{static_d}")
+    if bad_solo:
+        why.append(f"{bad_solo}/{len(solo)} decode-only steps not on {total_sm} SM")
+    if bad_p:
+        why.append(f"{bad_p}/{len(pchunk)} prefill-only chunks not on {total_sm} SM")
+    facts = {"n_co": len(co), "n_decode_only": len(solo), "n_prefill_only_chunks": len(pchunk),
+             "n_drain_adjust": sum(1 for r in recs if r.get("event") == "drain" and r.get("reason") == "adjust"),
+             "n_drain_slo_switch": sum(1 for r in recs if r.get("event") == "drain" and r.get("reason") == "slo_switch"),
+             "n_spans": sum(1 for r in recs if r.get("event") == "prefill_span_start")}
+    if why:
+        return {"verdict": FAIL, "why": why, "facts": facts}
+    if missing:
+        return {"verdict": UNRESOLVED, "why": [f"state not observed: {missing}"], "facts": facts}
+    return {"verdict": PASS, "why": [], "facts": facts}
 
 
 def check_slo_switch(recs):
@@ -249,8 +328,19 @@ def score_dir(root):
     res["D3_records_slo"] = check_diag_records(tel_slo, sm, log_slo) if tel_slo else \
         {"verdict": UNRESOLVED, "why": ["no on_slo telemetry"]}
     res["D6_slo_switch"] = check_slo_switch(tel_slo)
-    verdict = rollup([v["verdict"] for v in res.values()])
-    out = {"verdict": verdict, "checks": res,
+    res["D7_sync_audit"] = check_sync_audit(tel)
+    res["D8_phase_only"] = check_phase_only(read_jsonl(root / "phase_only" / "tel.jsonl"))
+    tel_st = read_jsonl(root / "static_ns" / "tel.jsonl")
+    log_st = (root / "static_ns" / "server.log").read_text(errors="replace") if (root / "static_ns" / "server.log").is_file() else ""
+    res["D3_records_static_ns"] = check_diag_records(tel_st, sm, log_st) if tel_st else \
+        {"verdict": UNRESOLVED, "why": ["no static_ns telemetry"]}
+    res["D9_static_nonsticky"] = check_static_nonsticky(tel_st, int(cfg.get("static_d", STATIC_D)))
+    common = [v["verdict"] for k, v in res.items() if k not in ("D3_records_slo", "D6_slo_switch")]
+    v_d1 = rollup(common + [v for v in (res["D3_records_slo"]["verdict"], res["D6_slo_switch"]["verdict"])
+                            if v != UNRESOLVED])
+    v_d3 = rollup(common + [res["D3_records_slo"]["verdict"], res["D6_slo_switch"]["verdict"]])
+    verdict = v_d1          # exit code = the D-1 roll-up; D-3 may be submitted only when verdict_for_D3 == PASS
+    out = {"verdict": verdict, "verdict_for_D1": v_d1, "verdict_for_D3": v_d3, "checks": res,
            "note": "harness result on this Job's data; not a performance claim; observer cost not measured here"}
     (root / "GATE_RESULT.json").write_text(json.dumps(out, indent=1, sort_keys=True) + "\n")
     return out
@@ -263,11 +353,12 @@ def run():
     sys.path.insert(0, str(ENG / "benchmarks"))
     from pdmux_eval import abs_mono_loadgen as AM
 
-    os.environ.pop("PDMUX_PHASE_DIAG", None)
+    for k in ("PDMUX_PHASE_DIAG", "PDMUX_PHASE_DIAG_SYNC_AUDIT"):
+        os.environ.pop(k, None)
     job = os.environ.get("PDMUX_JOB_NAME", "local")
     root = Path(os.environ.get("PDMUX_GATE_ROOT") or ENG / "results" / "engine_gate" / job)
     root.mkdir(parents=True, exist_ok=True)
-    gate = GD.Gate("diag", root, int(os.environ.get("PDMUX_GATE_HARDCAP_MIN", "90")))
+    gate = GD.Gate("diag", root, int(os.environ.get("PDMUX_GATE_HARDCAP_MIN", "120")))
     GD.check_models(gate)
     GD.write_substrate(gate)
     got, err = GD.tree_digest(GD.tree_path())
@@ -280,11 +371,15 @@ def run():
     cfg = yaml.safe_load(cfg_path.read_text())
     divs = [[108, 0]] + [[p, d] for p, d, _t in cfg["manual_divisions"]] + [[0, 108]]
     (root / "plan.json").write_text(json.dumps({"sm_counts": divs, "config": str(cfg_path), "seq_lengths": SEQ_LENGTHS,
+                                                "static_d": STATIC_D,
                                                 "conc": [CONC_N, CONC_LENGTHS, CONC_MAX_NEW, CONC_RATE]}) + "\n")
     ctx = GD.Ctx()
     on_env = {"PDMUX_TELEMETRY_PATH": "{dir}/tel.jsonl", "PDMUX_PHASE_EVENTS": "1", "PDMUX_PHASE_DIAG": "1",
               "PDMUX_DECODE_PROBE_PATH": "{dir}/decode_probe.jsonl"}
-    boots = (("off", {}), ("on", on_env), ("on_slo", dict(on_env, PDMUX_SLO_SCHED="1")))
+    boots = (("off", {}), ("on", dict(on_env, PDMUX_PHASE_DIAG_SYNC_AUDIT="1")),
+             ("phase_only", {"PDMUX_TELEMETRY_PATH": "{dir}/tel.jsonl", "PDMUX_PHASE_EVENTS": "1"}),
+             ("static_ns", dict(on_env, PDMUX_R2_POLICY="fixed", PDMUX_R2_FIXED_DSM=str(STATIC_D))),
+             ("on_slo", dict(on_env, PDMUX_SLO_SCHED="1")))
 
     def seq_step(srv):
         out = {}
@@ -312,7 +407,7 @@ def run():
     for bid, env in boots:
         spec = {"arm": "agnostic", "on": bool(env), "level_env": env,
                 "ins_check": lambda ins: {"verdict": PASS, "why": []}}
-        steps = ([("seq", seq_step, 600, 1800)] if bid != "on_slo" else []) + [("conc", conc_step, 300, 1200)]
+        steps = ([("seq", seq_step, 600, 1800)] if bid in ("off", "on") else []) + [("conc", conc_step, 300, 1200)]
         srv = GD.Server(gate, bid, spec, "applied")   # dir = root/<bid>, log = root/<bid>/server.log
         st = gate.stage(f"{bid}_boot", lambda srv=srv: GD._boot(srv), GD.EST["boot"], GD.TMO["boot"] + 30)
         try:
