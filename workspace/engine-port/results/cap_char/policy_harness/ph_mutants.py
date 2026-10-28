@@ -65,6 +65,11 @@ MUTANTS = [
     ("M48 dead boot exits 0", "ph_runner.py", "        rc = 17\n", "        rc = 0\n"),
     ("M49 w1_lengths sha check disabled", "ph_runner.py", "if want and sha256_file(a.w1_lengths) != want:", "if False:"),
     ("M50 engine digest placeholder allowed to run", "ph_job.sh", '== "PENDING_FINAL_TREE" ]]; }; then', '== "NEVER_MATCHES" ]]; }; then'),
+    ("M51 sealed run may override digest paths (n4)", "ph_job.sh", 'if [[ "${PDMUX_POLICY_SEALED:-}" == 1 ]] && { [[ -n "${PDMUX_POLICY_ENGINE_DIGEST_FILE:-}" ]]', 'if false && { [[ -n "${PDMUX_POLICY_ENGINE_DIGEST_FILE:-}" ]]'),
+    ("M52 CAP addendum skips the trace-identity check (n2)", "ph_analyze.py", "    if bad:\n        raise RuntimeError(f\"ABORT_TRACE_IDENTITY: CAP arms", "    if False:\n        raise RuntimeError(f\"ABORT_TRACE_IDENTITY: CAP arms"),
+    ("M53 smoke accepts the same split for D16 and D64", "ph_smoke.py", 'if modes["s16"] == modes["s64"]:', "if False:"),
+    ("M54 smoke does not require the target split", "ph_smoke.py", 'if info[a]["frac_at_target"] < APPLY_FRAC:', "if False:"),
+    ("M55 gate+smoke wrapper accepts the placeholder digest", "ph_gate_smoke.sh", 'if [[ "${digest}" == "PENDING_FINAL_TREE" || ${#digest} != 64 ]]; then', 'if false; then'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

@@ -28,9 +28,13 @@ esac
 if [[ "${PDMUX_POLICY_SEALED:-}" != 1 && "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]]; then
   echo "ABORT_UNSEALED: policy harness not sealed (PREREG_HD_HE0cell rev0.1)" >&2; exit 16
 fi
+# audit n4: a SEALED run takes its digest files from the tree only -- no env override of the engine digest, harness digest or manifest
+if [[ "${PDMUX_POLICY_SEALED:-}" == 1 ]] && { [[ -n "${PDMUX_POLICY_ENGINE_DIGEST_FILE:-}" ]] || [[ -n "${PDMUX_POLICY_HARNESS_DIGEST:-}" ]] || [[ -n "${PDMUX_POLICY_MANIFEST:-}" ]]; }; then
+  echo "ABORT_SEALED_OVERRIDE: digest/manifest paths cannot be overridden when PDMUX_POLICY_SEALED=1" >&2; exit 16
+fi
 # D1: the engine digest of the FINAL tree (shared with the diag Job) lives in this directory; a placeholder must never run.
 edigest="${PDMUX_POLICY_ENGINE_DIGEST_FILE:-${here}/ENGINE_DIGEST.txt}"
-if [[ "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]] && { [[ ! -f "${edigest}" ]] || [[ "$(tr -d ' \n' < "${edigest}")" == "PENDING_FINAL_TREE" ]]; }; then
+if { [[ ! -f "${edigest}" ]] || [[ "$(tr -d ' \n' < "${edigest}")" == "PENDING_FINAL_TREE" ]]; }; then
   echo "ABORT_ENGINE_DIGEST_PENDING: ${edigest} is a placeholder (final engine tree digest not delivered) -- refusing to run" >&2; exit 13
 fi
 if [[ "${PDMUX_POLICY_SEALED:-}" == 1 ]]; then

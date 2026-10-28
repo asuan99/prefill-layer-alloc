@@ -16,6 +16,9 @@ def load_runs(out):
 
 def cap_addendum(runs, workload, floor_ms=None):
     """CAP Job -> {'lambda_star': {workload: x}, 'best_D': D, 'per_D': ...}.  W3 SLO = 3 x floor (same Job)."""
+    bad = cap_trace_problems(runs)                  # audit n2: every D must have seen the same requests at (rate, seed)
+    if bad:
+        raise RuntimeError(f"ABORT_TRACE_IDENTITY: CAP arms saw different requests at {bad}")
     if workload == "W3":
         if not floor_ms:
             raise RuntimeError("ABORT_NO_FLOOR: W3 capacity needs the Job's floor")

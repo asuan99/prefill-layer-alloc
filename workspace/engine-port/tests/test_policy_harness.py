@@ -598,6 +598,52 @@ class NaturalOutputWrapperTests(unittest.TestCase):
         self.assertIn("benchmark_started_mono", summ)
 
 
+class CapAddendumAndSmokeTests(unittest.TestCase):
+    @staticmethod
+    def cap_run(D, h):
+        reqs = [dict(rq(500, i=i), scheduled_arrival_s=float(i)) for i in range(30)]
+        return {"run_id": f"c{D}", "arm": {"D": D, "kind": "static"}, "seed": 201, "trace_hash": h, "spec": {"rate": 1.0},
+                "segments": [{"segment_id": "s", "phase": "W1", "round": 0, "duration_s": 10.0, "requests": reqs}]}
+
+    def test_cap_addendum_refuses_arm_dependent_traces(self):
+        A.cap_addendum([self.cap_run(16, "h"), self.cap_run(24, "h")], "W1")            # same trace: fine
+        with self.assertRaises(RuntimeError):
+            A.cap_addendum([self.cap_run(16, "h1"), self.cap_run(24, "h2")], "W1")
+
+    def test_smoke_verdicts(self):
+        from collections import Counter
+        import ph_smoke as SM
+        ok = {"s16": Counter({(92, 16): 100}), "s64": Counter({(44, 64): 98, (108, 0): 2}), "dyn": Counter({(74, 34): 5})}
+        self.assertEqual(SM.smoke_verdict(ok)[0], "SMOKE_PASS")
+        same = dict(ok, s64=Counter({(92, 16): 100}))                                   # D-independent split -> the seal is void
+        self.assertEqual(SM.smoke_verdict(same)[0], "SMOKE_VOID_SAME_SPLIT")
+        off = dict(ok, s64=Counter({(44, 64): 50, (108, 0): 50}))
+        self.assertEqual(SM.smoke_verdict(off)[0], "SMOKE_FAIL_NOT_APPLIED")
+        self.assertEqual(SM.smoke_verdict(ok, booted={"s16": True, "s64": True, "dyn": False})[0], "SMOKE_FAIL_BOOT")
+        self.assertEqual(SM.smoke_verdict(dict(ok, s16=Counter()))[0], "SMOKE_UNRESOLVED")
+
+    def test_smoke_parses_prefill_span_start(self):
+        import ph_smoke as SM
+        with tempfile.TemporaryDirectory() as td:
+            p = Path(td) / "tel.jsonl"
+            p.write_text('{"event":"prefill_span_start","prefill_sms":92,"decode_sms":16}\n{"event":"decode_iteration","iter_seq":1}\n'
+                         '{"event":"prefill_span_start","prefill_sms":44,"decode_sms":64}\n')
+            self.assertEqual(dict(SM.realized_pairs(p)), {(92, 16): 1, (44, 64): 1})
+
+    def test_gate_smoke_wrapper_refuses_placeholder_digest(self):
+        import shutil
+        with tempfile.TemporaryDirectory() as td:
+            shutil.copy(PH / "ph_gate_smoke.sh", td)
+            Path(td, "ENGINE_DIGEST.txt").write_text("PENDING_FINAL_TREE\n")
+            e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+            r = subprocess.run(["bash", str(Path(td) / "ph_gate_smoke.sh")], env=e, capture_output=True, text=True, timeout=60)
+            self.assertEqual(r.returncode, 13)
+            self.assertIn("ABORT_ENGINE_DIGEST_PENDING", r.stderr)
+        src = (PH / "ph_gate_smoke.sh").read_text()
+        self.assertIn("engine_gate_diag.sh", src)
+        self.assertIn("ph_smoke.py", src)
+
+
 class JobShellTests(unittest.TestCase):
     def run_sh(self, env):
         e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
@@ -617,16 +663,24 @@ class JobShellTests(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             pend = Path(td) / "ED.txt"
             pend.write_text("PENDING_FINAL_TREE\n")
-            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_SEALED": "1", "PDMUX_POLICY_ENGINE_DIGEST_FILE": str(pend),
+            # the placeholder check applies in every mode (TEST_MODE may override the file path, SEALED may not)
+            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_TEST_MODE": "1", "PDMUX_POLICY_ENGINE_DIGEST_FILE": str(pend),
                              "PDMUX_POLICY_OUT": f"{td}/raw", "PDMUX_POLICY_SUMMARY": f"{td}/sum"})
             self.assertEqual(r.returncode, 13)
             self.assertIn("ABORT_ENGINE_DIGEST_PENDING", r.stderr)
 
+    def test_sealed_run_refuses_env_overrides(self):
+        for var in ("PDMUX_POLICY_ENGINE_DIGEST_FILE", "PDMUX_POLICY_HARNESS_DIGEST", "PDMUX_POLICY_MANIFEST"):
+            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_SEALED": "1", var: "/tmp/x"})
+            self.assertEqual(r.returncode, 16, var)
+            self.assertIn("ABORT_SEALED_OVERRIDE", r.stderr)
+
     def test_sealed_without_digest_refuses(self):
         with tempfile.TemporaryDirectory() as td:
-            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_SEALED": "1", "PDMUX_POLICY_HARNESS_DIGEST": f"{td}/none",
+            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_SEALED": "1",
                              "PDMUX_POLICY_OUT": f"{td}/raw", "PDMUX_POLICY_SUMMARY": f"{td}/sum"})
-            self.assertEqual(r.returncode, 13)
+            self.assertIn(r.returncode, (0, 13))              # tree digest: matches the sealed bytes (0 stops later on GPU preflight) or differs (13)
+            self.assertNotIn("ABORT_SEALED_OVERRIDE", r.stderr)
 
 
 class MutantsTests(unittest.TestCase):

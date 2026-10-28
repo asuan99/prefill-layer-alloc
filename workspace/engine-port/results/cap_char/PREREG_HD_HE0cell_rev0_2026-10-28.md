@@ -1,9 +1,9 @@
-# 사전등록 rev0.3 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1 (POLICY-1, 봉인본) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
 > 근거: 설계 `PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 §2(결정 32·33 반영본; 이 문서는 §2를 **그대로 승계**하고 아래 명시한 곳만 더한다) · 결정 43–45(`tracks/main.md`) · 변화 trace 감사 `../anchor_audit/VERDICT_change_trace_validity_r1_2026-10-27.md` · 진단 짝 PREREG `../lockstep_diag/PREREG_DIAG_stall_drain_rev0_2026-10-28.md` · 형식 `PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
-> **rev0.3(2026-10-28, 미봉인): 엔진 digest 핀 확정 `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`(engine-porter 커밋 `3858f129`, mixin + decode_probe 변경; 진단 PREREG와 같은 최종 트리). 변경 위치 §14.** rev0.2(2026-10-28, 미봉인): 하네스층 감사 r1(`AUDIT_harness_HD_HE0cell_r1_2026-10-28.md`, 死因 D1–D4·MAJOR M1–M7·MINOR m1–m9) 수리 + 결정 49(O-P6: 전 Job static arm 비sticky). 감사 항목 → 수리 위치 대조표는 §13. rev0.1 = 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1).**
+> **rev1(2026-10-28, 봉인본): 하네스층 감사 r2(GO-with-caveats, 死因 0) caveat 7개를 §15에 문자 그대로 승계하고 n1–n6을 수리했다. 하네스 digest = `policy_harness/HARNESS_DIGEST.txt`, 봉인 커밋 = `git log -1 --format=%h -- workspace/engine-port/results/cap_char/policy_harness/HARNESS_DIGEST.txt`(rev3.11 관례: digest 파일을 추가한 커밋). 이 봉인은 CAP1 제출 전 Q-3 smoke(§15-3)가 caveat 1을 무효화하지 않는 것을 확인한다는 조건 아래서만 유효하다.** rev0.3(2026-10-28, 미봉인): 엔진 digest 핀 확정 `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`(engine-porter 커밋 `3858f129`, mixin + decode_probe 변경; 진단 PREREG와 같은 최종 트리). 변경 위치 §14.** rev0.2(2026-10-28, 미봉인): 하네스층 감사 r1(`AUDIT_harness_HD_HE0cell_r1_2026-10-28.md`, 死因 D1–D4·MAJOR M1–M7·MINOR m1–m9) 수리 + 결정 49(O-P6: 전 Job static arm 비sticky). 감사 항목 → 수리 위치 대조표는 §13. rev0.1 = 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1).**
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정] · **[봉인 시 기입]**. `[미정→초안 채택]` = 사용자 결정이 아직 없어 초안이 채택한 값.
 > **V-O(oracle 격차)는 이 PREREG에 없다**(결정 43: V\_REG·G0 PREREG 뒤 2차).
 
@@ -197,7 +197,7 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 ## 11. 열린 결정 [미정] (rev0.2: 감사 r1 권고값 채택으로 대부분 닫힘)
 
-**닫힘(결정 49 + 감사 권고 채택)**: O-P6 = 전 Job static arm 비sticky(`ph_spec.STATIC_STICKY = False`, 봉인 상수; caveat "static D는 동거 중 목표값이며 실현 할당이 아니다") · O-P3 h = 1.5(한 점) · O-P4 튜닝 격자 ANCHOR\_IDX {2, 3, 4} × DWELL {3, 6}, 매핑 1=D16…5=D64 · O-H1 phase 길이 {120 s, 600 s} · connector 한도 0(무제한) · warm-up 60 s · W3 `max_new_tokens` 1024 · `--context-length` 20,480 · 판정 여유 ln 1.03 · n = 4 · CAP seed 2 · W3 floor = **CAP2 상수**(HD Job의 자체 floor는 공변량 기록만) · 용량 bracket 실패 시 사다리 재배치·CAP 재실행 규칙(§3-3, 등록).
+**닫힘(결정 49 + 감사 권고 채택)**: O-P6 = 전 Job static arm 비sticky(`ph_spec.STATIC_STICKY = False`, 봉인 상수; caveat "static D는 동거 중 목표값이며 실현 할당이 아니다") · O-P3 h = 1.5(한 점) · O-P4 튜닝 격자 ANCHOR\_IDX {2, 3, 4} × DWELL {3, 6}, 매핑 1=D16…5=D64 · O-H1 phase 길이 {120 s, 600 s} · connector 한도 0(무제한) · warm-up 60 s · W3 `max_new_tokens` 1024 · `--context-length` 20,480 · 판정 여유 ln 1.03 · n = 4 · CAP seed 2 · W3 floor = **CAP2 상수**(HD Job의 자체 floor는 공변량 기록만) · 용량 bracket 실패 시 사다리 재배치·CAP 재실행 규칙(§13-1, 등록).
 **열린 채 허용**: O-H3(전환 가능 구성 대조 arm, 미포함) · q = 0.8(조건부 Job) · O-P5 용량 사다리 하한 `cap_ladder.rmin`(비용 항 T1/T2 예측으로 CAP 전에 기입, 봉인 addendum).
 **남은 선행**: ~~Q-7 최종 트리 digest~~(rev0.3에서 확정) · Q-3 GPU smoke(비sticky `R2_POLICY=fixed` 의미 확인 포함, engine-porter) · Q-2 arXiv-Sum 볼륨 존재 확인.
 
@@ -234,7 +234,7 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 | 감사 항목 | 수리 | 위치 |
 |---|---|---|
 | D1 엔진 digest 불일치 | `policy_harness/ENGINE_DIGEST.txt` 신설(`PENDING_FINAL_TREE`), `ph_job.sh`가 placeholder면 거부, `ph_digest`가 파일 포함·placeholder면 make 거부, Q-7 갱신 | `ph_job.sh`, `ph_digest.py`, `ENGINE_DIGEST.txt`, 이 문서 Q-7; 시험 `test_pending_engine_digest_refuses`, 변이 M50 |
-| D2 CAP trace가 arm마다 다름 | 요청 샘플 키 = (workload, seed, rate) | `ph_trace.cap_trace`; 시험 `test_cap_trace_identical_for_every_arm`, 변이 M32 |
+| D2 CAP trace가 arm마다 다름 | 요청 샘플 키 = `("cap", seed, rate)`(workload는 pool 선택으로 이미 구분됨, 감사 n5) | `ph_trace.cap_trace`; 시험 `test_cap_trace_identical_for_every_arm`, 변이 M32 |
 | D3 O-P6·배선 불일치 | `STATIC_STICKY = False` 봉인 상수, 전 plan·`arm_env`가 사용, `static_sticky` addendum 삭제 | `ph_spec.py`; 시험 `test_every_job_has_nonsticky_static_arms`, 변이 M34; 문서 §11 |
 | D4 절단 용량 | bracket 요구, 재배치 규칙, `he0_rates` 거부 | `ph_verdict.lambda_star_best_static/next_ladder_rmin`, `ph_spec.he0_rates`, `ph_analyze.cap_addendum`; 시험 `test_truncated_capacity_is_not_accepted`, 변이 M36; 문서 §13-1 |
 | M1 connector 상한 | `connector_limit=0` | `ph_loadgen.py`, `ph_runner.default_replay`; 시험 `test_connector_limit_is_unlimited`, 변이 M44 |
@@ -266,3 +266,31 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 | 항목 | 수리/변경 | 위치 |
 |---|---|---|
 | 감사 D1 후속(최종 digest) | digest 확정, 제출 거부 장치는 유지 | `ENGINE_DIGEST.txt`, Q-7, 이 절 |
+
+
+## 15. rev1 봉인 (감사 r2 → 수리·승계)
+
+### 15-1. 수리한 것
+| 감사 r2 | 수리 | 위치 |
+|---|---|---|
+| n1 체류 float/1 s 절단 차 | **공시**: 동적 arm 첫 구간 체류는 로그 1 s 해상도·절단 차로 최대 1 s 오차(음수 가능)이며 기술값이다. 판정(goodput·CI·라벨)에 쓰지 않는다 | 이 절 |
+| n2 `cap_addendum`이 CAP trace 동일성 미대조 | `cap_addendum`이 `cap_trace_problems`를 호출, 불일치면 `ABORT_TRACE_IDENTITY` | `ph_analyze.py`; 시험 `test_cap_addendum_refuses_arm_dependent_traces`, 변이 M52 |
+| n3 digest 핀 변이 부재 | 시험·변이 추가: placeholder 거부(`test_pending_engine_digest_refuses`, M50, TEST_MODE에서도 적용), SEALED=1 override 거부(M51), gate+smoke 래퍼 placeholder 거부(M55) | `ph_job.sh`, `ph_gate_smoke.sh`, `ph_mutants.py` |
+| n4 SEALED=1에서 digest 파일 env 교체 | SEALED=1이면 `PDMUX_POLICY_ENGINE_DIGEST_FILE`·`_HARNESS_DIGEST`·`_MANIFEST` 설정을 `ABORT_SEALED_OVERRIDE` rc 16으로 거부 | `ph_job.sh`; 시험 `test_sealed_run_refuses_env_overrides` |
+| n5 키 표기 불일치 | §13-1 표기를 `("cap", seed, rate)`로 정정 | §13-2 D2 행 |
+| n6 실행 실패 처리 규칙 + 포인터 오기 | 규칙 등록(caveat 5): **INVALID/실패 boot가 있으면 그 Job 전체를 새 job name으로 재실행**하고 다른 Job의 arm으로 메우지 않는다(`--resume`은 같은 Job 이름·같은 raw 디렉터리의 중단 재개에만). 포인터 "§3-3" → "§13-1" 정정 | 이 절, §11 |
+
+### 15-2. O-P5 용량 사다리 하한 (닫음)
+`cap_ladder.rmin`: **W1 = 0.5 req/s**(사다리 ×1.35, 10점 → 0.5…7.5 req/s), **W3 = 0.1 req/s**(×1.5, 6점 → 0.1…0.76 req/s). 근거: 비용 항 T1/T2 계수로 만든 용량 예측치는 아직 없다(항 결과는 있으나 조립 V 전) — 그래서 이 값은 **예측이 아니라 범위 덮개**이다: 이 문서가 §7 시간 모형에서 가정한 λ\* ≈ 3 / 0.3 req/s [임의]를 사다리 안쪽(W1 약 2.2번째 점 이후, W3 약 3번째 점)에 두고, N3의 Nano 8k 입력 SLO 용량 0.15–0.22 req/s [측정, 구간 병기 인용]가 W3(입력 중앙값 6,484 토큰)의 하한 쪽 참조다. 빗나가면 caveat 2의 bracket 재실행 규칙(최대 1회)이 사다리를 옮긴다. addendum의 `cap_ladder.W1.rmin`·`.W3.rmin`으로 CAP 제출 시 넣는다.
+
+### 15-3. 첫 GPU 단계 (제출 전 조건)
+**한 Job으로 묶는다**(`policy_harness/ph_gate_smoke.sh`): 1단계 진단 GPU gate `engine_gate_diag.sh`(D0–D9, 비sticky static D34 boot 포함), 2단계 `ph_smoke.py`(Q-3 smoke: 비sticky `R2_POLICY=fixed`가 D16·D64에서 서로 다른 분할을 실제로 적용하는지, bind+GATE boot). 같은 최종 엔진 트리·같은 노드를 쓰는 이득(이미지 pull·설치·substrate 1회, 두 단계의 불일치가 노드 효과가 아님)이 크고, boot는 공유되지 않는다(arm/env 상이). 사용자 승인 후에만 제출. smoke가 `SMOKE_VOID_SAME_SPLIT`이면 caveat 1에 따라 **이 봉인은 무효**이며 CAP1을 제출하지 않는다.
+
+### 15-4. 승계 caveat (감사 r2, 문자 그대로, 인용 금지 형태)
+1. "static D는 동거 중 목표값이며 실현 할당이 아니다. 비sticky `R2_POLICY=fixed`가 co-residence 중 D별로 다른 분할을 실제로 적용한다는 것은 Q-3 smoke 전까지 미확인이며, smoke에서 D 간 분할이 같으면 이 봉인은 무효다(CAP1 제출 전 확인)."
+2. "CAP 재실행은 bracket 실패당 최대 1회다. 2회째도 실패하면 사용자 결정으로 넘긴다. λ*는 마지막 CAP Job 하나의 데이터로만 정하고 Job 간 셀을 합치지 않는다. NONMONOTONE이면 첫 실패 전 마지막 통과 rate를 쓴다."
+3. "`UNSTABLE` 용량 셀에서 나온 λ*로 정한 rate의 결과는 크기를 인용하지 않는다. S3(실현 분할 기반)는 검사하지 않았다."
+4. "PHASE·diag 계측 OFF 경로가 비용 항 트리(99bbef91)와 같게 동작한다는 것은 정적 확인이며 측정되지 않았다. 비용 항 수치와 이 Job 수치를 결합하지 않는다."
+5. "INVALID 또는 실패한 boot는 그 Job 전체를 새 job name으로 재실행해 채운다. 다른 Job의 arm으로 메우지 않는다(같은 비교의 arm은 한 Job 안)."
+6. "H-D의 H는 요청률 가중이라 W1 phase가 지배한다. λ 비 약 10:1이면 W3 비중 약 9%, W3 phase만의 여지가 PRESENT를 만들려면 약 33% 이상 [유도, §7 가정 λ 3/0.3]."
+7. "h=1.5는 한 점이다. 원 KISTI HI/λ* 배율은 미상이다."

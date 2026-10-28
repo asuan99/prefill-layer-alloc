@@ -1,0 +1,1 @@
+PREREG_DIAG_stall_drain rev1 rule seal (decision 50). Job harness for D-1a/D-1b/D-3 NOT implemented; only the GPU gate may be submitted.
