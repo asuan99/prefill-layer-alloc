@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-policy-cap1-1217d68-20261028075615
+Slug:                 job-d8gi0770ezms
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/1217d68493943e35ae14c9844fea01ffd80f83a8/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-28T07:56:29Z
+Started At:           2026-10-28T07:56:35Z
+Completed At:         2026-10-28T12:24:29Z
+Duration:             4h27m54s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=1217d68493943e35ae14c9844fea01ffd80f83a8, PDMUX_JOB_NAME=pdmux-policy-cap1-1217d68-20261028075615, PDMUX_CAMPAIGN=policy_cap1, PDMUX_TARGET=workspace/engine-port/results/cap_char/policy_harness/ph_cap1_control.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_POLICY_JOB=CAP1, PDMUX_POLICY_SEALED=1, PDMUX_POLICY_ADDENDUM=workspace/engine-port/results/cap_char/policy_harness/addendum_cap1.json
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

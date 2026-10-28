@@ -1,0 +1,2 @@
+stage1 CAP1 rc=0
+stage2 ph_switch_control rc=0 (0 PASS, 1 LOG_UNOBSERVABLE, 4 NO_SWITCH/UNRESOLVED) -- does not affect CAP1

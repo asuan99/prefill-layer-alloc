@@ -163,3 +163,5 @@ workspace/engine-port/results/cap_char/probe_128k/*/cache/
 workspace/engine-port/results/engine_gate*/**/*.gz
 workspace/engine-port/results/engine_gate*/**/meta/clk.csv
 workspace/engine-port/results/engine_gate*/**/meta/energy.csv
+workspace/engine-port/results/policy_*/**/meta/clk.csv
+workspace/engine-port/results/policy_*/**/meta/energy.csv

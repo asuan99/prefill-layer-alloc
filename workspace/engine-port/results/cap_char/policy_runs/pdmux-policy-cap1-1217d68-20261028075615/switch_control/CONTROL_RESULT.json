@@ -1,0 +1,8 @@
+{
+ "NOTE": "SWITCH_CONTROL_NONMEASUREMENT: no number here is a result",
+ "booted": true,
+ "log_count": 18,
+ "tel_changes": 17,
+ "tolerance": 5,
+ "verdict": "SWITCH_CONTROL_PASS"
+}
