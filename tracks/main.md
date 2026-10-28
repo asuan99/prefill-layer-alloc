@@ -20,6 +20,7 @@
 - **결정 51(2026-10-28, 사용자)**: gate+smoke Job 회수 — stage1 진단 GPU gate D0–D9 PASS, stage2 `SMOKE_VOID_SAME_SPLIT`은 판별량 결함(`prefill_span_start`가 전환 전 분할 기록; 동거 decode s16 113/113·s64 107/107 목표 D, `policy_gate_smoke/DIAG_gate_smoke_2026-10-28.md`). 재판정 = **(i) 회수 tel.jsonl CPU 재채점**: 새 기준(prefill 동거 decode 반복의 decode_sms) 먼저 등록 → claims-auditor 1회 → 재채점, '결과를 본 뒤 규칙 변경' 봉인 기록 공시. 그 전까지 CAP1 보류 — promote 필요: 예 (결정)
 - **결정 52(2026-10-28, 사용자)**: 동적 arm(SLO_SCHED) switch_count·체류 관측성(§16-4 `UNOBSERVABLE_UNCONFIRMED`)은 **양성 대조 smoke 먼저**(전환이 확실한 LO↔HI 부하, dyn arm만, 엔진 변경 없음, 다른 Job에 붙여 부팅 비용 최소화); 실패 시 엔진 전환 이벤트 추가 — promote 필요: 예 (결정)
 - **결정 53(2026-10-28, 사용자)**: 게이트 5 switch_count = **컨트롤러 결정 변경 횟수**(목표 D 변경, static은 정의상 0, SLO- 로그 집계); 물리 스트림 전환 수는 별도 이름의 기술값(관측 가능할 때만). smoke v2 감사 `policy_gate_smoke/AUDIT_smoke_v2_r1_2026-10-28.md` GO-with-caveats(재채점 진행), CAP1은 비차단, TUNE·HE0 봉인은 양성 대조 smoke 확인 뒤 — promote 필요: 예 (결정·감사)
+- **결정 54(2026-10-28, 사용자)**: CAP1 원자료(클러스터 볼륨 `/data/runs` 전용) 회수 = **pdmux-build CPU Workspace 기동 → CAP1 raw + m12 미회수 원자료(비용 항 T3·engine_gate_decomp TEL/I46 등)를 tar+sha256으로 object 볼륨 반출 → 로컬 download → Workspace standby** + `ph_job.sh`가 raw를 object 볼륨으로 반출하도록 수리(재봉인). m12 결정 대기 닫힘 — promote 필요: 예 (결정)
 - **구현 결함 Phase 0(CPU, 2026-10-28, 미감사)** `results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md`: 입장·merge drain ≤0.15 ms(빈 stream), B1(동적 전환 drain)은 VESSL 기회 0·HE0 상한만(bind+GATE ≤0.72% HI, slo 배제 불가), B2(decode-empty)는 N3 span 45%·ITL 영향≈0·TTFT 상한만, E3 handoff는 B2 못 고침→E2 우선. 영역: HE0 94–95% 미발화, P1-opint·N3·N2·T3 적체, 박자 영역 측정 0
 - **방향 재정리(제안, 미결정, 감사 반영)**: 부정 결론은 "KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증"으로 범위만 재진술(정지 기판 귀속 금지, layer-type 死 제외) · 승계 기본값(D=44·cap 48·budget 65536)은 Nano에서 재결정 · HyMux 원고는 구현 구조로 낮추고 R1–R3를 단일 처치 ablation 가설로(R3·R1 > R2) · 비동기 기판 arm은 후순위 · 구조 검증 T1–T5 완료(`7a7a2c08`, 원고 대조는 Revision Letter R3 기준, 본문 직접 대조 미실시)
 - 동결 설계: V-O·H-D `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 · DP 라우팅(감사 r2). 사소한 결함: `ct_harness_digest.py check --dir` 상대 경로
@@ -30,7 +31,6 @@
 ## 사용자 결정 대기
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
-- **m12 원자료 보관** / boot 원자료가 클러스터 볼륨에만 있어 CLOCK_SENSITIVE·T4 MISS 재분석 불가 / 회수·보관 단계 코드화(권고) · 볼륨 유지만
 - **roofline η 정본 반영** / 집계 η≈0.49는 층별 η 아님 / 수식 문서 §6 "실측 대조"에 한 줄만(권고) · 반영 안 함
 - **presubmit reachability 차단 2건** / M4R·TC1 rev3 spec 전역 차단(측정 무관) / 범위 한정 OVERRIDE(권고) · 두 spec 폐기
 - **로컬 엔진 트리 재동기화** / 2026-10-27 확인: `sglang_engine_dev`는 VESSL 10-20 서빙 manifest(`6015796d…`, 27항목)와 sha256 전부 일치, 차이는 기본 OFF probe 파일·훅뿐. 저장소 untracked `results/runtime_source_manifest.sha256`이 구판(5건 FAILED) / 구판 manifest 갱신·로컬 테스트 실패 원인 재확인(권고) · 유지
