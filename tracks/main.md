@@ -20,6 +20,7 @@
 - **결정 51(2026-10-28, 사용자)**: gate+smoke Job 회수 — stage1 진단 GPU gate D0–D9 PASS, stage2 `SMOKE_VOID_SAME_SPLIT`은 판별량 결함(`prefill_span_start`가 전환 전 분할 기록; 동거 decode s16 113/113·s64 107/107 목표 D, `policy_gate_smoke/DIAG_gate_smoke_2026-10-28.md`). 재판정 = **(i) 회수 tel.jsonl CPU 재채점**: 새 기준(prefill 동거 decode 반복의 decode_sms) 먼저 등록 → claims-auditor 1회 → 재채점, '결과를 본 뒤 규칙 변경' 봉인 기록 공시. 그 전까지 CAP1 보류 — promote 필요: 예 (결정)
 - **결정 52(2026-10-28, 사용자)**: 동적 arm(SLO_SCHED) switch_count·체류 관측성(§16-4 `UNOBSERVABLE_UNCONFIRMED`)은 **양성 대조 smoke 먼저**(전환이 확실한 LO↔HI 부하, dyn arm만, 엔진 변경 없음, 다른 Job에 붙여 부팅 비용 최소화); 실패 시 엔진 전환 이벤트 추가 — promote 필요: 예 (결정)
 - **결정 53(2026-10-28, 사용자)**: 게이트 5 switch_count = **컨트롤러 결정 변경 횟수**(목표 D 변경, static은 정의상 0, SLO- 로그 집계); 물리 스트림 전환 수는 별도 이름의 기술값(관측 가능할 때만). smoke v2 감사 `policy_gate_smoke/AUDIT_smoke_v2_r1_2026-10-28.md` GO-with-caveats(재채점 진행), CAP1은 비차단, TUNE·HE0 봉인은 양성 대조 smoke 확인 뒤 — promote 필요: 예 (결정·감사)
+- **구현 결함 Phase 0(CPU, 2026-10-28, 미감사)** `results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md`: 입장·merge drain ≤0.15 ms(빈 stream), B1(동적 전환 drain)은 VESSL 기회 0·HE0 상한만(bind+GATE ≤0.72% HI, slo 배제 불가), B2(decode-empty)는 N3 span 45%·ITL 영향≈0·TTFT 상한만, E3 handoff는 B2 못 고침→E2 우선. 영역: HE0 94–95% 미발화, P1-opint·N3·N2·T3 적체, 박자 영역 측정 0
 - **방향 재정리(제안, 미결정, 감사 반영)**: 부정 결론은 "KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증"으로 범위만 재진술(정지 기판 귀속 금지, layer-type 死 제외) · 승계 기본값(D=44·cap 48·budget 65536)은 Nano에서 재결정 · HyMux 원고는 구현 구조로 낮추고 R1–R3를 단일 처치 ablation 가설로(R3·R1 > R2) · 비동기 기판 arm은 후순위 · 구조 검증 T1–T5 완료(`7a7a2c08`, 원고 대조는 Revision Letter R3 기준, 본문 직접 대조 미실시)
 - 동결 설계: V-O·H-D `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 · DP 라우팅(감사 r2). 사소한 결함: `ct_harness_digest.py check --dir` 상대 경로
 ## 다음 행동
@@ -35,6 +36,7 @@
 - **로컬 엔진 트리 재동기화** / 2026-10-27 확인: `sglang_engine_dev`는 VESSL 10-20 서빙 manifest(`6015796d…`, 27항목)와 sha256 전부 일치, 차이는 기본 OFF probe 파일·훅뿐. 저장소 untracked `results/runtime_source_manifest.sha256`이 구판(5건 FAILED) / 구판 manifest 갱신·로컬 테스트 실패 원인 재확인(권고) · 유지
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
+- **구현 결함 Phase 1–2 진행** / Phase 0 결과(B1 미측정, B2 TTFT만, E2>E3) / Phase 1(진단 addendum, 봉인된 rev1에 붙는 형태 확인 필요)+Phase 2(E1–E3 기본 OFF, E2 우선) 진행(권고) · Phase 0 감사 먼저 · 중단
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - `pdmux-policy-cap1-1217d68-20261028075615`(job-d8gi0770ezms, 2026-10-28 제출, commit 1217d684 봉인 S2, A100×1, 하드캡 4.3 h): CAP1(W1 용량, static D 5 동일 trace) + 양성 대조 smoke(dyn switch 로그 관측성). 회수 `scripts/vessl/fetch.sh policy_cap1 <job name>`
