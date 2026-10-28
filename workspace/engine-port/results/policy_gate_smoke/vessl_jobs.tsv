@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-28T06:48:25Z	pdmux-policy-gate-smoke-71f5006-20261028064810	71f5006ad5a79f3c68a31f3ddb04eb9d8b5b8968	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/results/cap_char/policy_harness/ph_gate_smoke.sh		no
