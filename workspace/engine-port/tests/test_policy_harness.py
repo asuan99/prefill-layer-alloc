@@ -602,7 +602,7 @@ class CapAddendumAndSmokeTests(unittest.TestCase):
     @staticmethod
     def cap_run(D, h):
         reqs = [dict(rq(500, i=i), scheduled_arrival_s=float(i)) for i in range(30)]
-        return {"run_id": f"c{D}", "arm": {"D": D, "kind": "static"}, "seed": 201, "trace_hash": h, "spec": {"rate": 1.0},
+        return {"run_id": f"CAP1_c{D}", "arm": {"D": D, "kind": "static"}, "seed": 201, "trace_hash": h, "spec": {"rate": 1.0},
                 "segments": [{"segment_id": "s", "phase": "W1", "round": 0, "duration_s": 10.0, "requests": reqs}]}
 
     def test_cap_addendum_refuses_arm_dependent_traces(self):
@@ -749,6 +749,62 @@ class SwitchControlTests(unittest.TestCase):
                              (0, "controller_decision_change", None))
             g = V.gate5_row([r], 3000)
             self.assertIn("physical_stream_transitions", g)
+
+
+class Cap1RerunTests(unittest.TestCase):
+    CAP1R_ADD = {"cap_ladder": {"W1": {"rmin": 5.516}}}
+
+    def test_ladder_rule_is_rmin_times_1p15_pow_k(self):
+        p = P.make_plan("CAP1R", self.CAP1R_ADD)
+        self.assertEqual(p["rates"], [round(5.516 * 1.15 ** k, 6) for k in range(10)])
+        self.assertEqual(P.plan_problems(p), [])
+        self.assertEqual(sorted(b["arm"]["D"] for b in p["boots"]), [16, 24, 34, 44, 64])         # all 5 D
+        self.assertEqual({r["seed"] for b in p["boots"] for r in b["runs"]}, set(P.CAP_SEEDS))
+        self.assertTrue(all(r["n_requests"] == 120 and r["workload"] == "W1" for b in p["boots"] for r in b["runs"]))
+        self.assertEqual(sum(len(b["runs"]) for b in p["boots"]), 5 * 10 * 2)
+        self.assertEqual(P.HARD_CAP_MIN["CAP1R"], 151)
+
+    def test_registered_cap1_ladder_is_unchanged(self):
+        p = P.make_plan("CAP1", {"cap_ladder": {"W1": {"rmin": 0.5}, "W3": {"rmin": 0.1}}})
+        self.assertEqual(p["rates"], [round(0.5 * 1.35 ** k, 6) for k in range(10)])
+
+    def test_cap1r_trace_is_arm_independent(self):
+        p = P.make_plan("CAP1R", self.CAP1R_ADD)
+        seen = {}
+        for b in p["boots"]:
+            for r in b["runs"]:
+                seen.setdefault((r["rate"], r["seed"]), set()).add(T.trace_hash(RU.build_segments(r, W1_POOL, W3_POOL, r["run_id"])))
+        self.assertTrue(all(len(v) == 1 for v in seen.values()))
+
+    @staticmethod
+    def _run(prefix, D, rate, good=30, n=30):
+        reqs = [dict(rq(500 if i < good else 9000, i=i), scheduled_arrival_s=float(i)) for i in range(n)]
+        return {"run_id": f"{prefix}_D{D}_r{rate}_s201", "arm": {"D": D, "kind": "static"}, "seed": 201, "trace_hash": f"h{rate}",
+                "spec": {"rate": rate}, "segments": [{"segment_id": "s", "phase": "W1", "round": 0, "duration_s": 10.0, "requests": reqs}]}
+
+    def test_original_cap1_data_cannot_be_mixed_into_the_rerun(self):
+        mixed = [self._run("CAP1R", 16, 6.0), self._run("CAP1", 16, 7.0)]
+        with self.assertRaises(RuntimeError) as cm:
+            A.cap_addendum(mixed, "W1")
+        self.assertIn("ABORT_MIXED_CAP_JOBS", str(cm.exception))
+        A.cap_addendum([self._run("CAP1R", 16, 6.0), self._run("CAP1R", 16, 7.0)], "W1")          # one Job: fine
+
+    def test_second_bracket_failure_goes_to_the_user(self):
+        top_passes = [self._run("CAP1R", 44, r) for r in (6.0, 7.0, 8.0)]                           # never fails -> not bracketed
+        r = A.cap_addendum(top_passes, "W1")
+        self.assertEqual(r["status"], "CAPACITY_NOT_BRACKETED")
+        self.assertIsNone(r["rerun_rmin"])
+        self.assertTrue(r["rerun_exhausted_user_decision"])
+        first = A.cap_addendum([self._run("CAP1", 44, r_) for r_ in (6.0, 7.0, 8.0)], "W1")
+        self.assertIsNotNone(first["rerun_rmin"])                                                    # the FIRST failure may still rerun
+        self.assertFalse(first["rerun_exhausted_user_decision"])
+
+    def test_job_target_accepts_cap1r(self):
+        e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        e["PDMUX_POLICY_JOB"] = "CAP1R"
+        r = subprocess.run(["bash", str(PH / "ph_job.sh")], env=e, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 16)
+        self.assertIn("ABORT_UNSEALED", r.stderr)                                                    # past the job-name check, stopped by the seal
 
 
 class RawExportTests(unittest.TestCase):

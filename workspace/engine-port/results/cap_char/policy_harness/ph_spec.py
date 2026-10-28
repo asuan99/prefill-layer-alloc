@@ -64,7 +64,11 @@ STATIC_STICKY = False                         # decision 49 / O-P6: every Job, e
 ENGINE_DIGEST_FILE = HERE / "ENGINE_DIGEST.txt"   # single final tree shared with the diag Job (diag audit M8); PENDING_FINAL_TREE until delivered
 ENGINE_DIGEST_PENDING = "PENDING_FINAL_TREE"
 
-HARD_CAP_MIN = {"CAP1": 196, "CAP2": 272, "TUNE": 278, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
+# CAP1-R (decision 55): the one registered rerun of CAP1, ALL 5 D, W1, rmin 5.516 x 1.15^k, k = 0..9 (spacing changed from the
+# registered x1.35 relocation; disclosed before the rerun data).  No further rerun: a second bracket failure goes to the user.
+CAP1R_FACTOR, CAP1R_N = 1.15, 10
+
+HARD_CAP_MIN = {"CAP1R": 151, "CAP1": 196, "CAP2": 272, "TUNE": 278, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
 
 
 def stable(obj) -> str:
@@ -136,10 +140,10 @@ def _need(addendum, *keys):
     return cur
 
 
-def plan_cap(job_id: str, workload: str, addendum: dict):
+def plan_cap(job_id: str, workload: str, addendum: dict, factor: float | None = None, n_rates: int | None = None):
     """CAP1 (W1) / CAP2 (W3): 5 D x ladder x 2 seeds, one boot per D, non-sticky static (decision 49), PHASE OFF."""
     rmin = _need(addendum, "cap_ladder", workload, "rmin")
-    rates = ladder(rmin, CAP_FACTOR[workload], CAP_N_RATES[workload])
+    rates = ladder(rmin, factor or CAP_FACTOR[workload], n_rates or CAP_N_RATES[workload])
     rng = _rng(job_id)
     boots = []
     ds = list(D_GRID)
@@ -225,6 +229,8 @@ def plan_hd(k: int, addendum: dict):
 def make_plan(job: str, addendum: dict | None = None):
     if job == "CAP1":
         return plan_cap("CAP1", "W1", addendum)
+    if job == "CAP1R":
+        return plan_cap("CAP1R", "W1", addendum, factor=CAP1R_FACTOR, n_rates=CAP1R_N)
     if job == "CAP2":
         return plan_cap("CAP2", "W3", addendum)
     if job == "TUNE":
@@ -269,6 +275,8 @@ def plan_problems(plan: dict):
         for b in plan["boots"]:
             if sorted((r["variant"], r["phase_len_s"]) for r in b["runs"]) != sorted(HD_VARIANTS):
                 out.append("HD variants incomplete")
+    if plan["job"] == "CAP1R" and (len(plan["rates"]) != CAP1R_N or any(abs(r / plan["rates"][0] - CAP1R_FACTOR ** i) > 1e-4 * CAP1R_FACTOR ** i for i, r in enumerate(plan["rates"]))):
+        out.append("CAP1R ladder is not rmin x 1.15^k")
     if k == "CAP" and len(plan["boots"]) != 5:
         out.append("CAP needs 5 boots")
     return out

@@ -16,6 +16,9 @@ def load_runs(out):
 
 def cap_addendum(runs, workload, floor_ms=None):
     """CAP Job -> {'lambda_star': {workload: x}, 'best_D': D, 'per_D': ...}.  W3 SLO = 3 x floor (same Job)."""
+    jobs = {r["run_id"].split("_")[0] for r in runs}
+    if len(jobs) != 1:                               # lambda* comes from ONE CAP Job's data (caveat 2); no cells merged across Jobs
+        raise RuntimeError(f"ABORT_MIXED_CAP_JOBS: runs from {sorted(jobs)}")
     bad = cap_trace_problems(runs)                  # audit n2: every D must have seen the same requests at (rate, seed)
     if bad:
         raise RuntimeError(f"ABORT_TRACE_IDENTITY: CAP arms saw different requests at {bad}")
@@ -42,8 +45,12 @@ def cap_addendum(runs, workload, floor_ms=None):
                 stat[r["seed"]] = V.stationarity(reqs, ttft, P.ITL_MS)["label"]
     rmin = ladder[0]
     nxt = V.next_ladder_rmin(status, rmin, P.CAP_FACTOR[workload], P.CAP_N_RATES[workload])
+    exhausted = jobs == {"CAP1R"} and status not in ("CAPACITY_BRACKETED", "CAPACITY_BRACKETED_NONMONOTONE")
+    if exhausted:                                    # decision 55: the single rerun is spent -> USER decision, no automatic ladder move
+        nxt = None
     return {"lambda_star": {workload: lam}, "best_D": D, "status": status, "ttft_slo_ms": ttft, "per_D": per, "ladder": ladder,
-            "stationarity_at_capacity": stat, "rerun_rmin": nxt}
+            "stationarity_at_capacity": stat, "rerun_rmin": nxt,
+            "rerun_exhausted_user_decision": exhausted}
 
 
 def tune_pick(runs):

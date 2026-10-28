@@ -21,9 +21,9 @@ w3tok="${PDMUX_POLICY_W3_TOKENS:-${data}/datasets/arxsum_x/arxsum_x_tokens_v1.bi
 w3sha="4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f"   # results/multigpu/mg_const.py X_TOKENS_SHA256
 
 case "${job}" in           # hard caps (min) = ph_spec.HARD_CAP_MIN
-  CAP1) cap_min=196 ;; CAP2) cap_min=272 ;; TUNE) cap_min=247 ;; EVAL-a|EVAL-b) cap_min=252 ;;
+  CAP1R) cap_min=151 ;; CAP1) cap_min=196 ;; CAP2) cap_min=272 ;; TUNE) cap_min=247 ;; EVAL-a|EVAL-b) cap_min=252 ;;
   HD-[1-8]) cap_min=312 ;;
-  *) echo "ABORT_CONFIG: PDMUX_POLICY_JOB must be CAP1|CAP2|TUNE|EVAL-a|EVAL-b|HD-1..8; got '${job}'" >&2; exit 16 ;;
+  *) echo "ABORT_CONFIG: PDMUX_POLICY_JOB must be CAP1|CAP1R|CAP2|TUNE|EVAL-a|EVAL-b|HD-1..8; got '${job}'" >&2; exit 16 ;;
 esac
 if [[ "${PDMUX_POLICY_SEALED:-}" != 1 && "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]]; then
   echo "ABORT_UNSEALED: policy harness not sealed (PREREG_HD_HE0cell rev0.1)" >&2; exit 16

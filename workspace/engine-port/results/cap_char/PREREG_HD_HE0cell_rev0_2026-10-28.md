@@ -1,4 +1,4 @@
-# 사전등록 rev1.3 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.4 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -360,3 +360,26 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 **규칙(한 줄)**: 모든 정책 Job은 종료 시 run 원자료 트리(`${raw}`, 기본 `/data/runs/<job>/raw` = 클러스터 볼륨)를 `${summary}/raw`(= `results/cap_char/policy_runs/<job>/raw`, job\_entry가 object 볼륨 `results/<job>/results/`로 반출하고 `fetch.sh`가 `workspace/engine-port/results/`에 병합하는 경로)로 복사하고 그 사본의 `SHA256SUMS`를 `sha256sum -c`로 검증하며 파일 수가 같아야 `RAW_EXPORT_OK`를 쓴다. 실패는 `ABORT_RAW_EXPORT`(rc 18, 측정 rc가 0일 때)로 크게 알린다. `/data` 사본은 유지한다. 구현 `ph_job.sh`(종료부); 시험 `RawExportTests`, 변이 M70–M72.
 
 **CAP1 결과의 유효성은 이 변경과 무관하다**(CAP1 Job `job-d8gi0770ezms`, 커밋 `1217d684`): 그 커밋 이후 정책 하네스 diff는 `ph_job.sh` 13줄 **추가**(삭제 0, 종료부의 반출 블록)와 `ph_mutants.py` 3줄 추가뿐이며(`git diff 1217d684 -- workspace/engine-port/results/cap_char/policy_harness`), `ph_runner.py`·`ph_spec.py`·`ph_trace.py`·`ph_verdict.py`·`ph_analyze.py`·`ph_smoke.py`·`ph_switch_control.py`·`ph_loadgen.py`는 바이트 동일이다. 즉 측정 경로(서버 boot·trace 생성·replay·판정)는 불변이고 바뀐 것은 측정이 끝난 뒤의 반출 단계뿐이다. 이 변경의 동기: 그 Job에서 raw가 클러스터 볼륨에만 남아 `vesslctl`로 회수할 수 없었다.
+
+
+## 19. addendum rev1.4 — CAP1 재실행 CAP1-R (결정 55, 재실행 데이터 전 등록)
+
+**경위**: 원 CAP1(`pdmux-policy-cap1-1217d68-20261028075615`, 사다리 0.5 × 1.35^k, 10점) 분석(`results/policy_cap1/RESULT_cap1_2026-10-28.md`): D44·D64가 최상단 7.447 req/s까지 통과 → `CAPACITY_NOT_BRACKETED`, λ\* = None(§13-1 D4 규칙). 등록된 재배치 규칙(`rmin\' = rmin × factor^(n−1)`, 위 caveat 2: bracket 실패당 최대 1회)을 문자 그대로 쓰면 사다리가 7.447…110.9 req/s가 되어 상단 대부분이 비현실적이다.
+
+**결정 55 (사용자, 2026-10-28, 원문 요지)**: CAP1 재실행의 사다리는 **5 D 전부, rmin 5.516 × 1.15^k, k = 0..9**.
+
+**공시(문자 그대로)**: "CAP1 재실행의 사다리 점 간격(×1.35 → ×1.15)과 점 수 배치는 등록된 재배치 규칙(rmin' = rmin × factor^(n−1), factor 1.35)에서 간격만 바꾼 변경이며, 원 CAP1 결과(D44·D64가 7.447에서 잘림)를 본 뒤 재실행 데이터를 보기 전에 등록했다. 원 CAP1 데이터는 λ* 산정에 쓰지 않는다."
+
+### 19-1. CAP1-R 정의
+- Job 이름 `CAP1R`(새 job name), 대상 `ph_job.sh`(`PDMUX_POLICY_JOB=CAP1R`, addendum `policy_harness/addendum_cap1r.json` = `cap_ladder.W1.rmin = 5.516`). **양성 대조 smoke는 붙이지 않는다**(원 CAP1에서 `SWITCH_CONTROL_PASS`: log 18 / tel 17 / tol 5). raw 반출(rev1.3 §18)은 그대로 적용된다.
+- 구성: W1, static D {16, 24, 34, 44, 64} **전부**(비sticky, 결정 49), 사다리 `rate_k = round(5.516 × 1.15^k, 6)`, k = 0..9 → 5.516, 6.3434, 7.29491, 8.389146, 9.647518, 11.094646, 12.758843, 14.67267, 16.87357, 19.404606 req/s. 셀당 120 요청, CAP seed {201, 202}, D마다 1 boot, 판정 SLO(3000 ms/ITL p95 60 ms)·attainment ≥ 0.90·`CAPACITY_BRACKETED` 규칙·정상성 S1·S2·cliff 검사는 CAP1과 동일.
+- **seed·trace 규칙은 CAP1과 동일**: 요청 샘플 키 `("cap", seed, rate)`(D2 수리 유지, 모든 D가 같은 요청을 본다). 사다리가 달라 (rate, seed) 쌍은 새로 생성되며 원 CAP1 trace와 겹치는 셀을 이어 쓰지 않는다.
+- **λ\*는 이 Job 하나의 데이터로만 정한다**(caveat 2). `cap_addendum`은 서로 다른 CAP Job의 run이 섞이면 `ABORT_MIXED_CAP_JOBS`로 거부한다(시험 `test_original_cap1_data_cannot_be_mixed_into_the_rerun`, 변이 M75).
+- **재실행 상한 소진**: CAP1-R에서도 argmax D가 bracket되지 않으면(`CAPACITY_NOT_BRACKETED` 또는 `NO_PASSING_RATE`) 자동 재배치는 없고 `rerun_exhausted_user_decision = true`, `rerun_rmin = None` — **사용자 결정으로 넘긴다**(시험 `test_second_bracket_failure_goes_to_the_user`, 변이 M76).
+
+### 19-2. 하드캡·예상 시간 [유도, 모형 U = §7-1 시간 모형: 셀 = max(120/rate, 120/μ) + 45 s, 포화 처리율 μ ≈ 7.5 req/s(원 CAP1의 D44·D64 통과 상한), boot 4.3 min]
+- 요청 수가 고정(120)이라 rate가 높을수록 셀이 **짧아진다**: (D, seed)당 Σ max(120/rate, 16 s) ≈ 175 s + 10 × 45 s = 625 s. D당 2 seed = 20.8 min + boot 4.3 min = 25.1 min, 5 D = **약 125.6 min = 2.09 h**(셀 100.8 min, 사용률 약 80%). 모형 대조: 같은 모형이 원 CAP1에 2.72 h를 예보했고 실측 컨테이너 시간은 2.99 h(양성 대조 약 0.2 h 포함)였다 — 모형은 약 5% 이내.
+- **하드캡 151 min**(= 1.2 × 125.6 min = 2.5 h, `ph_spec.HARD_CAP_MIN["CAP1R"]`, `ph_job.sh`). Job당 ≤ 6 h 충족. 스펙 `resourcespec-a100x1`(GPU 1장).
+
+### 19-3. 상태
+시험 `Cap1RerunTests`, 변이 M73–M77, 재봉인 후 dry-run만. 제출은 사용자 승인 몫.

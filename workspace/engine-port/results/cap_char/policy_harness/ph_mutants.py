@@ -87,6 +87,11 @@ MUTANTS = [
     ("M70 raw export to the object-volume path omitted (decision 54)", "ph_job.sh", 'cp -a "${raw}/." "${summary}/raw/"', "true"),
     ("M71 raw export failure not reported", "ph_job.sh", 'echo "ABORT_RAW_EXPORT: could not export/verify ${raw} -> ${summary}/raw" >&2', "true"),
     ("M72 export copy not verified against its sums", "ph_job.sh", '(cd "${summary}/raw" && sha256sum --quiet -c SHA256SUMS) \\\n', 'true \\\n'),
+    ("M73 CAP1-R ladder factor back to 1.35", "ph_spec.py", "CAP1R_FACTOR, CAP1R_N = 1.15, 10", "CAP1R_FACTOR, CAP1R_N = 1.35, 10"),
+    ("M74 CAP1-R ladder 10 -> 6 points", "ph_spec.py", "CAP1R_FACTOR, CAP1R_N = 1.15, 10", "CAP1R_FACTOR, CAP1R_N = 1.15, 6"),
+    ("M75 mixed CAP Jobs accepted in one capacity table", "ph_analyze.py", "    if len(jobs) != 1:", "    if False:"),
+    ("M76 rerun never marked exhausted", "ph_analyze.py", 'exhausted = jobs == {"CAP1R"} and', 'exhausted = False and'),
+    ("M77 CAP1R job name rejected by the job target", "ph_job.sh", "  CAP1R) cap_min=151 ;; CAP1) cap_min=196 ;;", "  CAP1) cap_min=196 ;;"),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 
