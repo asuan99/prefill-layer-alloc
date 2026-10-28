@@ -60,7 +60,11 @@ CAP_ATTAIN = 0.90
 TUNE_ANCHOR_IDX = (2, 3, 4)                  # D24, D34, D44
 TUNE_DWELL = (3, 6)
 
-HARD_CAP_MIN = {"CAP1": 196, "CAP2": 272, "TUNE": 247, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
+STATIC_STICKY = False                         # decision 49 / O-P6: every Job, every static arm is NON-sticky (sealed constant)
+ENGINE_DIGEST_FILE = HERE / "ENGINE_DIGEST.txt"   # single final tree shared with the diag Job (diag audit M8); PENDING_FINAL_TREE until delivered
+ENGINE_DIGEST_PENDING = "PENDING_FINAL_TREE"
+
+HARD_CAP_MIN = {"CAP1": 196, "CAP2": 272, "TUNE": 278, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
 
 
 def stable(obj) -> str:
@@ -78,11 +82,13 @@ def ladder(rmin: float, factor: float, n: int):
 
 
 def he0_rates(lam_w1: float, h: float = HE0_H, ratio: float = HE0_RATIO):
+    if lam_w1 is None or not lam_w1 > 0:
+        raise RuntimeError("ABORT_NO_LAMBDA: lambda* is None (capacity not bracketed) -- rerun the capacity ladder (README rule)")
     hi = h * lam_w1
     return {"lo": hi / ratio, "hi": hi}
 
 
-def static_arm(D: int, sticky: bool = True):
+def static_arm(D: int, sticky: bool = STATIC_STICKY):
     if D not in D_GRID:
         raise ValueError(f"D {D} not in {D_GRID}")
     return {"kind": "static", "D": D, "sticky": bool(sticky), "name": f"s{D}"}
@@ -99,7 +105,7 @@ def arm_env(arm: dict) -> dict:
     """PDMUX_* env of one boot (only what differs between arms; the common part is in ph_runner.boot_env)."""
     if arm["kind"] == "static":
         env = {"PDMUX_ENGINE_MODE": "pdmux", "PDMUX_R2_POLICY": "fixed", "PDMUX_R2_FIXED_DSM": str(arm["D"])}
-        if arm.get("sticky", True):
+        if arm.get("sticky", STATIC_STICKY):
             env["PDMUX_STICKY_PARTITION"] = "1"      # PDMUX_STICKY_PARTITION + PDMUX_SLO_SCHED is rejected by the engine
         return env
     if arm["kind"] == "dynamic":
@@ -131,7 +137,7 @@ def _need(addendum, *keys):
 
 
 def plan_cap(job_id: str, workload: str, addendum: dict):
-    """CAP1 (W1) / CAP2 (W3): 5 D x ladder x 2 seeds, one boot per D, sticky static, PHASE OFF."""
+    """CAP1 (W1) / CAP2 (W3): 5 D x ladder x 2 seeds, one boot per D, non-sticky static (decision 49), PHASE OFF."""
     rmin = _need(addendum, "cap_ladder", workload, "rmin")
     rates = ladder(rmin, CAP_FACTOR[workload], CAP_N_RATES[workload])
     rng = _rng(job_id)
@@ -161,18 +167,18 @@ def plan_tune(job_id: str, addendum: dict):
     cfgs = [dynamic_arm(a, d) for a in TUNE_ANCHOR_IDX for d in TUNE_DWELL]
     rng.shuffle(cfgs)
     boots = []
-    for i, arm in enumerate(cfgs):
-        seeds = list(TUNE_SEEDS)
-        rng.shuffle(seeds)
-        boots.append(_boot(job_id, boots, arm, [he0_run(f"{job_id}_{arm['name']}_s{s}", s, rates) for s in seeds], i))
+    pairs = [(arm, sd) for arm in cfgs for sd in TUNE_SEEDS]       # controller state lives in the boot: one boot per (config, seed)
+    rng.shuffle(pairs)
+    for i, (arm, sd) in enumerate(pairs):
+        boots.append(_boot(job_id, boots, arm, [he0_run(f"{job_id}_{arm['name']}_s{sd}", sd, rates)], i))
     return {"job": job_id, "kind": "TUNE", "rates": rates, "boots": boots}
 
 
-def plan_eval(job_id: str, seeds, addendum: dict, sticky: bool | None = None):
+def plan_eval(job_id: str, seeds, addendum: dict):
     """HE0 evaluation Job: 5 static D (one boot, all seeds in random order) + tuned dynamic (one boot per seed)."""
     lam = _need(addendum, "lambda_star", "W1")
     tuned = _need(addendum, "tuned_config")
-    sticky = addendum.get("static_sticky", True) if sticky is None else sticky
+    sticky = STATIC_STICKY
     rates = he0_rates(lam)
     rng = _rng(job_id)
     boots = []
@@ -193,7 +199,7 @@ def hd_run(job_id, D, seed, variant, plen, start_first, rate_w1, rate_w3, w3_slo
             "phase_len_s": plen, "start": start_first, "rate_w1": rate_w1, "rate_w3": rate_w3, "w3_ttft_ms": w3_slo_ms}
 
 
-def plan_hd(k: int, addendum: dict, sticky: bool = True):
+def plan_hd(k: int, addendum: dict):
     """HD-k: seed k, 5 static arms, each boot serves the 3 variants (clean120, clean600, cont600) in random order."""
     if k not in EVAL_SEEDS:
         raise ValueError(k)
@@ -211,7 +217,8 @@ def plan_hd(k: int, addendum: dict, sticky: bool = True):
         vs = list(HD_VARIANTS)
         rng.shuffle(vs)
         runs = [hd_run(job_id, D, k, v, pl, start_first, r1, r3, W3_TTFT_K * f3) for v, pl in vs]
-        boots.append(_boot(job_id, None, static_arm(D, sticky), runs, i))
+        boots.append(_boot(job_id, None, static_arm(D), runs, i))
+    boots[0]["floor"] = "covariate"                # this Job's own W3 floor is recorded as a covariate; the SLO uses the CAP2 constant
     return {"job": job_id, "kind": "HD", "seed": k, "q": HD_Q, "boots": boots}
 
 
@@ -249,6 +256,11 @@ def plan_problems(plan: dict):
         for b in plan["boots"]:
             if b["arm"]["kind"] == "dynamic" and len(b["runs"]) != 1:
                 out.append("dynamic arm must reboot per seed")
+    for b in plan["boots"]:
+        if b["arm"]["kind"] == "static" and b["arm"].get("sticky") != STATIC_STICKY:
+            out.append("static arm sticky != STATIC_STICKY")
+    if k == "TUNE" and len(plan["boots"]) != 2 * len(TUNE_ANCHOR_IDX) * len(TUNE_DWELL):
+        out.append("TUNE needs one boot per (config, seed)")
     if k == "TUNE" and (set(r["seed"] for b in plan["boots"] for r in b["runs"]) != set(TUNE_SEEDS)):
         out.append("TUNE seeds != registered tuning seeds")
     if k == "HD":

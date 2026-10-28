@@ -110,6 +110,10 @@ def gate5_row(runs, ttft_slo_ms):
 
 def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4):
     """runs: {arm_name: {seed: run}} with 'dyn' and 's<D>' arms.  Returns table + label (PREREG 5-2)."""
+    want = {"dyn", *[f"s{D}" for D in (16, 24, 34, 44, 64)]}
+    if set(runs) != want:
+        raise ValueError(f"he0_compare needs exactly arms {sorted(want)}; got {sorted(runs)} (a missing static arm would make "
+                         f"'best static' a best-of-fewer -- audit m9)")
     dyn = runs["dyn"]
     statics = {a: v for a, v in runs.items() if a != "dyn"}
     seeds = sorted(set(dyn) & set.intersection(*[set(v) for v in statics.values()]))
@@ -122,6 +126,13 @@ def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4):
         d = [math.log(g["dyn"][s] / g[ref][s]) for s in seeds]
         res[key] = dict(zip(("mean", "lo", "hi", "n"), paired_t_ci(d)), ref=ref)
     out["ci"] = res
+    # descriptive per-phase pairs (audit m4: the LABEL uses the TOTAL goodput over LO+HI; phases are reported, never labelled)
+    out["phase_ci"] = {}
+    for ph in ("LO", "HI"):
+        gp = {a: {s: he0_goodput(v[s], ttft_slo_ms, itl_slo_ms, phase=ph) for s in seeds} for a, v in runs.items()}
+        for key, ref in (("a", f"s{ref_static}"), ("b", best)):
+            d = [math.log(gp["dyn"][s] / gp[ref][s]) for s in seeds if gp["dyn"][s] > 0 and gp[ref][s] > 0]
+            out["phase_ci"][f"{ph}:{key}"] = dict(zip(("mean", "lo", "hi", "n"), paired_t_ci(d)), ref=ref)
     cliff = {}
     for a, v in runs.items():
         for ph in ("LO", "HI"):
@@ -158,8 +169,10 @@ def select_tune(table, tie_frac=0.01):
 
 
 # ---------------------------------------------------------------------------------------------------- H-D
-def hd_phase_goodput(run, phase, w1_ttft_ms, w3_ttft_ms, itl_ms):
-    """good ARRIVALS of `phase` / nominal phase length (arrival-based; drain time not counted)."""
+def hd_phase_goodput(run, phase, w1_ttft_ms, w3_ttft_ms, itl_ms, exclude_warm=0.0):
+    """good ARRIVALS of `phase` / nominal phase length (arrival-based: a request belongs to the phase it ARRIVED in, however
+    late it completes; drain time not counted).  exclude_warm = fraction of the phase length dropped at its start (the
+    continuous variant reports both 0 and 0.10, rev4 2-3); the denominator shrinks with it."""
     reqs, plen = [], None
     for s in run["segments"]:
         if s["phase"] in (phase, "CONT"):
@@ -167,6 +180,11 @@ def hd_phase_goodput(run, phase, w1_ttft_ms, w3_ttft_ms, itl_ms):
             reqs += [r for r in s["requests"] if r["phase"] == phase]
     if plen is None:
         raise ValueError(f"{run['run_id']}: no segment for phase {phase}")
+    if exclude_warm:
+        # arrival offsets inside the phase: scheduled_arrival_s is relative to the segment start; in a CONT segment the second
+        # phase is offset by plen, so the phase-relative arrival is (scheduled_arrival_s mod plen)
+        reqs = [r for r in reqs if (r["scheduled_arrival_s"] % plen) >= exclude_warm * plen]
+        plen = plen * (1.0 - exclude_warm)
     t, i = slo_of(phase, w3_ttft_ms, w1_ttft_ms, itl_ms)
     return sum(1 for r in reqs if req_good(r, t, i)) / plen
 
@@ -201,6 +219,7 @@ def crossfit_H(tab, seeds_a, seeds_b):
             h.append(math.log(oracle / tab[d_best][s]["total"]))
         m, lo, hi, n = paired_t_ci(h)
         roles.append({"pick": pick, "best": d_best, "H": m, "lo": lo, "hi": hi, "n": n, "h_s": h})
+    # registered as an ENVELOPE of the two role CIs (lowest lower, highest upper; audit m1) -- the conservative reading of "wider"
     summ = {"H": statistics.fmean(r["H"] for r in roles), "lo": min(r["lo"] for r in roles),
             "hi": max(r["hi"] for r in roles), "roles": roles}
     return summ
@@ -246,9 +265,58 @@ def capacity_per_D(cells, ladder):
 
 
 def lambda_star_best_static(per_D):
-    """per_D: {D: capacity_per_D result}.  Best static = largest capacity; None if no D passes any rate."""
+    """per_D: {D: capacity_per_D result}.  Returns (lambda*, D, status).
+    lambda* is accepted ONLY when the argmax D's capacity is BRACKETED (a real failing rate above it exists) -- a ladder whose
+    top rate still passes gives a truncated capacity, q=1.0 would then sit below the true capacity and H=0 holds by identity
+    (audit D4, lesson 9).  Otherwise (None, D, 'CAPACITY_NOT_BRACKETED' | 'NO_PASSING_RATE') and the ladder must move."""
     caps = {D: v["capacity"] for D, v in per_D.items() if v["capacity"] is not None}
     if not caps:
-        return None, None
+        return None, None, "NO_PASSING_RATE"
     D = max(caps, key=lambda k: caps[k])
-    return caps[D], D
+    if per_D[D]["first_fail"] is None:
+        return None, D, "CAPACITY_NOT_BRACKETED"
+    if per_D[D].get("nonmonotone"):
+        return caps[D], D, "CAPACITY_BRACKETED_NONMONOTONE"
+    return caps[D], D, "CAPACITY_BRACKETED"
+
+
+def next_ladder_rmin(status, rmin, factor, n):
+    """Registered rerun rule: not bracketed -> shift the ladder UP so the old top rate becomes the new bottom;
+    no passing rate -> shift DOWN so the old bottom becomes the new top."""
+    if status == "CAPACITY_NOT_BRACKETED":
+        return rmin * factor ** (n - 1)
+    if status == "NO_PASSING_RATE":
+        return rmin / factor ** (n - 1)
+    return None
+
+
+def stationarity(requests, ttft_slo_ms, itl_slo_ms, s1_max=1.7, s2_drop=0.20):
+    """S1 (TTFT drift): median TTFT of the last third of arrivals / first third > s1_max -> UNSTABLE (N3 S1 threshold 1.7).
+    S2 (late degradation): attainment of the last third < first third - s2_drop -> UNSTABLE ([proposal] 0.20).
+    S3 (runtime-snapshot based) is not implemented: it needs PHASE telemetry, forbidden by PREREG Q-5 (decision-30 row)."""
+    rs = sorted(requests, key=lambda r: r.get("scheduled_arrival_s", 0.0))
+    n = len(rs) // 3
+    if n < 3:
+        return {"S1": None, "S2": None, "label": "STATIONARITY_UNKNOWN"}
+    a, c = rs[:n], rs[-n:]
+    med = lambda xs: statistics.median(x["ttft_ms"] for x in xs if x.get("ttft_ms") is not None) if any(x.get("ttft_ms") is not None for x in xs) else math.nan
+    s1 = med(c) / med(a) if med(a) > 0 else math.nan
+    att = lambda xs: sum(1 for x in xs if req_good(x, ttft_slo_ms, itl_slo_ms)) / len(xs)
+    s2 = att(a) - att(c)
+    bad = (s1 > s1_max) or (s2 > s2_drop)
+    return {"S1": s1, "S2": s2, "label": "UNSTABLE" if bad else "STATIONARY"}
+
+
+def hd_gate5(runs_by_variant, pick_by_phase):
+    """Gate 5 for H-D (static arms only): per arm TTFT/ITL p50/p95/p99 pooled, plus the virtual phase-oracle's transition count
+    per cycle (1 iff its W1 and W3 arms differ; 0 otherwise) and its arm dwell (one phase length each)."""
+    out = {}
+    for D, runs in runs_by_variant.items():
+        reqs = arm_requests(list(runs.values()))
+        tt = [r["ttft_ms"] for r in reqs if r.get("ttft_ms") is not None]
+        il = [x for r in reqs for x in (r.get("token_itl_ms") or [])]
+        out[D] = {"ttft_ms": {f"p{int(q * 100)}": percentile(tt, q) for q in (.5, .95, .99)},
+                  "itl_ms": {f"p{int(q * 100)}": percentile(il, q) for q in (.5, .95, .99)}}
+    out["oracle"] = {"switches_per_cycle": int(pick_by_phase["W1"] != pick_by_phase["W3"]),
+                     "dwell_phases": {str(pick_by_phase["W1"]): "W1", str(pick_by_phase["W3"]): "W3"}}
+    return out

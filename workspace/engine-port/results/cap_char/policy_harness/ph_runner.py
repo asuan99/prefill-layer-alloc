@@ -77,7 +77,8 @@ def default_replay(endpoint, requests, out_path, ttft_slo_ms=1e12, itl_slo_ms=1e
     import asyncio
     import ph_loadgen as PL
     abs_mono = os.environ.get("PDMUX_LOADGEN_ABS_MONO", "") == "1"
-    summ = asyncio.run(PL.replay_natural(endpoint, requests, Path(out_path), ttft_slo_ms, itl_slo_ms, abs_mono=abs_mono))
+    summ = asyncio.run(PL.replay_natural(endpoint, requests, Path(out_path), ttft_slo_ms, itl_slo_ms, connector_limit=0,
+                                         abs_mono=abs_mono))
     recs = [json.loads(x) for x in Path(out_path).read_text().splitlines() if x.strip()]
     return summ["duration_s"], recs
 
@@ -93,11 +94,23 @@ def replay_segment(replay_fn, endpoint, seg, out_dir, w3_tokens=None):
             "phase_len_s": seg.get("phase_len_s"), "requests": [{k: r[k] for k in keep if k in r} for r in recs]}
 
 
-def parse_switches(log_text, anchor_idx):
-    """switch_count + dwell seconds per stream idx from SLO-BIND lines (logger timestamps, 1 s resolution)."""
-    cur, t_prev, dwell, n, t_last = anchor_idx, None, {}, 0, None
+def idx_after(log_text, anchor_idx):
+    """Stream index the controller is at after replaying every SLO-BIND line of `log_text` (anchor before the first)."""
+    cur = anchor_idx
+    for b in BIND_RE.finditer(log_text):
+        cur = int(b.group(2))
+    return cur
+
+
+def parse_switches(log_slice, start_idx, t0=None, t1=None):
+    """switch_count + dwell seconds per D for ONE run: `log_slice` is only the bytes the server logged while this run executed
+    (audit M2: the whole boot log would add warm-up and earlier runs); dwell starts at the run start t0 (wall clock) in
+    `start_idx` and ends at t1.  Logger timestamps have 1 s resolution."""
     import datetime as dt
-    for ln in log_text.splitlines():
+    cur, dwell, n = start_idx, {}, 0
+    t_prev = t0
+    t_last = t0
+    for ln in log_slice.splitlines():
         m = TS_RE.match(ln)
         t = dt.datetime.strptime(m.group(1), "%Y-%m-%d %H:%M:%S").timestamp() if m else None
         if t is not None:
@@ -109,8 +122,9 @@ def parse_switches(log_text, anchor_idx):
             n += 1
             dwell[cur] = dwell.get(cur, 0.0) + (t - t_prev)
             cur, t_prev = int(b.group(2)), t
-    if t_prev is not None and t_last is not None:
-        dwell[cur] = dwell.get(cur, 0.0) + (t_last - t_prev)
+    t_end = t1 if t1 is not None else t_last
+    if t_prev is not None and t_end is not None:
+        dwell[cur] = dwell.get(cur, 0.0) + max(0.0, t_end - t_prev)
     return n, {str(P.D_OF_IDX.get(k, k)): v for k, v in dwell.items()}
 
 
@@ -159,20 +173,28 @@ def run_boot(boot, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None
     endpoint = f"http://127.0.0.1:{srv.port}/generate"
     done = []
     try:
-        warm = T.cap_trace("W1", w1_pool, 2.0, 0, 10, f"{boot['boot_id']}_warm")
-        replay_segment(replay_fn, endpoint, warm[0], bdir / "warmup")           # warm-up: discarded
-        if boot.get("floor") and not (Path(out) / "floor.json").exists():
-            measure_floor(endpoint, replay_fn, w3_pool, out)
+        ok, why = warmup_and_check(endpoint, replay_fn, w1_pool, bdir, boot["boot_id"])
+        if not ok:
+            dump({"boot_id": boot["boot_id"], "status": "INVALID_CORRECTNESS", "why": why}, bdir / "DONE.json")
+            return {"boot_id": boot["boot_id"], "status": "INVALID_CORRECTNESS", "runs": [], "why": why}
+        if boot.get("floor"):
+            name = "floor.json" if boot["floor"] is True else "floor_covariate.json"
+            if not (Path(out) / name).exists():
+                measure_floor(endpoint, replay_fn, w3_pool, out, name=name)
         for run in boot["runs"]:
             f = Path(out) / "runs" / f"{run['run_id']}.json"
             if f.exists():
                 continue
+            off0, t0 = _log_size(srv), time.time()
             rec = execute_run(run, arm, endpoint, replay_fn, w1_pool, w3_pool, out, w3_tokens)
-            log = Path(srv.log).read_text(errors="replace") if getattr(srv, "log", None) and Path(srv.log).exists() else ""
+            t1 = time.time()
+            before, sl = _log_split(srv, off0)
             if arm["kind"] == "dynamic":
-                rec["switch_count"], rec["split_dwell"] = parse_switches(log, arm["anchor_idx"])
+                rec["switch_count"], rec["split_dwell"] = parse_switches(sl, idx_after(before, arm["anchor_idx"]), t0, t1)
             else:
+                # non-sticky static (decision 49): D is the TARGET while co-resident, not a realized allocation
                 rec["switch_count"], rec["split_dwell"] = 0, {str(arm["D"]): sum(s["duration_s"] for s in rec["segments"])}
+                rec["split_dwell_note"] = "target value while co-resident, not a realized allocation"
             rec["boot_id"] = boot["boot_id"]
             dump(rec, f)
             done.append(run["run_id"])
@@ -182,7 +204,35 @@ def run_boot(boot, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None
     return {"boot_id": boot["boot_id"], "status": "done", "runs": done}
 
 
-def measure_floor(endpoint, replay_fn, w3_pool, out, n=8, seed=7):
+WARMUP_S = 60.0                               # PREREG 2: warm-up 60 s
+
+
+def warmup_and_check(endpoint, replay_fn, w1_pool, bdir, boot_id):
+    """Warm-up (60 s of W1 at 2 req/s, discarded) + correctness: every fixed-length (ignore_eos) warm-up request must return
+    exactly its requested number of tokens without error, else the boot is INVALID (audit M5)."""
+    ts = T.arrivals(2.0, ("warm", boot_id), duration=WARMUP_S)
+    reqs = T.make_requests("W1", w1_pool, ts, ("warm", boot_id), f"{boot_id}_warm", "WARM")
+    seg = replay_segment(replay_fn, endpoint, {"segment_id": "warm", "phase": "WARM", "requests": reqs}, bdir / "warmup")
+    bad = [q["request_id"] for q in seg["requests"]
+           if q.get("error") or q.get("observed_output_tokens") != q.get("requested_output_tokens")]
+    dump({"n": len(seg["requests"]), "bad": bad[:20], "n_bad": len(bad)}, bdir / "correctness.json")
+    return (not bad), f"{len(bad)}/{len(seg['requests'])} warm-up requests wrong length or errored"
+
+
+def _log_size(srv):
+    p = getattr(srv, "log", None)
+    return Path(p).stat().st_size if p and Path(p).exists() else 0
+
+
+def _log_split(srv, off):
+    p = getattr(srv, "log", None)
+    if not p or not Path(p).exists():
+        return "", ""
+    b = Path(p).read_bytes()
+    return b[:off].decode(errors="replace"), b[off:].decode(errors="replace")
+
+
+def measure_floor(endpoint, replay_fn, w3_pool, out, n=8, seed=7, name="floor.json"):
     """W3 floor = median TTFT of n sequential single-request segments (same Job, before the capacity cells)."""
     ttfts = []
     for k in range(n):
@@ -190,7 +240,7 @@ def measure_floor(endpoint, replay_fn, w3_pool, out, n=8, seed=7):
         s = replay_segment(replay_fn, endpoint, seg, Path(out) / "floor")
         ttfts += [r["ttft_ms"] for r in s["requests"] if r["ttft_ms"] is not None]
     f = statistics.median(ttfts) if ttfts else None
-    dump({"n": len(ttfts), "ttft_ms": ttfts, "floor_ms": f}, Path(out) / "floor.json")
+    dump({"n": len(ttfts), "ttft_ms": ttfts, "floor_ms": f}, Path(out) / name)
     return f
 
 
@@ -226,6 +276,14 @@ def analyze(out, kind, addendum=None):
     return res
 
 
+def exit_code(res):
+    """A dead / invalid boot must not look like success (audit m9)."""
+    rc = 0
+    if any(b["status"] != "done" for b in res):
+        rc = 17
+    return rc
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     sub = ap.add_subparsers(dest="cmd", required=True)
@@ -244,10 +302,17 @@ def main(argv=None):
         print(json.dumps({"plan_sha": P.sha(plan), "problems": P.plan_problems(plan), "boots": len(plan["boots"])}))
         return 0
     w1 = json.load(open(a.w1_lengths))
+    want = (add or {}).get("w1_lengths_sha256")
+    if want and sha256_file(a.w1_lengths) != want:
+        print("ABORT_DATASET: w1_lengths sha256 differs from the addendum (ShareGPT/tokenizer changed between Jobs)", file=sys.stderr)
+        return 13
     w3 = T.load_w3_pool(a.w3_tokens)[0] if a.w3_tokens else []
     rc = 0
-    run_job(plan, a.out, lambda bdir, argv_, env: R.ProcessServer(bdir, argv_, env), default_replay, w1, w3,
-            a.w3_tokens, a.resume, run_id=os.environ.get("PDMUX_JOB_NAME", "local"))
+    res = run_job(plan, a.out, lambda bdir, argv_, env: R.ProcessServer(bdir, argv_, env), default_replay, w1, w3,
+                  a.w3_tokens, a.resume, run_id=os.environ.get("PDMUX_JOB_NAME", "local"))
+    rc = exit_code(res)
+    if rc:
+        print("BOOT_FAILURES: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done"), file=sys.stderr)
     return rc
 
 

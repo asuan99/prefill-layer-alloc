@@ -26,9 +26,9 @@ def sha(p):
 
 
 def covered():
-    own = [p for p in sorted(HERE.glob("ph_*.py")) if p.name != "ph_mutants.py"] + [HERE / "ph_job.sh"]
+    own = [p for p in sorted(HERE.glob("ph_*.py")) if p.name != "ph_mutants.py"] + [HERE / "ph_job.sh", HERE / "ENGINE_DIGEST.txt"]
     ct = [CT / n for n in ("ct_spec.py", "ct_runner.py", "ct_client.py", "ct_extract.py", "ct_fit.py",
-                           "pdmux_costterms_D64_candidate.yml", "ENGINE_DIGEST.txt")]
+                           "pdmux_costterms_D64_candidate.yml")]
     ext = [ENG / "benchmarks/pdmux_eval/trace_loadgen.py", ENG / "benchmarks/pdmux_eval/analyze.py", ENG / "benchmarks/pdmux_eval/abs_mono_loadgen.py",
            ENG / "scripts/multigpu/mg_x_pretokenize.py", ENG / "scripts/bootstrap/engine_digest.py", ENG / "scripts/vessl/job_entry.sh"]
     return own, ct, ext
@@ -36,6 +36,8 @@ def covered():
 
 def make():
     import ph_spec
+    if (HERE / "ENGINE_DIGEST.txt").read_text().strip() == ph_spec.ENGINE_DIGEST_PENDING:
+        raise SystemExit("ABORT: ENGINE_DIGEST.txt is PENDING_FINAL_TREE; a harness digest cannot be made before the final tree digest")
     own, ct, ext = covered()
     d = {"files": {str(p.relative_to(ENG)): sha(p) for p in own + ct + ext}, "plans_sha": ph_spec.plans_sha(CANON)}
     d["digest"] = hashlib.sha256(json.dumps(d, sort_keys=True).encode()).hexdigest()

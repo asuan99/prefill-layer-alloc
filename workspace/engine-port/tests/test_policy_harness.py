@@ -101,17 +101,39 @@ class SpecTests(unittest.TestCase):
 
     def test_arm_env(self):
         st = P.arm_env(P.static_arm(44))
-        self.assertEqual(st["PDMUX_STICKY_PARTITION"], "1")
+        self.assertNotIn("PDMUX_STICKY_PARTITION", st)             # decision 49: static arms are non-sticky in EVERY Job
         self.assertEqual(st["PDMUX_R2_FIXED_DSM"], "44")
+        self.assertEqual(P.arm_env(P.static_arm(44, sticky=True))["PDMUX_STICKY_PARTITION"], "1")
         dy = P.arm_env(P.dynamic_arm(3, 6))
         self.assertNotIn("PDMUX_STICKY_PARTITION", dy)          # engine rejects sticky + SLO_SCHED
         self.assertNotIn("PDMUX_R2_POLICY", dy)
         self.assertEqual((dy["PDMUX_SLO_ANCHOR_IDX"], dy["PDMUX_SLO_DWELL"], dy["PDMUX_TPOT_SLO_MS"]), ("3", "6", "60"))
 
-    def test_tune_grid(self):
+    def test_tune_grid_reboots_per_config_and_seed(self):
         p = P.make_plan("TUNE", ADD)
-        self.assertEqual(len(p["boots"]), 6)
+        self.assertEqual(len(p["boots"]), 12)                      # controller state lives in the boot (audit M3)
+        self.assertTrue(all(len(b["runs"]) == 1 for b in p["boots"]))
         self.assertEqual({r["seed"] for b in p["boots"] for r in b["runs"]}, set(P.TUNE_SEEDS))
+
+    def test_every_job_has_nonsticky_static_arms(self):
+        self.assertIs(P.STATIC_STICKY, False)
+        for j in ("CAP1", "CAP2", "EVAL-a", "EVAL-b", *[f"HD-{i}" for i in range(1, 9)]):
+            for b in P.make_plan(j, ADD)["boots"]:
+                if b["arm"]["kind"] == "static":
+                    self.assertIs(b["arm"]["sticky"], False, j)
+                    self.assertNotIn("PDMUX_STICKY_PARTITION", P.arm_env(b["arm"]), j)
+
+    def test_hd_first_boot_records_floor_covariate_only(self):
+        self.assertEqual(P.make_plan("HD-1", ADD)["boots"][0]["floor"], "covariate")
+        self.assertIs(P.make_plan("CAP2", ADD)["boots"][0]["floor"], True)
+
+    def test_he0_rates_refuses_missing_lambda(self):
+        with self.assertRaises(RuntimeError):
+            P.he0_rates(None)
+
+    def test_engine_digest_is_placeholder_or_hex(self):
+        v = P.ENGINE_DIGEST_FILE.read_text().strip()
+        self.assertTrue(v == P.ENGINE_DIGEST_PENDING or (len(v) == 64 and all(c in "0123456789abcdef" for c in v)))
 
 
 class TraceTests(unittest.TestCase):
@@ -313,8 +335,61 @@ class VerdictTests(unittest.TestCase):
         c2 = V.capacity_per_D(cells2, lad)
         self.assertEqual(c2["capacity"], 1.0)
         self.assertTrue(c2["nonmonotone"])
-        lam, D = V.lambda_star_best_static({16: c, 44: c2, 64: {"capacity": None}})
-        self.assertEqual((lam, D), (1.35, 16))
+        lam, D, st = V.lambda_star_best_static({16: c, 44: c2, 64: {"capacity": None, "first_fail": 1.0}})
+        self.assertEqual((lam, D, st), (1.35, 16, "CAPACITY_BRACKETED"))
+
+    def test_truncated_capacity_is_not_accepted(self):
+        lad = [1.0, 1.35, 1.82]
+        top_passes = V.capacity_per_D([{"rate": r, "n": 100, "good": 97} for r in lad], lad)
+        self.assertIsNone(top_passes["first_fail"])
+        lam, D, st = V.lambda_star_best_static({16: top_passes})
+        self.assertEqual((lam, st), (None, "CAPACITY_NOT_BRACKETED"))      # q=1.0 would sit below capacity (H=0 identity)
+        none_pass = V.capacity_per_D([{"rate": r, "n": 100, "good": 10} for r in lad], lad)
+        self.assertEqual(V.lambda_star_best_static({16: none_pass})[2], "NO_PASSING_RATE")
+        self.assertAlmostEqual(V.next_ladder_rmin("CAPACITY_NOT_BRACKETED", 1.0, 1.5, 6), 1.5 ** 5)
+        self.assertAlmostEqual(V.next_ladder_rmin("NO_PASSING_RATE", 1.0, 1.5, 6), 1.5 ** -5)
+        self.assertIsNone(V.next_ladder_rmin("CAPACITY_BRACKETED", 1.0, 1.5, 6))
+
+    def test_empty_itl_is_good_single_token_output(self):
+        self.assertTrue(V.req_good(rq(500, itls=()), 3000, 60))
+
+    def test_hd_phase_attribution_by_arrival(self):
+        """A W1 request that ARRIVED in the W1 phase but completed during W3 still belongs to W1; a W3 request never counts for W1."""
+        reqs = [dict(rq(500, phase="W1", i=0), scheduled_arrival_s=5.0), dict(rq(9000, phase="W1", i=1), scheduled_arrival_s=6.0),
+                dict(rq(500, phase="W3", i=2), scheduled_arrival_s=125.0), dict(rq(500, phase="W3", i=3), scheduled_arrival_s=140.0)]
+        run = mkrun("r", {}, 1, [{"segment_id": "c", "phase": "CONT", "round": 0, "duration_s": 300.0, "phase_len_s": 120, "requests": reqs}])
+        self.assertAlmostEqual(V.hd_phase_goodput(run, "W1", 3000, 3000, 60), 1 / 120)
+        self.assertAlmostEqual(V.hd_phase_goodput(run, "W3", 3000, 3000, 60), 2 / 120)
+        # warm exclusion drops arrivals in the first 10 % (12 s) of each phase and shrinks the denominator
+        self.assertAlmostEqual(V.hd_phase_goodput(run, "W1", 3000, 3000, 60, exclude_warm=0.10), 0.0)
+        self.assertAlmostEqual(V.hd_phase_goodput(run, "W3", 3000, 3000, 60, exclude_warm=0.10), 1 / 108)
+
+    def test_he0_requires_all_five_static_arms(self):
+        runs = he0_runs(81, 54)
+        del runs["s16"]
+        with self.assertRaises(ValueError):
+            V.he0_compare(runs, 3000, 60)
+
+    def test_he0_reports_phase_level_pairs_descriptively(self):
+        r = V.he0_compare(he0_runs(81, 54), 3000, 60)
+        self.assertEqual(set(r["phase_ci"]), {"LO:a", "LO:b", "HI:a", "HI:b"})
+
+    def test_stationarity_s1_s2(self):
+        flat = [dict(rq(500, i=i), scheduled_arrival_s=float(i)) for i in range(60)]
+        drift = [dict(rq(500 if i < 30 else 2500, i=i), scheduled_arrival_s=float(i)) for i in range(60)]   # last third 5x slower
+        self.assertEqual(V.stationarity(flat, 3000, 60)["label"], "STATIONARY")
+        self.assertEqual(V.stationarity(drift, 3000, 60)["label"], "UNSTABLE")
+        late_fail = [dict(rq(500, itls=(30.0,) if i < 40 else (400.0,), i=i), scheduled_arrival_s=float(i)) for i in range(60)]   # TTFT flat, ITL degrades
+        lf = V.stationarity(late_fail, 3000, 60)
+        self.assertLess(lf["S1"], 1.7)
+        self.assertEqual(lf["label"], "UNSTABLE")                                                           # S2 alone (attainment drop)
+
+    def test_hd_gate5_has_oracle_switch_count(self):
+        runs = {16: {1: mkrun("a", {}, 1, [seg("W1", 5, 0, 10.0, plen=10)])}}
+        g = V.hd_gate5(runs, {"W1": 16, "W3": 44})
+        self.assertEqual(g["oracle"]["switches_per_cycle"], 1)
+        self.assertEqual(V.hd_gate5(runs, {"W1": 44, "W3": 44})["oracle"]["switches_per_cycle"], 0)
+        self.assertIn("p99", g[16]["ttft_ms"])
 
 
 class RunnerTests(unittest.TestCase):
@@ -333,18 +408,29 @@ class RunnerTests(unittest.TestCase):
         self.assertEqual(n, 2)
         self.assertEqual({k: round(v) for k, v in dw.items()}, {"34": 10, "24": 30, "44": 20})
 
-    def _fakes(self, tmp):
+    def _fakes(self, tmp, wrong_tokens=False, calls=None):
+        import datetime as dt
+        live = {}
+
         class Srv:
             def __init__(s, bdir, argv, env):
                 s.log, s.port = Path(bdir) / "server.log", 1234
-                s.log.write_text("[2026-10-28 10:00:00] x\n[2026-10-28 10:00:10] SLO-BIND 3->4 dec_sm=44\n[2026-10-28 10:00:20] y\n")
+                s.log.write_text("[2026-10-28 10:00:00] boot\n")
+                live["srv"] = s
             def start(s): return "ok"
             def stop(s): return {"returncode": 0}
 
         def replay(endpoint, reqs, out_path):
+            if calls is not None:
+                calls.append(reqs)
+            first = reqs[0]["request_id"] if reqs else ""
+            if first.endswith("r1LO-00000"):                           # one controller switch inside every HE0 run (round 1, LO)
+                with open(live["srv"].log, "a") as f:
+                    f.write(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] SLO-BIND 3->4 dec_sm=44\n")
             recs = [{"request_id": r["request_id"], "phase": r["phase"], "ttft_ms": 500.0, "token_itl_ms": [30.0] * 3,
                      "error": "", "error_kind": "", "scheduled_arrival_s": r["arrival_s"], "completion_s": r["arrival_s"] + 1.0,
-                     "input_tokens": r["input_tokens"], "requested_output_tokens": r["output_tokens"], "observed_output_tokens": 4}
+                     "input_tokens": r["input_tokens"], "requested_output_tokens": r["output_tokens"],
+                     "observed_output_tokens": (1 if wrong_tokens else r["output_tokens"])}
                     for r in reqs]
             return (max(r["arrival_s"] for r in reqs) + 1.0 if reqs else 1.0), recs
         return Srv, replay
@@ -354,12 +440,14 @@ class RunnerTests(unittest.TestCase):
             Srv, replay = self._fakes(td)
             plan = P.make_plan("EVAL-a", ADD)
             out = Path(td) / "raw"
-            RU.run_job(plan, out, Srv, replay, W1_POOL, W3_POOL)
+            res = RU.run_job(plan, out, Srv, replay, W1_POOL, W3_POOL)
+            self.assertEqual(RU.exit_code(res), 0)
             runs = A.load_runs(out)
             self.assertEqual(len(runs), 12)
             dyn = [r for r in runs if r["arm"]["kind"] == "dynamic"]
             self.assertTrue(all(r["switch_count"] == 1 for r in dyn))
             self.assertTrue(all(len(r["segments"]) == 6 for r in runs))
+            self.assertEqual(A.eval_trace_problems(runs), [])            # every arm of a seed saw the same requests (audit M7)
             self.assertTrue((out / "RUN_DONE.json").exists())
             with self.assertRaises(RuntimeError):
                 RU.run_job(plan, out, Srv, replay, W1_POOL, W3_POOL)                 # no --resume: ABORT_RAW_NOT_EMPTY
@@ -367,6 +455,59 @@ class RunnerTests(unittest.TestCase):
             RU.run_job(plan, out, Srv, replay, W1_POOL, W3_POOL, resume=True)
             after = {p.name: p.stat().st_mtime_ns for p in (out / "runs").glob("*.json")}
             self.assertEqual(before, after)                                           # finished runs kept
+
+    def test_switch_count_is_sliced_per_run(self):
+        """Two runs in one boot: the second run's count must not include the first run's (or warm-up's) switches (audit M2)."""
+        with tempfile.TemporaryDirectory() as td:
+            Srv, replay = self._fakes(td)
+            rates = P.he0_rates(3.0)
+            boot = {"boot_id": "b", "arm": P.dynamic_arm(3, 3),
+                    "runs": [P.he0_run("ra", 1, rates, np_=20, rounds=1), P.he0_run("rb", 2, rates, np_=20, rounds=1)]}
+            # the fake keys the switch on a request id ending "r1LO-00000" -> one per run
+            RU.run_boot(boot, Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            ra, rb = (json.loads((Path(td) / "raw/runs" / f"{x}.json").read_text()) for x in ("ra", "rb"))
+            self.assertEqual((ra["switch_count"], rb["switch_count"]), (1, 1))
+            self.assertAlmostEqual(sum(ra["split_dwell"].values()), sum(rb["split_dwell"].values()), delta=3.0)
+
+    def test_warmup_is_60s_and_correctness_gate(self):
+        with tempfile.TemporaryDirectory() as td:
+            calls = []
+            Srv, replay = self._fakes(td, calls=calls)
+            plan = P.make_plan("TUNE", ADD)
+            plan["boots"] = plan["boots"][:1]
+            RU.run_boot(plan["boots"][0], Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            warm = calls[0]
+            self.assertGreater(max(r["arrival_s"] for r in warm), 50.0)            # ~60 s of arrivals, not 10 requests
+            self.assertLessEqual(max(r["arrival_s"] for r in warm), 60.0)
+        with tempfile.TemporaryDirectory() as td:
+            Srv, replay = self._fakes(td, wrong_tokens=True)
+            r = RU.run_boot(P.make_plan("TUNE", ADD)["boots"][0], Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            self.assertEqual(r["status"], "INVALID_CORRECTNESS")
+            self.assertEqual(r["runs"], [])
+            self.assertEqual(RU.exit_code([r]), 17)
+
+    def test_exit_code_flags_dead_boot(self):
+        self.assertEqual(RU.exit_code([{"status": "done"}]), 0)
+        self.assertEqual(RU.exit_code([{"status": "done"}, {"status": "died"}]), 17)
+
+    def test_cap_trace_identical_for_every_arm(self):
+        p = P.make_plan("CAP1", ADD)
+        specs = {}
+        for b in p["boots"]:
+            for r in b["runs"]:
+                segs = RU.build_segments(r, W1_POOL, W3_POOL, r["run_id"])
+                specs.setdefault((r["rate"], r["seed"]), set()).add(T.trace_hash(segs))
+        self.assertTrue(all(len(v) == 1 for v in specs.values()))                   # same (rate, seed) -> same requests across D
+        self.assertEqual(len(specs), 2 * P.CAP_N_RATES["W1"])
+
+    def test_w1_sha_mismatch_aborts_before_any_server(self):
+        with tempfile.TemporaryDirectory() as td:
+            w1 = Path(td) / "w1.json"
+            w1.write_text(json.dumps(W1_POOL))
+            add = dict(ADD, w1_lengths_sha256="0" * 64)
+            (Path(td) / "a.json").write_text(json.dumps(add))
+            rc = RU.main(["run", "--job", "TUNE", "--out", str(Path(td) / "raw"), "--w1-lengths", str(w1), "--addendum", str(Path(td) / "a.json")])
+            self.assertEqual(rc, 13)
 
     def test_cap2_measures_floor(self):
         with tempfile.TemporaryDirectory() as td:
@@ -436,6 +577,19 @@ class NaturalOutputWrapperTests(unittest.TestCase):
         self.assertNotIn("t_sent_mono", recs["full_nat"])
         self.assertTrue(aiohttp.ClientSession.__module__.startswith("aiohttp"))   # patch removed afterwards
 
+    def test_connector_limit_is_unlimited(self):
+        import aiohttp
+        from unittest import mock
+        limits = []
+        real = aiohttp.TCPConnector
+
+        def spy(*a, **k):
+            limits.append(k.get("limit"))
+            return real(*a, **k)
+        with mock.patch.object(aiohttp, "TCPConnector", spy):
+            self._run(False)
+        self.assertEqual(limits, [0])                              # default 100 would queue streams in the client (audit M1)
+
     def test_composes_with_abs_mono(self):
         seen, recs, summ, _ = self._run(True)
         self.assertEqual(seen["short_nat"], False)
@@ -458,6 +612,15 @@ class JobShellTests(unittest.TestCase):
     def test_bad_job_refuses(self):
         r = self.run_sh({"PDMUX_POLICY_JOB": "HD-9", "PDMUX_POLICY_TEST_MODE": "1"})
         self.assertEqual(r.returncode, 16)
+
+    def test_pending_engine_digest_refuses(self):
+        with tempfile.TemporaryDirectory() as td:
+            pend = Path(td) / "ED.txt"
+            pend.write_text("PENDING_FINAL_TREE\n")
+            r = self.run_sh({"PDMUX_POLICY_JOB": "CAP1", "PDMUX_POLICY_SEALED": "1", "PDMUX_POLICY_ENGINE_DIGEST_FILE": str(pend),
+                             "PDMUX_POLICY_OUT": f"{td}/raw", "PDMUX_POLICY_SUMMARY": f"{td}/sum"})
+            self.assertEqual(r.returncode, 13)
+            self.assertIn("ABORT_ENGINE_DIGEST_PENDING", r.stderr)
 
     def test_sealed_without_digest_refuses(self):
         with tempfile.TemporaryDirectory() as td:

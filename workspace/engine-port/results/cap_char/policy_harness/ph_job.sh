@@ -28,6 +28,11 @@ esac
 if [[ "${PDMUX_POLICY_SEALED:-}" != 1 && "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]]; then
   echo "ABORT_UNSEALED: policy harness not sealed (PREREG_HD_HE0cell rev0.1)" >&2; exit 16
 fi
+# D1: the engine digest of the FINAL tree (shared with the diag Job) lives in this directory; a placeholder must never run.
+edigest="${PDMUX_POLICY_ENGINE_DIGEST_FILE:-${here}/ENGINE_DIGEST.txt}"
+if [[ "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]] && { [[ ! -f "${edigest}" ]] || [[ "$(tr -d ' \n' < "${edigest}")" == "PENDING_FINAL_TREE" ]]; }; then
+  echo "ABORT_ENGINE_DIGEST_PENDING: ${edigest} is a placeholder (final engine tree digest not delivered) -- refusing to run" >&2; exit 13
+fi
 if [[ "${PDMUX_POLICY_SEALED:-}" == 1 ]]; then
   python3 "${here}/ph_digest.py" check --file "${PDMUX_POLICY_HARNESS_DIGEST:-${here}/HARNESS_DIGEST.txt}" \
     || { echo "ABORT_HARNESS_DIGEST: sealed harness bytes differ" >&2; exit 13; }
@@ -40,7 +45,7 @@ if [[ "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]]; then
   [[ "${ngpu}" == 1 ]] || { echo "ABORT_SUBSTRATE: ${ngpu} GPUs visible, policy Jobs need exactly 1" >&2; exit 16; }
   # engine digest (same sealed engine as the cost-term campaign)
   manifest="${PDMUX_POLICY_MANIFEST:-${data}/runs/${name}/meta/runtime_source_manifest.sha256}"
-  python3 "${eng}/scripts/bootstrap/engine_digest.py" check --manifest "${manifest}" --sealed-file "${ct}/ENGINE_DIGEST.txt" \
+  python3 "${eng}/scripts/bootstrap/engine_digest.py" check --manifest "${manifest}" --sealed-file "${edigest}" \
     --out "${summary}/ENGINE_DIGEST_CHECK.json" > "${summary}/ENGINE_DIGEST_CHECK.txt" 2>&1 \
     || { echo "ABORT_ENGINE_DIGEST (see ENGINE_DIGEST_CHECK.txt)" >&2; exit 13; }
   # datasets: ShareGPT json + arXiv-Sum token file (sha registered)
@@ -51,6 +56,7 @@ if [[ "${PDMUX_POLICY_TEST_MODE:-}" != 1 ]]; then
       || { echo "ABORT_DATASET: ${w3tok} missing or sha256 != ${w3sha} (see PREREG Q-2 staging procedure)" >&2; exit 13; }
   fi
   tok="${HF_HOME:-${data}/hf}/hub/models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base/snapshots/dc0661c829b14e5b9246c05cfa89094a0875e052/tokenizer.json"
+  sha256sum "${sg}" > "${summary}/sharegpt.sha256"     # audit m8: pinned per Job; w1_lengths sha is checked against the addendum
   python3 "${here}/ph_trace.py" build-w1 --sharegpt "${sg}" --tokenizer "${tok}" --out "${raw}/w1_lengths.json" \
     > "${summary}/w1_lengths.txt" || { echo "ABORT_DATASET: W1 length build failed" >&2; exit 13; }
 else

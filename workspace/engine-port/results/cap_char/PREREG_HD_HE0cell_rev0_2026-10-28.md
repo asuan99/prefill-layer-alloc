@@ -1,9 +1,9 @@
-# 사전등록 rev0.1 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev0.2 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
 > 근거: 설계 `PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 §2(결정 32·33 반영본; 이 문서는 §2를 **그대로 승계**하고 아래 명시한 곳만 더한다) · 결정 43–45(`tracks/main.md`) · 변화 trace 감사 `../anchor_audit/VERDICT_change_trace_validity_r1_2026-10-27.md` · 진단 짝 PREREG `../lockstep_diag/PREREG_DIAG_stall_drain_rev0_2026-10-28.md` · 형식 `PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
-> **rev0.1(2026-10-28, 미봉인): 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1) 반영.**
+> **rev0.2(2026-10-28, 미봉인): 하네스층 감사 r1(`AUDIT_harness_HD_HE0cell_r1_2026-10-28.md`, 死因 D1–D4·MAJOR M1–M7·MINOR m1–m9) 수리 + 결정 49(O-P6: 전 Job static arm 비sticky). 감사 항목 → 수리 위치 대조표는 §13. rev0.1 = 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1).**
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정] · **[봉인 시 기입]**. `[미정→초안 채택]` = 사용자 결정이 아직 없어 초안이 채택한 값.
 > **V-O(oracle 격차)는 이 PREREG에 없다**(결정 43: V\_REG·G0 PREREG 뒤 2차).
 
@@ -27,7 +27,7 @@
 | Q-4 | 하네스(§9) 구현·CPU 시험·변이 → **하네스층 감사 1회** → 봉인. | 대기 | 봉인 |
 | Q-5 | **PHASE 계측 OFF 확인**: 이 PREREG의 모든 측정 run은 PHASE\_EVENTS·chunk/drain 계측 OFF(정책 지표를 관측자 비용 없이 얻는다. 진단 PREREG D-3이 ON/OFF 짝으로 관측자 비용과 drain 몫을 따로 잰다). decode probe(I-4)도 OFF. | 규칙 | 봉인 |
 | Q-6 | 용량 측정 결과 addendum: **Job-CAP1·CAP2 회수 → λ\*\_best-static(W1)·λ\*\_best-static(W3) 확정 → rate addendum 봉인**(§4-3) → 그 뒤에만 Job-TUNE·HE0·H-D 제출. V\_REG addendum과 같은 방식(구조는 데이터 전에 봉인, 용량에서 나온 수치만 addendum). | 대기 | 후속 Job |
-| Q-7 | 기판: VESSL A100 SXM 80GB 1장, Nano-9B-v2-Base(rev `dc0661c…`, 봉인 시 전체 해시), cudagraph ON, radix OFF, `--mem-fraction-static` 0.6(결정 13), `--max-running-requests 48`, `--context-length` 모델 한도 이내, 엔진 digest = 비용 항 PREREG와 같은 `99bbef91…`(계측 OFF 경로라 계측 묶음이 달라지면 [미정, 진단 PREREG 계측 커밋과의 관계는 봉인 시 정함]). | [봉인 시 기입] | 봉인 |
+| Q-7 | 기판: VESSL A100 SXM 80GB 1장, Nano-9B-v2-Base(rev `dc0661c…`, 봉인 시 전체 해시), cudagraph ON, radix OFF, `--mem-fraction-static` 0.6(결정 13), `--max-running-requests 48`, `--context-length` 20,480. **엔진 digest = 최종 트리 하나, 진단 PREREG와 같은 값** — `policy_harness/ENGINE_DIGEST.txt`(자리표시 `PENDING_FINAL_TREE`; `ph_job.sh`는 이 값이면 `ABORT_ENGINE_DIGEST_PENDING` rc 13으로 거부, `ph_digest make`도 거부). 비용 항 값 `99bbef91…`는 이 Job의 엔진이 아니다(계측 커밋 96ae3afa 이후 트리). caveat(인용 금지 형태): "PHASE·diag 계측 OFF 경로가 비용 항 트리와 동일하게 동작한다는 것은 정적 확인이며 측정되지 않았다. 비용 항(99bbef91) 수치와 이 Job의 수치를 결합하지 않는다." | [봉인 시 기입: 최종 트리 digest] | 봉인 |
 
 ## 2. 공통 규약
 
@@ -83,7 +83,7 @@
   - 원 HI(rate 12)는 **과부하 phase**다. CONSENSUS §1-13: 정책 간 spread가 LO 0.067(2.3%) 대 HI 1.187(43%)이라 차별의 약 95%가 과부하 phase에서 발생. §1-19: "이 region은 OVERLOAD서만 존재 … 용량 이하 = 전부 통과·이상 = 전부 실패".
   - 원 LO(rate 3)는 **용량 이하**다. §1-13: LO는 split에 무관심(d16 2.861 ≈ d44 2.858 req/s ≈ 도착률 3의 약 95%).
   - **원 HI/λ\*의 정량적 배율은 정본에서 찾지 못했다**(KISTI Zamba2-2.7B의 SLO 용량 λ\*가 N3류 정규 측정으로 등록된 적이 없다 — 게이트 #6 "λ\*\_SLO 정규화 격자 미등록"). [미정]
-- 환산 규칙: `rate_HI = h × λ*_best-static(W1)`, `rate_LO = rate_HI / 4`. **h = 1.5 [미정→초안 채택, O-P3]** (HI가 용량 위 = 과부하이면서 cliff 경계 TTFT≈SLO에 서지 않도록 용량의 절반 위; LO = 0.375 λ\* 는 용량 이하). h를 바꾸는 sweep은 하지 않는다(잃는 범위 R-6). cliff는 §2 규칙으로 검사한다.
+- 환산 규칙: `rate_HI = h × λ*_best-static(W1)`, `rate_LO = rate_HI / 4`. **h = 1.5 [결정: 감사 r1 권고 수용, O-P3 닫힘; caveat: 원 KISTI HI/λ* 배율은 미상이라 한 점이다]** (HI가 용량 위 = 과부하이면서 cliff 경계 TTFT≈SLO에 서지 않도록 용량의 절반 위; LO = 0.375 λ\* 는 용량 이하). h를 바꾸는 sweep은 하지 않는다(잃는 범위 R-6). cliff는 §2 규칙으로 검사한다.
 - 구간당 요청 수가 고정(200)이라 phase 길이는 rate에 반비례한다: LO = 200 / rate\_LO s, HI = 200 / rate\_HI s. 이 길이는 용량 측정 뒤 addendum에 기입한다.
 
 ### 4-3. 튜닝 절차 (게이트 8 — 데이터 전에 등록)
@@ -148,14 +148,14 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 |---|---|---|---|---|---|---|---|
 | **Job-CAP1** W1 용량 | 5 D × (10 rate × 2 seed), D마다 1 boot | `resourcespec-a100x1` | 5 | 100 셀 | 2.72 | 3.3 | 142 min / 163 min = 87% |
 | **Job-CAP2** W3 용량 | 5 D × (6 rate × 2 seed), D마다 1 boot | 〃 | 5 | 60 셀 | 3.78 | 4.5 | 204 min / 227 min = 90% |
-| **Job-TUNE** 동적 튜닝 | 6 구성 × 2 튜닝 seed (구성마다 1 boot) | 〃 | 6 | 12 run | 3.43 | 4.1 | 180 min / 206 min = 87% |
+| **Job-TUNE** 동적 튜닝 | 6 구성 × 2 튜닝 seed, **(구성, seed)마다 1 boot**(컨트롤러 상태가 boot에 남음, 감사 M3) | 〃 | 12 | 12 run | 3.86 | 4.6 | 180 min / 232 min = 78% |
 | **Job-HE0-a** HE0 평가 seed 1·2 | 6 arm × 2 seed (static 5 boot + 동적 2 boot) | 〃 | 7 | 12 run | 3.50 | 4.2 | 180 min / 210 min = 86% |
 | **Job-HE0-b** HE0 평가 seed 3·4 | 〃 | 〃 | 7 | 12 run | 3.50 | 4.2 | 86% |
 | **Job-HD-1…8** H-D, seed 1…8 (Job당 1 seed) | 5 static arm × (깨끗 120 s + 깨끗 600 s + 연속 600 s), arm마다 1 boot | 〃 | 5 | 5 × 3 변형 | 4.32 | 5.2 | 237.5 min / 259 min = 92% |
-| 합계 | 13 Job | | | | **약 51.4 GPU-h** | 약 61.7 | |
-| 내역 | 용량 6.50 · 튜닝 3.43 · HE0 평가 7.00 · H-D 34.5 | | | | | | |
+| 합계 | 13 Job | | | | **약 51.8 GPU-h** | 약 62.2 | |
+| 내역 | 용량 6.50 · 튜닝 3.86 · HE0 평가 7.00 · H-D 34.5 | | | | | | |
 
-- 합계 산식 [유도]: 2.72 + 3.78 + 3.43 + 2 × 3.50 + 8 × 4.32 = 51.4 GPU-h. rev4 §2-4의 H-D 24–36 GPU-h(용량 측정 미포함)와 비교하면 H-D 본체 34.5는 그 범위 안이고, 용량 6.5가 더해진 비용이 "비용 미포함 문제"의 해소분이다.
+- 합계 산식 [유도]: 2.72 + 3.78 + 3.86 + 2 × 3.50 + 8 × 4.32 = 51.8 GPU-h (감사 M3: 재부팅 반영 +0.43). rev4 §2-4의 H-D 24–36 GPU-h(용량 측정 미포함)와 비교하면 H-D 본체 34.5는 그 범위 안이고, 용량 6.5가 더해진 비용이 "비용 미포함 문제"의 해소분이다.
 - **같은 비교의 arm은 한 Job 안**: H-D(5 arm × 한 seed)·HE0(6 arm × 두 seed)·CAP(5 D)·TUNE(6 구성) 모두 비교 단위가 한 Job에 완결된다. seed는 Job에 따라 달라지므로 seed 효과와 Job 효과가 교락한다 — CI는 같은 Job 안 arm 쌍의 짝차로만 계산하고 Job을 공변량으로 병기한다.
 - **Job당 ≤ 6 h**: 모든 Job 하드캡 ≤ 5.2 h(최대 H-D 5.2 h). 정지 선례(약 9.5 h 외부 정지)보다 충분히 아래.
 - **사용률(GPU Job 적정 크기)**: 모두 `resourcespec-a100x1`(GPU 1장, 동시 사용 1장). boot 구간 외에는 서빙 중이라 사용률은 셀 시간 비율(86–92%). TP2·다중 GPU 항목 없음.
@@ -195,13 +195,11 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 3. 봉인(규칙·하네스·엔진·config digest, [봉인 시 기입] 칸, 장부류는 봉인 바이트 확정 뒤 1회).
 4. Job-CAP1·CAP2 → `launch.sh` dry-run(명령·job name·`$/h` 표시) → **사용자 승인** → `--submit` → `fetch.sh`(DONE + `sha256sum -c`) → rate/구성 addendum 봉인 → 후속 Job 같은 절차. **이 문서 작성 시점에는 dry-run도 하지 않았다.**
 
-## 11. 열린 결정 [미정]
+## 11. 열린 결정 [미정] (rev0.2: 감사 r1 권고값 채택으로 대부분 닫힘)
 
-- O-P3 HE0 셀 h = 1.5(초안) — 원 HE0의 HI/λ\* 정량 배율은 정본에서 찾지 못함.
-- O-P4 튜닝 노브·격자(6 구성)와 ANCHOR\_IDX↔D 매핑(Q-3 확인 뒤).
-- O-P5 용량 격자 범위(비용 항 모델 예측으로 기입).
-- 판정 여유 ln 1.03·n = 4·확장 규칙·용량 seed 2 — [제안], 봉인 시 사용자 확인.
-- O-H3(전환 가능 구성 대조 arm) — engine-porter 확인 전 미포함.
+**닫힘(결정 49 + 감사 권고 채택)**: O-P6 = 전 Job static arm 비sticky(`ph_spec.STATIC_STICKY = False`, 봉인 상수; caveat "static D는 동거 중 목표값이며 실현 할당이 아니다") · O-P3 h = 1.5(한 점) · O-P4 튜닝 격자 ANCHOR\_IDX {2, 3, 4} × DWELL {3, 6}, 매핑 1=D16…5=D64 · O-H1 phase 길이 {120 s, 600 s} · connector 한도 0(무제한) · warm-up 60 s · W3 `max_new_tokens` 1024 · `--context-length` 20,480 · 판정 여유 ln 1.03 · n = 4 · CAP seed 2 · W3 floor = **CAP2 상수**(HD Job의 자체 floor는 공변량 기록만) · 용량 bracket 실패 시 사다리 재배치·CAP 재실행 규칙(§3-3, 등록).
+**열린 채 허용**: O-H3(전환 가능 구성 대조 arm, 미포함) · q = 0.8(조건부 Job) · O-P5 용량 사다리 하한 `cap_ladder.rmin`(비용 항 T1/T2 예측으로 CAP 전에 기입, 봉인 addendum).
+**남은 선행**: Q-7 최종 트리 digest(`PENDING_FINAL_TREE`) · Q-3 GPU smoke(비sticky `R2_POLICY=fixed` 의미 확인 포함, engine-porter) · Q-2 arXiv-Sum 볼륨 존재 확인.
 
 ## 12. 하네스 구현 기록 (2026-10-28, 정적 확인 — 측정 0, 미봉인, 하네스층 감사 대상)
 
@@ -209,6 +207,51 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 - **Q-2 arXiv-Sum 적재(해소)**: 16k 사전 토큰화 파일이 VESSL 클러스터 볼륨 `/data/datasets/arxsum_x/arxsum_x_tokens_v1.bin`에 이미 적재돼 있다(M3 rev12 R-H7, 2026-10-16, sha256 `4c32f1af…888f` = `mg_const.X_TOKENS_SHA256`, 168,330,617 B, 로컬 sha와 원격 sha 일치 기록 `results/multigpu/RH7_tokenizer_upload_2026-10-16.md`). `vesslctl`로 현재 볼륨을 직접 조회하지는 않았다(기록 기준). `ph_job.sh`가 Job 시작 때 sha256을 재검사해 불일치면 `ABORT_DATASET`(rc 13). 파일이 없으면 적재 절차: 로컬 `mg_x_pretokenize.py build` 산출물을 `vesslctl volume upload`로 object 볼륨 `staging/`에 올리고 `pdmux-build` Workspace에서 `/data/datasets/arxsum_x/`로 복사 후 `sha256sum -c`(RH7 문서 §2 명령 그대로). 실행하지 않았다.
 - **Q-3 / O-P4 bind+GATE 실현 가능성(정적 확인)**: (i) 배선: `PDMUX_SLO_SCHED=1`+`PDMUX_SLO_MODE=binding`+`PDMUX_SLO_FEAS_GATE`는 `multiplexing_mixin.py`(`adjust_stream_groups` → `_slo_decide_idx` → `_slo_decide_idx_binding` → `_slo_feasible`)에서 모델·backend 분기 없이 `update_decode_attn_backend(idx)`로 stream index별 decode attn backend 그룹을 바꾼다(`model_runner.py:2624`, 모델 무관). CUDA graph는 stream-group index별로 캡처된다(`f"{stream_idx}_{bs}"`, 같은 파일 주석). (ii) 분할 index: 비용 항 D64 후보 config(5 division)의 stream group = [(108,0), (92,16), (84,24), (74,34), (64,44), (44,64), (0,108)], `real_sm_group_num` = 7, 컨트롤러 범위 `_lo`=1, `_hi`=5. **ANCHOR_IDX↔D 매핑 확정: 1 = D16, 2 = D24, 3 = D34, 4 = D44, 5 = D64**(기존 KISTI `pdmux_slo.yml`은 5번째가 (54,54)=D54라 D64 없음 — 이 Job은 D64 후보 config를 쓴다). 튜닝 격자 {2, 3, 4}는 D24/D34/D44, 기본 앵커 `(1+5)//2` = 3(D34). (iii) 제약: `PDMUX_STICKY_PARTITION`+`PDMUX_SLO_SCHED`는 엔진이 `RuntimeError`로 거부한다 → 동적 arm은 sticky가 아니다. (iv) **미확인(정적으로 알 수 없음)**: Nano(nemotron\_h·mamba 상태)·flashinfer·현 엔진 트리에서 실제로 부팅·전환·`switch_count`가 기록되는지, 5개 index × bs 캡처 목록으로 부팅 시간이 늘어나는지(boot 4.3 min 모형은 단일 index 기준). 결론: **`INFEASIBLE_BY_RULE` 근거는 정적으로 발견되지 않았다. 실현 가능성은 GPU smoke(Workspace `pdmux-probe`, 비측정)로만 닫힌다** — 선행 조건 Q-3은 "정적 확인 완료·실행 확인 대기"로 갱신한다.
-- **O-P6 (신규, [미정])**: static arm의 sticky 여부. 동적 arm은 sticky일 수 없으므로(위 iii) 동적과 짝을 이루는 static이 sticky이면 "static 대 동적" 비교에 sticky 유무가 섞인다(KISTI 원 static d44는 단일 division·비sticky였다). 하네스 기본값은 비용 항 PREREG에서 검증된 경로(`PDMUX_R2_POLICY=fixed` + sticky)이고 addendum의 `static_sticky`로 바꾼다. CAP 용량·TUNE·EVAL·HD 모두 같은 값을 써야 한다(용량 환산 rate가 그 static 모드에서 나온다). 선택은 사용자 결정 + engine-porter의 비sticky fixed 의미 확인.
-- **구현 중 정한 [제안] 값(감사에서 확인)**: W3 natural-output 상한 `max_new_tokens` = 1024; W1 요청은 출력 길이 고정(`ignore_eos`, ShareGPT 응답 길이; KISTI bench_serving은 자연 EOS — 편차 공시); W1 길이 표는 Job 시작 때 서빙 모델 토크나이저로 ShareGPT 첫 turn 쌍에서 생성(`input+output ≤ 4000`); 서버 `--context-length` 20,480; H-D 단계 goodput = 그 phase에 도착한 양호 요청 수 / 명목 phase 길이, HE0 goodput = Σ양호 / Σsegment 실측 duration(게이트 7); H-D `G_best`는 평가 seed에서 고른다(보수적); `DRAIN_TIMEOUT`은 표지만(replay가 timeout을 받지 않음); 용량 격자 하한 `cap_ladder.rmin`은 addendum에서 받는다(O-P5).
-- **공유 코드 변경 1건**: `benchmarks/pdmux_eval/trace_loadgen.py`가 요청별 `ignore_eos`(기본 True, 키가 없는 옛 trace는 바이트 동일 동작)를 받는다 — W3 자연 출력용. 엔진 코드는 건드리지 않았다.
+- **O-P6 (rev0.2에서 닫힘, 결정 49)**: ~~static arm의 sticky 여부~~ → 전 Job 비sticky. 이하는 rev0.1 당시 서술이다: static arm의 sticky 여부. 동적 arm은 sticky일 수 없으므로(위 iii) 동적과 짝을 이루는 static이 sticky이면 "static 대 동적" 비교에 sticky 유무가 섞인다(KISTI 원 static d44는 단일 division·비sticky였다). 하네스 기본값은 비용 항 PREREG에서 검증된 경로(`PDMUX_R2_POLICY=fixed` + sticky)이고 addendum의 `static_sticky`로 바꾼다. CAP 용량·TUNE·EVAL·HD 모두 같은 값을 써야 한다(용량 환산 rate가 그 static 모드에서 나온다). 선택은 사용자 결정 + engine-porter의 비sticky fixed 의미 확인.
+- **구현 중 정한 [제안] 값(감사에서 확인)**: W3 natural-output 상한 `max_new_tokens` = 1024; W1 요청은 출력 길이 고정(`ignore_eos`, ShareGPT 응답 길이; **KISTI와 같다** — 감사 m3: `sharegpt_vary_bench.sbatch`에 `--disable-ignore-eos`가 없고 bench_serving 기본이 ignore_eos 사용이다. 편차 아님); W1 길이 표는 Job 시작 때 서빙 모델 토크나이저로 ShareGPT 첫 turn 쌍에서 생성(`input+output ≤ 4000`); 서버 `--context-length` 20,480; H-D 단계 goodput = 그 phase에 도착한 양호 요청 수 / 명목 phase 길이, HE0 goodput = Σ양호 / Σsegment 실측 duration(게이트 7); H-D `G_best`는 평가 seed에서 고른다(보수적); `DRAIN_TIMEOUT`은 표지만(replay가 timeout을 받지 않음); 용량 격자 하한 `cap_ladder.rmin`은 addendum에서 받는다(O-P5).
+- **공유 코드 변경 없음**(rev0.2 정정, 감사 m2): rev0.1의 `trace_loadgen.py` 수정은 `4aff6b30`에서 원복했다(봉인 multigpu rev12, sha `8da91574…`). W3 자연 출력은 `policy_harness/ph_loadgen.py` 래퍼(원 `replay` 호출, `ignore_eos` payload만 조정)가 맡고 `abs_mono_loadgen.py`와 조합된다.
+
+
+## 13. rev0.2 수리 내용과 감사 r1 → 수리 위치 대조표
+
+### 13-1. 새로 등록한 규칙 (감사 수리가 만든 데이터 전 등록)
+- **용량 인정 조건(D4)**: argmax D의 용량이 `CAPACITY_BRACKETED`(실패 rate가 실제로 존재)일 때만 λ\*로 받는다. 사다리 최상단까지 통과(`CAPACITY_NOT_BRACKETED`)면 λ\* = None, 사다리를 위로 이동(`rmin' = rmin × factor^(n−1)`)해 CAP를 재실행한다(재실행은 새 job name, 사실을 결과에 적는다). 통과 rate 없음(`NO_PASSING_RATE`)이면 아래로 이동(`rmin' = rmin / factor^(n−1)`). λ\* = None에서 `he0_rates`는 `ABORT_NO_LAMBDA`.
+- **정상성(M6)**: S1 = 도착 순 마지막 1/3 대 처음 1/3의 TTFT 중앙값 비 > 1.7 → `UNSTABLE`(N3 S1 임계 승계) · S2 = 마지막 1/3 attainment가 처음 1/3보다 0.20 넘게 낮음 → `UNSTABLE` [제안] · **S3(runtime\_snapshot 기반)는 구현하지 않는다**: PHASE 계측이 필요한데 Q-5가 금지한다. 결정 30 표 행: 잃는 범위 = 실현 분할 혼합 기반 정상성 검사; 분류 (R/C) = 계측 OFF 규약이 우선. `UNSTABLE` 용량 셀은 크기 인용 불가로 표시한다.
+- **trace 동일성(D2·M7)**: 요청 내용(도착·길이·문서)은 (workload, seed, rate/variant)만의 함수이며 arm·run\_id와 무관하다. `trace_hash`는 내용 해시(request\_id·segment\_id 제외)이고 분석은 같은 seed의 arm 간 hash 일치를 대조해 불일치면 `ABORT_TRACE_IDENTITY`.
+- **correctness·warm-up(M5)**: boot마다 W1 2 req/s 60 s warm-up(판정 제외); 고정 길이(`ignore_eos`) warm-up 요청은 요청한 토큰 수와 정확히 일치해야 하며 하나라도 어긋나거나 오류면 boot `INVALID_CORRECTNESS`(run 미실행, Job rc 17).
+- **로그 자르기(M2)**: 동적 arm의 `switch_count`·체류는 그 run이 실행되는 동안의 서버 로그 구간만으로, 체류는 run 시작 시각의 index에서 시작해 계산한다. 비sticky static의 체류는 "목표값이며 실현 할당이 아니다"(m7).
+- **CI 정의(m1)**: H-D 교차적합의 "더 넓은 CI"는 두 역할 CI의 **포락(envelope: 가장 낮은 하한, 가장 높은 상한)** 으로 등록한다 — UNRESOLVED 쪽으로만 기운다.
+- **HE0 라벨 지표(m4)**: 라벨은 LO + HI 합산 전체 goodput(Σ양호/Σduration)으로 매긴다. LO·HI 단계별 짝 구간(`phase_ci`)은 기술값으로 출력하고 라벨에 쓰지 않는다. static arm 5개 + 동적이 모두 없으면 `he0_compare`가 거부한다(m9).
+- **`DRAIN_TIMEOUT`(m5)**: H-D 깨끗한 시작 변형에서 segment의 실측 duration − 명목 phase 길이 > 120 s이면 표지(`DRAIN_TIMEOUT`)만 붙이고 값은 쓴다(replay에 timeout이 없다). 표지가 있는 phase는 결과 표에 병기한다.
+- **H-D 게이트 5·연속 변형(m6)**: arm별 TTFT/ITL p50/p95/p99와 가상 phase-oracle의 전환 수(사이클당 W1·W3 선택 arm이 다르면 1)·체류를 출력한다. 연속 변형은 phase 첫 10%를 제외한 H를 제외 전 H와 함께 보고한다(기술값).
+- **W3 floor(M4)**: SLO의 floor는 CAP2 Job의 봉인 상수다(`§2`의 "같은 Job" 문구는 floor에는 적용하지 않고 공시한다). HD Job은 자기 floor를 공변량으로 기록(`floor_covariate.json`)만 한다 — Job 간 W3 SLO 변동을 일으키지 않는다.
+- **데이터 고정(m8)**: ShareGPT json sha256을 Job마다 기록하고, addendum의 `w1_lengths_sha256`이 있으면 Job 시작 시 대조(불일치 `ABORT_DATASET` rc 13).
+- **H-D 요청률 가중 caveat(감사)**: "H-D의 H는 요청률 가중이라 W1 phase가 지배한다. λ 비 약 10:1이면 W3 비중 약 9%, W3 phase만의 여지가 PRESENT를 만들려면 약 33% 이상 [유도, §7 가정 λ 3/0.3]." — 모든 H-D 결과 문장에 병기한다.
+- **BELOW 비대칭·귀무 caveat(감사 반전 시험)**: `DYN_BELOW_STATIC`이 (b)만 요구해도 귀무 하에서 승자 편향 ≈ 0.58σ < 구간 반폭 ≈ 2.25σ [유도]라 뒤집히지 않는다. h·동률 1%·ln 1.03은 원자료가 없어 봉인 전 상수로 둔다.
+
+### 13-2. 감사 항목 → 수리 위치
+
+| 감사 항목 | 수리 | 위치 |
+|---|---|---|
+| D1 엔진 digest 불일치 | `policy_harness/ENGINE_DIGEST.txt` 신설(`PENDING_FINAL_TREE`), `ph_job.sh`가 placeholder면 거부, `ph_digest`가 파일 포함·placeholder면 make 거부, Q-7 갱신 | `ph_job.sh`, `ph_digest.py`, `ENGINE_DIGEST.txt`, 이 문서 Q-7; 시험 `test_pending_engine_digest_refuses`, 변이 M50 |
+| D2 CAP trace가 arm마다 다름 | 요청 샘플 키 = (workload, seed, rate) | `ph_trace.cap_trace`; 시험 `test_cap_trace_identical_for_every_arm`, 변이 M32 |
+| D3 O-P6·배선 불일치 | `STATIC_STICKY = False` 봉인 상수, 전 plan·`arm_env`가 사용, `static_sticky` addendum 삭제 | `ph_spec.py`; 시험 `test_every_job_has_nonsticky_static_arms`, 변이 M34; 문서 §11 |
+| D4 절단 용량 | bracket 요구, 재배치 규칙, `he0_rates` 거부 | `ph_verdict.lambda_star_best_static/next_ladder_rmin`, `ph_spec.he0_rates`, `ph_analyze.cap_addendum`; 시험 `test_truncated_capacity_is_not_accepted`, 변이 M36; 문서 §13-1 |
+| M1 connector 상한 | `connector_limit=0` | `ph_loadgen.py`, `ph_runner.default_replay`; 시험 `test_connector_limit_is_unlimited`, 변이 M44 |
+| M2 로그 전체로 switch 계산 | run별 byte offset 자르기·시작 index | `ph_runner.run_boot/parse_switches/idx_after`; 시험 `test_switch_count_is_sliced_per_run`, 변이 M45·M26 |
+| M3 TUNE 재부팅 없음 | (구성, seed)마다 boot 12, 비용 3.86 h·하드캡 278 min | `ph_spec.plan_tune/HARD_CAP_MIN`, §7; 시험 `test_tune_grid_reboots_per_config_and_seed`, 변이 M35 |
+| M4 W3 floor 다른 Job | CAP2 봉인 상수, HD는 공변량 | `ph_spec.plan_hd`, `ph_runner.measure_floor`, §13-1; 시험 `test_hd_first_boot_records_floor_covariate_only` |
+| M5 correctness·warm-up | 60 s warm-up + 토큰 수 검사, `INVALID_CORRECTNESS` | `ph_runner.warmup_and_check`; 시험 `test_warmup_is_60s_and_correctness_gate`, 변이 M46·M47 |
+| M6 정상성 | S1·S2 구현, S3 결정 30 행 | `ph_verdict.stationarity`, `ph_analyze.cap_addendum`; 시험 `test_stationarity_s1_s2`, 변이 M40·M41; §13-1 |
+| M7 hash arm 의존 | 내용 hash + 분석 대조 | `ph_trace.trace_hash`, `ph_analyze.*_trace_problems`; 시험 `test_run_job_end_to_end_and_resume`, 변이 M33 |
+| m1 더 넓은 CI | 포락으로 등록 | §13-1, `ph_verdict.crossfit_H` 주석 |
+| m2 §12 trace\_loadgen 문구 | 삭제·정정 | §12 |
+| m3 KISTI 자연 EOS | 정정(KISTI도 고정 출력) | §12 |
+| m4 HE0 라벨 지표 | 전체 goodput 명시 + `phase_ci` | §13-1, `ph_verdict.he0_compare`; 시험 `test_he0_reports_phase_level_pairs_descriptively` |
+| m5 DRAIN\_TIMEOUT | 의미 정의 | §13-1 |
+| m6 H-D 게이트 5·warm 10% | `hd_gate5`, `exclude_warm` | `ph_verdict.py`, `ph_analyze.hd_labels`; 시험 `test_hd_gate5_has_oracle_switch_count`, 변이 M42·M43 |
+| m7 static 체류 | 목표값 표지 | `ph_runner.run_boot`(`split_dwell_note`), §13-1 |
+| m8 ShareGPT sha | Job별 sha 기록 + addendum 대조 | `ph_job.sh`, `ph_runner.main`; 시험 `test_w1_sha_mismatch_aborts_before_any_server`, 변이 M49 |
+| m9 best-of-4·boot 실패 rc 0 | 5 static 요구, `exit_code` 17 | `ph_verdict.he0_compare`, `ph_runner.exit_code`; 시험 `test_he0_requires_all_five_static_arms`·`test_exit_code_flags_dead_boot`, 변이 M39·M48 |
+| 빠진 변이: phase 완료 귀속·빈 ITL | 시험·변이 추가 | `test_hd_phase_attribution_by_arrival`(M37), `test_empty_itl_is_good_single_token_output`(M38) |
+| 반전 시험 caveat·미정 닫기 | §11, §13-1 | 이 문서 |

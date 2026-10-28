@@ -52,7 +52,9 @@ class _NaturalSession:
         return getattr(self._real, name)
 
 
-async def replay_natural(endpoint, requests, output_path, ttft_slo_ms, itl_slo_ms, connector_limit=None, abs_mono=False):
+async def replay_natural(endpoint, requests, output_path, ttft_slo_ms, itl_slo_ms, connector_limit=0, abs_mono=False):
+    """connector_limit=0 (unlimited): the aiohttp default of 100 would queue requests IN THE CLIENT once the system holds more
+    than ~100 streams (HI phase at 1.5 x lambda*), distorting TTFT and the controller input (audit M1)."""
     natural = natural_ids(requests)
     inner = AM.replay_abs_mono if abs_mono else TL.replay
     if not natural:

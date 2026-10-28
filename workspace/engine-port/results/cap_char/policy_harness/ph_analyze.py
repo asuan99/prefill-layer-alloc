@@ -29,8 +29,18 @@ def cap_addendum(runs, workload, floor_ms=None):
         byD.setdefault(r["arm"]["D"], []).append({"rate": r["spec"]["rate"], "n": n, "good": good})
     ladder = sorted({c["rate"] for v in byD.values() for c in v})
     per = {D: V.capacity_per_D(v, ladder) for D, v in byD.items()}
-    lam, D = V.lambda_star_best_static(per)
-    return {"lambda_star": {workload: lam}, "best_D": D, "ttft_slo_ms": ttft, "per_D": per, "ladder": ladder}
+    lam, D, status = V.lambda_star_best_static(per)
+    # stationarity of the capacity cell (S1/S2) at the accepted rate, argmax D, per seed
+    stat = {}
+    if lam is not None:
+        for r in runs:
+            if r["arm"]["D"] == D and abs(r["spec"]["rate"] - lam) < 1e-9:
+                reqs = [q for s in r["segments"] for q in s["requests"]]
+                stat[r["seed"]] = V.stationarity(reqs, ttft, P.ITL_MS)["label"]
+    rmin = ladder[0]
+    nxt = V.next_ladder_rmin(status, rmin, P.CAP_FACTOR[workload], P.CAP_N_RATES[workload])
+    return {"lambda_star": {workload: lam}, "best_D": D, "status": status, "ttft_slo_ms": ttft, "per_D": per, "ladder": ladder,
+            "stationarity_at_capacity": stat, "rerun_rmin": nxt}
 
 
 def tune_pick(runs):
@@ -45,6 +55,9 @@ def tune_pick(runs):
 
 
 def eval_labels(runs):
+    bad = eval_trace_problems(runs)
+    if bad:
+        raise RuntimeError(f"ABORT_TRACE_IDENTITY: arms of seeds {bad} saw different requests")
     by = {}
     for r in runs:
         name = "dyn" if r["arm"]["kind"] == "dynamic" else f"s{r['arm']['D']}"
@@ -54,11 +67,22 @@ def eval_labels(runs):
 
 def hd_labels(runs, w3_ttft_ms, qs_run=(1.0,)):
     """runs: all HD-k records (seeds 1..8).  Clean-start labels from the cross-fit; continuous variant descriptive only."""
+    bad = hd_trace_problems(runs)
+    if bad:
+        raise RuntimeError(f"ABORT_TRACE_IDENTITY: arms saw different requests for {bad}")
     runs_by = {}
     for r in runs:
         key = (r["spec"]["variant"], r["spec"]["phase_len_s"])
         runs_by.setdefault(key, {}).setdefault(r["arm"]["D"], {})[r["seed"]] = r
     tab = V.hd_table(runs_by, P.W1_TTFT_MS, w3_ttft_ms, P.ITL_MS)
+    # continuous variant: also the value with the first 10 % of every phase excluded (rev4 2-3), both reported
+    warm = {}
+    for vk in [k for k in runs_by if k[0] == "cont"]:
+        warm[vk] = {D: {sd: {w: V.hd_phase_goodput(run, w, P.W1_TTFT_MS, w3_ttft_ms, P.ITL_MS, exclude_warm=0.10)
+                             for w in ("W1", "W3")} for sd, run in bys.items()} for D, bys in runs_by[vk].items()}
+        for D in warm[vk]:
+            for sd in warm[vk][D]:
+                warm[vk][D][sd]["total"] = (warm[vk][D][sd]["W1"] + warm[vk][D][sd]["W3"]) / 2.0
     sa, sb = [1, 2, 3, 4], [5, 6, 7, 8]
     out = {"variants": {}}
     clean, cliff = {}, {}
@@ -71,6 +95,10 @@ def hd_labels(runs, w3_ttft_ms, qs_run=(1.0,)):
         out["variants"][str(vk)] = {"H": cf["H"], "lo": cf["lo"], "hi": cf["hi"],
                                     "picks": [r["pick"] for r in cf["roles"]], "best": [r["best"] for r in cf["roles"]],
                                     "descriptive_only": vk[0] == "cont"}
+        if vk[0] == "cont" and vk in warm:
+            cfw = V.crossfit_H(warm[vk], sa, sb)
+            out["variants"][str(vk)]["H_warm_excluded"] = {"H": cfw["H"], "lo": cfw["lo"], "hi": cfw["hi"]}
+        out["variants"][str(vk)]["gate5"] = V.hd_gate5(runs_by[vk], cf["roles"][0]["pick"])
         if vk[0] == "clean":
             clean[vk[1]] = cf
             arms = {D for r in cf["roles"] for D in (*r["pick"].values(), r["best"])}
@@ -85,3 +113,23 @@ def hd_labels(runs, w3_ttft_ms, qs_run=(1.0,)):
     else:
         out["label"], out["why"] = "HEADROOM_UNRESOLVED", "clean variants missing"
     return out
+
+
+def trace_identity_problems(runs, keyfn):
+    """Runs that must have seen the SAME requests (same seed/spec, different arm) must share trace_hash (audit M7)."""
+    groups = {}
+    for r in runs:
+        groups.setdefault(keyfn(r), set()).add(r["trace_hash"])
+    return [k for k, h in groups.items() if len(h) != 1]
+
+
+def eval_trace_problems(runs):
+    return trace_identity_problems(runs, lambda r: r["seed"])
+
+
+def hd_trace_problems(runs):
+    return trace_identity_problems(runs, lambda r: (r["seed"], r["spec"]["variant"], r["spec"]["phase_len_s"]))
+
+
+def cap_trace_problems(runs):
+    return trace_identity_problems(runs, lambda r: (r["spec"]["rate"], r["seed"]))

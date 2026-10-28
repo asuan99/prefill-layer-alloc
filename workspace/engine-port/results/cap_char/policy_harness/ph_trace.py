@@ -115,16 +115,18 @@ def make_requests(workload, pool, ts, seed_key, prefix, phase, t_offset=0.0):
 
 
 def trace_hash(segments):
+    """Content hash: ids/labels that embed the arm (segment_id, request_id) are excluded, so equal content <=> equal hash
+    across arms (audit M7); the analysis compares it across arms of one seed."""
     h = hashlib.sha256()
     for s in segments:
-        h.update(json.dumps({k: v for k, v in s.items() if k != "requests"}, sort_keys=True).encode())
+        h.update(json.dumps({k: v for k, v in s.items() if k not in ("requests", "segment_id")}, sort_keys=True).encode())
         for r in s["requests"]:
-            h.update(json.dumps({k: v for k, v in r.items() if k != "input_ids"}, sort_keys=True).encode())
+            h.update(json.dumps({k: v for k, v in r.items() if k not in ("input_ids", "request_id")}, sort_keys=True).encode())
     return h.hexdigest()
 
 
 def cap_trace(workload, pool, rate, seed, n_requests, tag):
-    sk = (tag, seed, rate)
+    sk = ("cap", seed, rate)                       # arm/tag independent (audit D2): every D sees the SAME requests
     ts = arrivals(rate, sk, n=n_requests)
     return [{"segment_id": f"{tag}", "phase": workload, "round": 0,
              "requests": make_requests(workload, pool, ts, sk, tag, workload)}]
