@@ -1,6 +1,6 @@
-# 사전등록 rev0.2 (DIAG) — lockstep 정지 기전·동적 arm drain 대기 진단 Job, 2026-10-28
+# 사전등록 rev0.3 (DIAG) — lockstep 정지 기전·동적 arm drain 대기 진단 Job, 2026-10-28
 
-> **봉인 상태: 미봉인 초안 rev0.2**(하네스층 감사 r1 `AUDIT_harness_diag_r1_2026-10-28.md` 死因 K1·K2, MAJOR M1–M8, MINOR 수리 + 결정 49; 수리 위치 대조표 §13). 계측 필드 이름은 감사서 표기를 쓰며 **engine-porter 커밋 후 실제 이름에 맞춘다**(코드는 이 문서가 건드리지 않는다). 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 성능·정책 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
+> **봉인 상태: 미봉인 초안 rev0.3**(엔진 digest `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777` = 커밋 `3858f129` 핀, 계측 필드 이름을 실제 구현에 맞춤, 비sticky static drain 정정; 변경은 §14). rev0.2 = (하네스층 감사 r1 `AUDIT_harness_diag_r1_2026-10-28.md` 死因 K1·K2, MAJOR M1–M8, MINOR 수리 + 결정 49; 수리 위치 대조표 §13). 계측 필드 이름은 감사서 표기를 쓰며 **engine-porter 커밋 후 실제 이름에 맞춘다**(코드는 이 문서가 건드리지 않는다). 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 성능·정책 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: **진단 Job**. 정책 주장이 아니다. 이 Job의 어떤 라벨도 goodput·정책 순위·HE0 판정으로 인용하지 않는다. Nano HE0 핵심 셀의 정책 비교는 별도 PREREG `../cap_char/PREREG_HD_HE0cell_rev0_2026-10-28.md`가 맡는다(결정 40). **rev0.1(2026-10-28): 결정 46으로 Nano 단일 모델 진단 Job이다**(Zamba 배제, 결정 45 대체).
 > 근거: 진단 `DIAG_lockstep_stall_share_2026-10-27.md` §5 · 감사 `../anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md`("해소 실험"·P1–P5 허용/금지 문안) · 사용자 결정 39–45(`tracks/main.md`; 결정 46 = Zamba 배제·결정 45 대체) · 형식 `../cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정](사용자 결정 또는 선행 작업 몫) · **[봉인 시 기입]**.
@@ -22,12 +22,12 @@
 | # | 선행 조건 | 상태 | 막는 것 |
 |---|---|---|---|
 | P-1 | **계측 커밋 해시 확정 + GPU 정확성 gate PASS.** 계측 = 진단 §5 (i) `prefill_chunk` 이벤트(`span_seq, split_index, forward_count, t_issue_start, t_issue_end` host + prefill stream CUDA event 쌍 GPU ms, query 비차단 회수), (ii) `drain` 이벤트(사유, 두 synchronize 각각의 host ms, **진행 중 prefill chunk 수**), (iii) `prefill_span_start`의 `rids`, (iv) I-4 `decode_fwd_gpu_ms`를 같은 boot에서 함께, (v) client 토큰 절대 CLOCK_MONOTONIC. 구현 중(engine-porter), 기본 OFF env. | **[봉인 시 기입: 계측 커밋 해시 / gate 통과값 / ENGINE_DIGEST]** | 봉인 |
-| P-2 | 계측 env: 진단 계측 총괄 env = `PDMUX_PHASE_DIAG`(기본 OFF, `PDMUX_PHASE_EVENTS=1` 필수), 클라이언트 절대 단조시각 = `PDMUX_LOADGEN_ABS_MONO`(래퍼 `abs_mono_loadgen.py`). chunk·drain·rids·launch/GPU-bound 플래그의 세부 필드 이름은 감사서 표기 — `prefill_chunk{t_issue_start, t_issue_end, forward_count, gpu_ms, start_done_at_issue_start, end_done_at_issue_end}`, `drain{reason, stream_idx_from, stream_idx_to, host_ms, in_flight_chunks}`, `prefill_span_start.rids` — **engine-porter 커밋 후 실제 이름에 맞춘다**. | 부분 확정 | 봉인 |
+| P-2 | 계측 env·필드(구현 `3858f129`에 맞춤): 총괄 env `PDMUX_PHASE_DIAG`(기본 OFF, `PDMUX_PHASE_EVENTS=1` 필수), 클라이언트 절대 단조시각 `PDMUX_LOADGEN_ABS_MONO`(래퍼 `abs_mono_loadgen.py`), gate 동기화 감사 `PDMUX_PHASE_DIAG_SYNC_AUDIT=1`. 이벤트: `prefill_chunk{t_issue_start, t_issue_end, forward_count, gpu_ms, start_done_at_issue_start, end_done_at_issue_end}` · `decode_iteration{iter_seq, t_launch, t_sync, …}` — 짝짓기 키 **`decode_iter_seq == iter_seq`** · `decode_forward.decode_iter_seq`(PD-mux 경로만, fused는 None) · `drain{reason, stream_idx_from, stream_idx_to, host_ms, in_flight_chunks}` · `prefill_span_start.rids`. 필드 하나라도 어긋나면 봉인 때 코드 기준으로 정정한다. | 확정(필드), 이름 세부는 코드 기준 | 봉인 |
 | P-3 | gate 내용(engine-porter 설계, 이 문서는 요구만 둔다): 계측 ON/OFF에서 greedy 출력 토큰 동일성, 계측이 새 동기화(`synchronize`·`.item()`·블로킹 `query` 대기)를 만들지 않음, CUDA event 쌍의 시각 정합. 통과가 PASS이고 "특성화 종결"은 PASS가 아니다(결정 22 선례). | 미정 | 봉인 |
 | P-6 | 동적 arm에 쓰는 Nano 튜닝 구성과 Nano 용량 rate는 정책 PREREG(`PREREG_HD_HE0cell_rev0`)의 Job-CAP1·Job-TUNE 결과(addendum)에서 온다. D-3은 그 뒤에만 제출한다. | 대기 | D-3 |
 | P-7 | 하네스(신규 구현 항목 §9)는 감사 뒤 작성. | 대기 | 봉인 |
-| P-8 | **엔진 digest 단일 최종 트리 핀(감사 M8)**: 진단 Job과 정책 Job(`PREREG_HD_HE0cell_rev0.2` Q-7)은 **같은 최종 트리 하나**의 digest로 핀한다. K1 수리(launch/GPU-bound 플래그)가 digest를 한 번 더 바꾸므로 값은 `PENDING_FINAL_TREE`(자리표시, 전달 후 기입). | 대기 | 봉인 |
-| P-9 | CPU 재현 로그: `test_phase_diag`·`test_engine_gate_diag`는 이 머신에서 `sgl_kernel` 부재로 import 실패 — 감사자 CPU 재현 불가. 봉인 전 `sgl_kernel`이 있는 환경의 두 시험·변이 실행 로그를 첨부한다. | 대기 | 봉인 |
+| P-8 | **엔진 digest 단일 최종 트리 핀(감사 M8)**: 진단 Job과 정책 Job(`PREREG_HD_HE0cell_rev0.3` Q-7)은 **같은 최종 트리 하나**로 핀한다 — ENGINE\_DIGEST = **`65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`**, 엔진 커밋 `3858f129`(mixin + decode_probe 변경 반영). 진단 gate(`engine_gate_diag.sh`)의 `PDMUX_DIAG_GATE_DIGEST`도 같은 값. | **확정** | — |
+| P-9 | CPU 재현: `test_phase_diag`·`test_engine_gate_diag`는 이 머신에서 `sgl_kernel` 부재로 import 실패한다. 근거 = **재현 스크립트 `tests/run_diag_tests_with_stub.sh`**(stub 환경) 실행 로그 **110 tests OK, skipped 3**. 이 stub 실행이 GPU 정확성 gate를 대체하지 않는다(gate는 GPU Workspace에서 별도). | 근거 확보(stub), gate 대기 | 봉인 |
 
 ## 2. 측정 대상 arm
 
@@ -84,7 +84,7 @@
 
 ### 3-3. 판별량 B — drain 겹침과 TTFT·ITL 몫 (세 arm 모두, 감사 M1·M2·M3)
 
-- **static arm에도 drain이 있다(rev0.1 정정)**: `adjust` 경로의 drain(`prefill_stream.synchronize()` + `decode_stream.synchronize()`)은 static 모드에서 **prefill 경계마다** 발화한다(`multiplexing_mixin.py` 주석 "EVERY prefill boundary"); 동적 arm에서는 SLO 분기가 이를 억제한다. 따라서 B는 D-3의 **세 arm(동적 ON, static D44 ON, 동적 OFF는 client 지표만)** 에서 계산하고, **seed별 동적 − static 차**를 기술값으로 낸다. static의 drain이 span마다 ≈ 0이면 그 사실이 결과다.
+- **static arm의 drain은 부하 의존이다**(rev0.3 정정, engine-porter 실행 확인): 비sticky static(`R2_POLICY=fixed` + sticky OFF)에서 `adjust` drain은 **prefill 경계마다가 아니라 분할이 바뀔 때만** 발화한다 — decode만 남을 때 adjust 4→5, 새 prefill이 들어오면 slo\_switch 5→D, decode가 비면 adjust →0(fake 루프 span 10개에 drain 4회). 따라서 static의 drain 횟수는 prefill·decode 점유가 번갈아 바뀌는 정도에 달려 있고 "span마다"도 "없음"도 아니다. 동적 arm에서는 SLO 분기가 `adjust`를 억제한다. B는 D-3의 **세 arm(동적 ON, static D44 ON, 동적 OFF는 client 지표만)** 에서 계산하고 seed별 동적 − static 차를 기술값으로 낸다. 공시: 이 모드에서 threshold 행 선택 경로는 사실상 미도달이라는 것은 **정적 분석이며 측정되지 않았다**.
 - 전환 집계는 `stream_idx_from ≠ stream_idx_to`로 한다: SLO\_SCHED 아래 컨트롤러 결정도 `adjust_stream_groups`에서 수행돼 reason = `adjust`로 찍히기 때문이다. drain ms에는 `update_decode_attn_backend` 갱신 시간이 **포함되지 않는다**(공시).
 - 요청 r의 `drain_overlap_in_TTFT(r)` = r의 [도착, 첫 토큰]과 겹친 drain 시간 합, `share_TTFT(r)`; ITL p95/p99 꼬리 토큰 중 drain과 겹친 비율 `share_ITLtail`. **겹침은 손실이 아니다**: sync 대기 중에도 GPU prefill이 진행된다. 이 몫을 "drain 비용"으로 읽지 않는다.
 - **겹침 허용창(M3)**: client–server 지연 보정으로 겹침 판정 창을 lag p99만큼 넓힌다. lag = `token_t_mono[0]` − 같은 rid의 `prefill_span_end` 분포를 gate와 본측정에서 p50/p99로 보고; 민감도 0·2 × p99 병기. 창은 데이터 전에 "lag p99"로 등록한다.
@@ -169,8 +169,8 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, 동적/static/OFF.
 ## 11. 열린 결정 [미정] (rev0.2: 감사 r1 권고값 채택으로 닫힘)
 
 **닫힘**: O-DX2 n = 4 · O-DX3 static = D44 사전 지정·비sticky(결정 49) · O-DX4 8k rate 0.1 req/s·40 요청 · 동등성 여유 유지(잔차 판별량 R·Z에 적용) · `DRAIN_OVERLAP_*` 임계 유지·라벨 이름 변경 · 겹침 허용창 = lag p99 · realized 판정 단위 = span(셀 실현률 ≥ 95%) · digest 단일 최종 트리.
-**남은 선행**: P-1(계측 커밋·gate PASS) · P-2 필드 이름 확정 · P-8 최종 트리 digest(`PENDING_FINAL_TREE`) · P-9 sgl_kernel 환경 시험 로그 · P-6(D-3은 정책 CAP1·TUNE 뒤).
-**gate 요구(engine-porter 몫, 감사 M7)**: (a) ON boot에서 `torch.cuda.Stream.synchronize`·`Event.synchronize`·`Tensor.item`을 감싸 diag 블록 안 호출 횟수 == 0 요구 (b) D1 동시성 경우 출력은 기록만 (c) D6 UNRESOLVED 규칙 — D-1은 허용, D-3은 첫 boot에서 slo\_switch 정합(D3 + D6) PASS 필수 (d) 변이 추가: 해결 전 pool 반환, MAX\_PENDING 초과 드롭 미집계.
+**남은 선행**: P-1(계측 커밋·gate PASS) · ~~P-2 필드 이름~~·~~P-8 digest~~(rev0.3 확정) · P-9 stub 로그 확보(GPU gate는 대기) · P-6(D-3은 정책 CAP1·TUNE 뒤).
+**gate 요구(engine-porter 구현, 감사 M7; 구현 `3858f129`에 맞춘 명칭)**: **D7** — `PDMUX_PHASE_DIAG_SYNC_AUDIT=1`로 `torch.cuda.Stream.synchronize`·`Event.synchronize`·`Tensor.item`을 감싸 **diag 스택 안 sync 호출 0 ∧ 전체 stream sync > 0**(감사가 실제로 작동함을 함께 요구) · **D8** — "PHASE\_EVENTS only" boot(DIAG OFF) 관측 · **D9** — 비sticky static **D34** boot에서 세 상태(decode만 남음 / 새 prefill / decode 빔) 관측 · 판정은 `verdict_for_D1`과 `verdict_for_D3`로 분리(D1 동시성 경우 출력은 기록만; D6 UNRESOLVED는 D-1 허용, D-3은 첫 boot에서 slo\_switch 정합(D3 + D6) PASS 필수) · 변이: 해결 전 pool 반환, MAX\_PENDING 초과 드롭 미집계.
 
 ## 12. 라벨과 금지 문안
 
@@ -187,7 +187,7 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, 동적/static/OFF.
 - PHASE ON 접두 없는 인용, "계측은 영향이 없다", OFF 짝 비를 다른 arm·모델·부하의 보정 계수로 쓰는 것(결정 22 추가 금지 승계).
 - Job 간 값을 한 표에서 비교하는 것. Zamba 결과가 있는 듯한 서술.
 
-- "static arm에는 drain이 없다"/"drain은 동적 arm에만 있다"(감사 M1: static 모드에서도 prefill 경계마다 발화) · drain 겹침 몫을 "drain 비용/손실"로 읽는 것(M2: sync 대기 중 GPU prefill 진행) · drain ms가 backend 갱신 시간을 포함한다는 서술 · 동적 전환을 reason = `adjust` 행 수로 세는 것.
+- "static arm에는 drain이 없다"/"drain은 동적 arm에만 있다"/"static은 span마다 drain한다"(감사 M1·rev0.3: 비sticky static의 drain은 분할이 바뀔 때 발화하는 부하 의존 사건) · drain 겹침 몫을 "drain 비용/손실"로 읽는 것(M2: sync 대기 중 GPU prefill 진행) · drain ms가 backend 갱신 시간을 포함한다는 서술 · 동적 전환을 reason = `adjust` 행 수로 세는 것.
 - "H가 X2(chunk host 발행 시간)를 따른다 ⇒ CPU-launch 기전"(K1: H ≥ X2는 루프 순서의 회계 항등식) · ABSENT인 셀의 기울기를 "기전 판별"로 인용 · D-1 ON/OFF 짝(boot 1개씩)을 `OBSERVER_*` 라벨로 인용 · 비sticky static의 "D"를 실현 할당으로 서술("static D는 동거 중 목표값이며 실현 할당이 아니다").
 
 **허용 문안 틀**: "VESSL A100-SXM4 · &lt;모델&gt; · &lt;backend&gt; · cudagraph ON · &lt;D&gt; · &lt;예산&gt; · &lt;프롬프트&gt; · PHASE ON 조건의 &lt;Job&gt;에서, 정지 반복의 host 차단은 &lt;라벨&gt;이었다(기울기 구간 …, n = 4 seed). 정책 판정이 아니다."
@@ -199,7 +199,7 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, 동적/static/OFF.
 |---|---|---|
 | K1 판별량 A가 회계 항등식 | R = t\_sync − t\_issue\_end, Z = H − max(X2, X3)를 X1·X3·F에 회귀, X2는 회계 항, `start_done_at_issue_start`·`end_done_at_issue_end`로 LAUNCH/GPU-bound 분류, 해당 금지 문안 | §3-2, §12, P-2 |
 | K2 라벨 우선순위 | ABSENT → FEW → COLLINEAR/JOIN → 기울기 고정, ABSENT는 주 추정 보고만 | §3-2 |
-| M1 "static에 drain 없음" 거짓 | 판별량 B를 세 arm에 계산, 동적−static 차 기술값, D-1·D-3 static 모드 = 비sticky 등록, 금지 문안 | §2-1, §3-3, §12 |
+| M1 "static에 drain 없음" 거짓 (rev0.3: "span마다"도 아님 → 부하 의존) | 판별량 B를 세 arm에 계산, 동적−static 차 기술값, D-1·D-3 static 모드 = 비sticky 등록, 금지 문안 | §2-1, §3-3, §12 |
 | M2 겹침 ≠ 손실 | 라벨 `DRAIN_OVERLAP_*`, 손실 해석 금지, 전환 집계 = `stream_idx_from ≠ to`, backend 갱신 미포함 공시 | §3-3, §12 |
 | M3 client–server 지연 | lag 분포 보고 + 겹침 허용창 = lag p99(민감도 0·2×) | §3-3 |
 | M4 짝짓기 키 | X1 = 같은 `decode_iter_seq`, X3 = 직전 probe, 조인 실패율 5% | §3-2 |
@@ -208,10 +208,21 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, 동적/static/OFF.
 | M7 gate 공백 | (a)–(d) gate 요구 등록(코드는 engine-porter) | §11 |
 | M8 digest 핀 | 정책·진단 같은 최종 트리 하나, P-8 `PENDING_FINAL_TREE`, "PHASE\_EVENTS만" arm 추가 | P-8, §2-2 |
 | MINOR 헤더 rev 표기 | rev0.2로 통일 | 1행 |
-| MINOR P-2 TBD | `PDMUX_PHASE_DIAG` + 필드명은 감사서 표기, 커밋 후 맞춤 | P-2 |
+| MINOR P-2 TBD | `PDMUX_PHASE_DIAG` + 필드명은 감사서 표기, 커밋 후 맞춤 | P-2 | 계측 env·필드(구현 `3858f129`에 맞춤): 총괄 env `PDMUX_PHASE_DIAG`(기본 OFF, `PDMUX_PHASE_EVENTS=1` 필수), 클라이언트 절대 단조시각 `PDMUX_LOADGEN_ABS_MONO`(래퍼 `abs_mono_loadgen.py`), gate 동기화 감사 `PDMUX_PHASE_DIAG_SYNC_AUDIT=1`. 이벤트: `prefill_chunk{t_issue_start, t_issue_end, forward_count, gpu_ms, start_done_at_issue_start, end_done_at_issue_end}` · `decode_iteration{iter_seq, t_launch, t_sync, …}` — 짝짓기 키 **`decode_iter_seq == iter_seq`** · `decode_forward.decode_iter_seq`(PD-mux 경로만, fused는 None) · `drain{reason, stream_idx_from, stream_idx_to, host_ms, in_flight_chunks}` · `prefill_span_start.rids`. 필드 하나라도 어긋나면 봉인 때 코드 기준으로 정정한다. | 확정(필드), 이름 세부는 코드 기준 | 봉인 |
 | MINOR X-5 Zamba2-7B 잔여 | 결정 46 반영 문구로 교체 | §4 |
 | MINOR "모델과 backend가 함께 다르므로" | 문안 삭제(허용 문안 틀) | §12 |
 | MINOR FLAT 여유 근거 | "관례" 공시 | §3-2 |
 | MINOR 관측자 비용이 H에 포함 | 공시 추가 | §3-1 |
 | 열린 [미정] 닫기 | O-DX2·3·4 등 채택 | §11 |
 | Job 분할·비용 재산정 | D-1a/D-1b/D-3, 약 10.7 GPU-h | §7 |
+
+
+## 14. rev0.3 변경 (2026-10-28)
+
+| 변경 | 위치 |
+|---|---|
+| 엔진 digest `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777` = 커밋 `3858f129` 확정(정책 PREREG Q-7과 같은 트리), 진단 gate의 `PDMUX_DIAG_GATE_DIGEST`도 같은 값 | P-8 |
+| 계측 필드 이름을 구현에 맞춤: `start_done_at_issue_start`·`end_done_at_issue_end`, `decode_iteration.{t_launch, t_sync}`, 키 `decode_iter_seq == iter_seq`, `decode_forward.decode_iter_seq`(PD-mux만) | P-2 |
+| gate D7(`PDMUX_PHASE_DIAG_SYNC_AUDIT=1`: diag sync 0 ∧ 전체 sync > 0)·D8·D9, `verdict_for_D1`/`verdict_for_D3` 분리 | §11 |
+| 재현 근거 `tests/run_diag_tests_with_stub.sh`(110 tests OK, skipped 3) | P-9 |
+| 감사 M1 문구 정정: 비sticky static drain = 분할이 바뀔 때만(부하 의존), threshold 행 경로 미도달은 정적 분석·미실측 공시 | §3-3, §12, §13 |

@@ -1,9 +1,9 @@
-# 사전등록 rev0.2 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev0.3 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
 > 근거: 설계 `PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 §2(결정 32·33 반영본; 이 문서는 §2를 **그대로 승계**하고 아래 명시한 곳만 더한다) · 결정 43–45(`tracks/main.md`) · 변화 trace 감사 `../anchor_audit/VERDICT_change_trace_validity_r1_2026-10-27.md` · 진단 짝 PREREG `../lockstep_diag/PREREG_DIAG_stall_drain_rev0_2026-10-28.md` · 형식 `PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
-> **rev0.2(2026-10-28, 미봉인): 하네스층 감사 r1(`AUDIT_harness_HD_HE0cell_r1_2026-10-28.md`, 死因 D1–D4·MAJOR M1–M7·MINOR m1–m9) 수리 + 결정 49(O-P6: 전 Job static arm 비sticky). 감사 항목 → 수리 위치 대조표는 §13. rev0.1 = 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1).**
+> **rev0.3(2026-10-28, 미봉인): 엔진 digest 핀 확정 `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`(engine-porter 커밋 `3858f129`, mixin + decode_probe 변경; 진단 PREREG와 같은 최종 트리). 변경 위치 §14.** rev0.2(2026-10-28, 미봉인): 하네스층 감사 r1(`AUDIT_harness_HD_HE0cell_r1_2026-10-28.md`, 死因 D1–D4·MAJOR M1–M7·MINOR m1–m9) 수리 + 결정 49(O-P6: 전 Job static arm 비sticky). 감사 항목 → 수리 위치 대조표는 §13. rev0.1 = 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1).**
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정] · **[봉인 시 기입]**. `[미정→초안 채택]` = 사용자 결정이 아직 없어 초안이 채택한 값.
 > **V-O(oracle 격차)는 이 PREREG에 없다**(결정 43: V\_REG·G0 PREREG 뒤 2차).
 
@@ -27,7 +27,7 @@
 | Q-4 | 하네스(§9) 구현·CPU 시험·변이 → **하네스층 감사 1회** → 봉인. | 대기 | 봉인 |
 | Q-5 | **PHASE 계측 OFF 확인**: 이 PREREG의 모든 측정 run은 PHASE\_EVENTS·chunk/drain 계측 OFF(정책 지표를 관측자 비용 없이 얻는다. 진단 PREREG D-3이 ON/OFF 짝으로 관측자 비용과 drain 몫을 따로 잰다). decode probe(I-4)도 OFF. | 규칙 | 봉인 |
 | Q-6 | 용량 측정 결과 addendum: **Job-CAP1·CAP2 회수 → λ\*\_best-static(W1)·λ\*\_best-static(W3) 확정 → rate addendum 봉인**(§4-3) → 그 뒤에만 Job-TUNE·HE0·H-D 제출. V\_REG addendum과 같은 방식(구조는 데이터 전에 봉인, 용량에서 나온 수치만 addendum). | 대기 | 후속 Job |
-| Q-7 | 기판: VESSL A100 SXM 80GB 1장, Nano-9B-v2-Base(rev `dc0661c…`, 봉인 시 전체 해시), cudagraph ON, radix OFF, `--mem-fraction-static` 0.6(결정 13), `--max-running-requests 48`, `--context-length` 20,480. **엔진 digest = 최종 트리 하나, 진단 PREREG와 같은 값** — `policy_harness/ENGINE_DIGEST.txt`(자리표시 `PENDING_FINAL_TREE`; `ph_job.sh`는 이 값이면 `ABORT_ENGINE_DIGEST_PENDING` rc 13으로 거부, `ph_digest make`도 거부). 비용 항 값 `99bbef91…`는 이 Job의 엔진이 아니다(계측 커밋 96ae3afa 이후 트리). caveat(인용 금지 형태): "PHASE·diag 계측 OFF 경로가 비용 항 트리와 동일하게 동작한다는 것은 정적 확인이며 측정되지 않았다. 비용 항(99bbef91) 수치와 이 Job의 수치를 결합하지 않는다." | [봉인 시 기입: 최종 트리 digest] | 봉인 |
+| Q-7 | 기판: VESSL A100 SXM 80GB 1장, Nano-9B-v2-Base(rev `dc0661c…`, 봉인 시 전체 해시), cudagraph ON, radix OFF, `--mem-fraction-static` 0.6(결정 13), `--max-running-requests 48`, `--context-length` 20,480. **엔진 digest = 최종 트리 하나, 진단 PREREG와 같은 값** — `policy_harness/ENGINE_DIGEST.txt` = **`65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`**(커밋 `3858f129`; 자리표시 `PENDING_FINAL_TREE`가 남아 있으면 `ph_job.sh`가 `ABORT_ENGINE_DIGEST_PENDING` rc 13으로 거부, `ph_digest make`도 거부하는 장치는 유지). 비용 항 값 `99bbef91…`는 이 Job의 엔진이 아니다(계측 커밋 96ae3afa 이후 트리). caveat(인용 금지 형태): "PHASE·diag 계측 OFF 경로가 비용 항 트리와 동일하게 동작한다는 것은 정적 확인이며 측정되지 않았다. 비용 항(99bbef91) 수치와 이 Job의 수치를 결합하지 않는다." | **확정(rev0.3)**: 위 digest | 봉인 |
 
 ## 2. 공통 규약
 
@@ -199,7 +199,7 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 **닫힘(결정 49 + 감사 권고 채택)**: O-P6 = 전 Job static arm 비sticky(`ph_spec.STATIC_STICKY = False`, 봉인 상수; caveat "static D는 동거 중 목표값이며 실현 할당이 아니다") · O-P3 h = 1.5(한 점) · O-P4 튜닝 격자 ANCHOR\_IDX {2, 3, 4} × DWELL {3, 6}, 매핑 1=D16…5=D64 · O-H1 phase 길이 {120 s, 600 s} · connector 한도 0(무제한) · warm-up 60 s · W3 `max_new_tokens` 1024 · `--context-length` 20,480 · 판정 여유 ln 1.03 · n = 4 · CAP seed 2 · W3 floor = **CAP2 상수**(HD Job의 자체 floor는 공변량 기록만) · 용량 bracket 실패 시 사다리 재배치·CAP 재실행 규칙(§3-3, 등록).
 **열린 채 허용**: O-H3(전환 가능 구성 대조 arm, 미포함) · q = 0.8(조건부 Job) · O-P5 용량 사다리 하한 `cap_ladder.rmin`(비용 항 T1/T2 예측으로 CAP 전에 기입, 봉인 addendum).
-**남은 선행**: Q-7 최종 트리 digest(`PENDING_FINAL_TREE`) · Q-3 GPU smoke(비sticky `R2_POLICY=fixed` 의미 확인 포함, engine-porter) · Q-2 arXiv-Sum 볼륨 존재 확인.
+**남은 선행**: ~~Q-7 최종 트리 digest~~(rev0.3에서 확정) · Q-3 GPU smoke(비sticky `R2_POLICY=fixed` 의미 확인 포함, engine-porter) · Q-2 arXiv-Sum 볼륨 존재 확인.
 
 ## 12. 하네스 구현 기록 (2026-10-28, 정적 확인 — 측정 0, 미봉인, 하네스층 감사 대상)
 
@@ -255,3 +255,14 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 | m9 best-of-4·boot 실패 rc 0 | 5 static 요구, `exit_code` 17 | `ph_verdict.he0_compare`, `ph_runner.exit_code`; 시험 `test_he0_requires_all_five_static_arms`·`test_exit_code_flags_dead_boot`, 변이 M39·M48 |
 | 빠진 변이: phase 완료 귀속·빈 ITL | 시험·변이 추가 | `test_hd_phase_attribution_by_arrival`(M37), `test_empty_itl_is_good_single_token_output`(M38) |
 | 반전 시험 caveat·미정 닫기 | §11, §13-1 | 이 문서 |
+
+
+## 14. rev0.3 변경 (2026-10-28)
+
+- **Q-7 / D1 확정**: `policy_harness/ENGINE_DIGEST.txt` = `65cbb49d5caa630bf418520a8c09c664ab304cfbda4ce5350c56f6ae82e6b777`, 엔진 커밋 `3858f129`(진단 계측 수리 K1 플래그 + gate D7–D9 + decode_probe 변경). 정책 Job과 진단 Job은 이 한 트리로 핀한다(진단 감사 M8). `ph_digest make`는 이제 만들 수 있다(placeholder 아님); 하네스 digest 파일은 봉인 때 한 번 만든다.
+- 사실 관계 유지: 이 트리의 PHASE·diag OFF 경로가 비용 항 트리(`99bbef91…`)와 동일하게 동작한다는 것은 정적 확인이며 측정되지 않았다. 비용 항 수치와 결합하지 않는다.
+- 그 밖의 규칙·비용·Job 수는 rev0.2와 같다(약 51.8 GPU-h, Job 13).
+
+| 항목 | 수리/변경 | 위치 |
+|---|---|---|
+| 감사 D1 후속(최종 digest) | digest 확정, 제출 거부 장치는 유지 | `ENGINE_DIGEST.txt`, Q-7, 이 절 |
