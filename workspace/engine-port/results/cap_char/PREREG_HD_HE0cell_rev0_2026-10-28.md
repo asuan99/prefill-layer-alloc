@@ -1,4 +1,4 @@
-# 사전등록 rev1 (POLICY-1, 봉인본) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.1 (POLICY-1, 봉인본 + §16 smoke 판별 기준 addendum, 재채점·재봉인 대기) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -294,3 +294,29 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 5. "INVALID 또는 실패한 boot는 그 Job 전체를 새 job name으로 재실행해 채운다. 다른 Job의 arm으로 메우지 않는다(같은 비교의 arm은 한 Job 안)."
 6. "H-D의 H는 요청률 가중이라 W1 phase가 지배한다. λ 비 약 10:1이면 W3 비중 약 9%, W3 phase만의 여지가 PRESENT를 만들려면 약 33% 이상 [유도, §7 가정 λ 3/0.3]."
 7. "h=1.5는 한 점이다. 원 KISTI HI/λ* 배율은 미상이다."
+
+
+## 16. addendum rev1.1 — Q-3 smoke 판별 기준 v2 (2026-10-28, 사용자 결정 51)
+
+**공시(문자 그대로)**: "이 기준은 smoke 결과(VOID)를 본 뒤 판별량 결함 진단(DIAG_gate_smoke)에 따라 바꾼 것이며, 성능 판정이 아닌 정확성 smoke다. 새 기준은 회수된 원자료에 재채점으로만 적용했다."  — *단 이 문서 작성 시점(감사 전)에는 재채점을 아직 실행하지 않았다. 위 문장은 재채점을 실행한 뒤의 결과 문서에 그대로 붙인다.*
+
+### 16-1. 경위
+- 회수 Job `pdmux-policy-gate-smoke-71f5006-20261028064810`(커밋 `71f5006a`). stage 1(진단 gate D0–D9)은 전부 PASS(`results/engine_gate/<job>/GATE_RESULT.json`, D9 = 비sticky static D34의 동거 decode 115/115가 D34). stage 2의 v1 판별량(`prefill_span_start`의 arm별 decode\_sms 최빈값)은 `SMOKE_VOID_SAME_SPLIT`이었다.
+- 진단(`results/policy_gate_smoke/DIAG_gate_smoke_2026-10-28.md`): `prefill_span_start`는 **분할 전환 전**의 index를 기록한다(`multiplexing_mixin.py` `_phase_on_prefill_start`는 `update_split_prefill_batch`에서 호출되고 전환 `set_current_stream_idx`는 그 뒤). 비sticky에서 decode 중 새 prefill이 들어오면 span\_start는 (0,108)을 찍고 같은 반복에서 D로 전환되므로, 짧은 span이 지배하는 smoke 부하에서는 arm과 무관하게 최빈값이 108이다. **v1은 caveat 1이 겨냥한 현상(D 간 분할이 같음)을 관측한 것이 아니라 전환 전 분할을 센 판별량 결함이다.**
+
+### 16-2. 새 판별 기준 v2 (`ph_smoke.smoke_verdict_v2`, 구 `smoke_verdict` v1은 이력으로 보존)
+- **관측량**: `decode_iteration` 이벤트 중 **`prefill_in_flight == True` 이고 `prefill_kernel_done_wait == False`** 인 반복의 `decode_sms` (engine\_gate\_diag D9와 같은 정의, `engine_gate_diag.py:260-287`). 필드 이름은 telemetry 그대로(`decode_iteration.decode_sms`, `.prefill_in_flight`, `.prefill_kernel_done_wait`). decode만 도는 반복(108)과 kernel-done-wait 반복은 세지 않는다.
+- **판정(고정 순서)**: ① 세 arm(s16, s64, dyn) 중 하나라도 boot 실패 → `SMOKE_FAIL_BOOT` ② 정적 arm의 동거 반복 수 < **N\_CO\_MIN = 30** → `SMOKE_UNRESOLVED`(회수 자료는 s16 113·s64 107개 [측정, 진단 문서 §2.3]이며 30은 재채점 전에 고정한 값) ③ 두 정적 arm의 동거 decode\_sms **최빈값이 같으면** `SMOKE_VOID_SAME_SPLIT`(= 아래 caveat 1이 겨냥한 현상) ④ 각 정적 arm의 동거 반복 중 목표 D(s16 → 16, s64 → 64)에 있는 비율 < **APPLY\_FRAC = 0.95**(v1과 같은 값 유지) → `SMOKE_FAIL_NOT_APPLIED` ⑤ dyn의 동거 반복 수 < 30 → `SMOKE_UNRESOLVED` ⑥ 그 외 `SMOKE_PASS`. dyn은 부팅하고 동거 반복이 충분했는지만 요구한다(전환 여부는 요구하지 않음 — §16-4).
+- 시험: `test_smoke_v2_scores_the_coresident_split_not_span_start`(회수 자료와 같은 형태의 합성 telemetry에서 v1은 VOID, v2는 PASS), `test_smoke_v2_verdict_table`(0.95·30 경계), 변이 M56–M61(필터 제거, kernel-done-wait 포함, 판별량을 span\_start로 되돌림, 최소 개수·최빈값 상이·비율 제거) 전부 검출.
+
+### 16-3. caveat 1 (개정)
+- **개정 문구(v2)**: "static D는 동거 중 목표값이며 실현 할당이 아니다. 비sticky `R2_POLICY=fixed`가 co-residence 중 D별로 다른 분할을 실제로 적용하는지는 `decode_iteration`의 동거 반복(`prefill_in_flight` ∧ ¬`prefill_kernel_done_wait`)의 decode\_sms로 판정하며(v2), 두 정적 arm의 그 분포가 같으면 이 봉인은 무효다(CAP1 제출 전 확인). `prefill_span_start`의 분할은 전환 전 값이라 이 판정에 쓰지 않는다."
+- **원문(이력, 변경 없음)**: "static D는 동거 중 목표값이며 실현 할당이 아니다. 비sticky `R2_POLICY=fixed`가 co-residence 중 D별로 다른 분할을 실제로 적용한다는 것은 Q-3 smoke 전까지 미확인이며, smoke에서 D 간 분할이 같으면 이 봉인은 무효다(CAP1 제출 전 확인)."
+
+### 16-4. dyn arm 관측성 문제 (기록; 해결은 사용자 결정 몫)
+- `PDMUX_SLO_SCHED` 경로는 `controller_decision`/`split_transition` 이벤트를 내지 않고(진단), 정책 Job은 PHASE\_EVENTS를 끈다(Q-5). 따라서 HE0 셀 동적 arm의 게이트 5 `switch_count`·체류 분포는 **`ph_runner`의 서버 로그(`SLO-BIND` 줄, run별 byte offset) 집계**에만 의존한다.
+- 회수 자료 확인(`results/cap_char/policy_runs/<job>/smoke/dyn/`): 서버 로그에는 모듈 logger의 INFO 줄이 나온다(`PD-Multiplexing enabled with 7 stream groups …` 1건; `[YYYY-mm-dd HH:MM:SS]` 접두 — `ph_runner.TS_RE`와 형식이 맞는다). 그러나 이 로그에 **`SLO-BIND`/`SLO-` 줄은 0건**이고, telemetry의 동거 decode\_sms는 전부 34(112/112, anchor idx 3)다 — 즉 이 smoke 부하(LO 1.2/HI 4.8 req/s, 각 60요청)에서 컨트롤러는 **전환하지 않았다**. 전환이 없었으므로 "로그 집계가 전환을 관측한다"는 **양성 대조가 없다**.
+- 기록: (a) 로그 기반 switch\_count는 원리상 관측 가능해 보이나 **미확인**, (b) 0을 "전환 없음"으로 읽으려면 전환이 일어난 부하에서 같은 경로가 ≥ 1건을 세는지의 양성 대조가 필요, (c) 대안은 엔진 변경(SLO 경로의 전환 이벤트)이거나 전환이 확실한 부하의 양성 대조 smoke다. 어느 쪽도 이 addendum이 정하지 않는다 — 사용자 결정. 결정 전까지 HE0 셀 동적 arm의 게이트 5 항목은 `UNOBSERVABLE_UNCONFIRMED`로 표시한다.
+
+### 16-5. 상태
+재채점 미실행(감사 전) · `ph_smoke.py` 변경으로 `HARNESS_DIGEST.txt`(`71f5006a` 봉인)는 **의도적으로 오래된 상태**다 — 감사·재채점 뒤 재봉인(새 digest 커밋)한다 · CAP1 제출 보류 유지.

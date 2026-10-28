@@ -1,0 +1,2 @@
+stage1 engine_gate_diag rc=0
+stage2 ph_smoke rc=1

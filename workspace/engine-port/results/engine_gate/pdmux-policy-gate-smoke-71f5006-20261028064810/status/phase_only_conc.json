@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 315.2,
+ "facts": {},
+ "reason": "24 concurrent requests, failed 0.0",
+ "stage": "phase_only_conc",
+ "status": "PASS",
+ "t_end_utc": "2026-10-28T07:01:31Z"
+}

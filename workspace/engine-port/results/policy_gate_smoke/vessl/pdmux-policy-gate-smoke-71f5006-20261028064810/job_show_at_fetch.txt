@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-policy-gate-smoke-71f5006-20261028064810
+Slug:                 job-0duhieqx2go8
+State:                failed
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/71f5006ad5a79f3c68a31f3ddb04eb9d8b5b8968/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-28T06:48:24Z
+Started At:           2026-10-28T06:48:24Z
+Completed At:         2026-10-28T07:11:14Z
+Duration:             22m50s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=71f5006ad5a79f3c68a31f3ddb04eb9d8b5b8968, PDMUX_JOB_NAME=pdmux-policy-gate-smoke-71f5006-20261028064810, PDMUX_CAMPAIGN=policy_gate_smoke, PDMUX_TARGET=workspace/engine-port/results/cap_char/policy_harness/ph_gate_smoke.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

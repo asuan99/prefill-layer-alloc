@@ -1,0 +1,24 @@
+{
+ "NOTE": "SMOKE_UNSEALED_NONMEASUREMENT: no number here is a result",
+ "info": {
+  "s16": {
+   "decode_sms_hist": {
+    "0": 5,
+    "16": 18,
+    "108": 88
+   },
+   "frac_at_target": 0.16216216216216217,
+   "spans": 111
+  },
+  "s64": {
+   "decode_sms_hist": {
+    "0": 6,
+    "64": 24,
+    "108": 76
+   },
+   "frac_at_target": 0.22641509433962265,
+   "spans": 106
+  }
+ },
+ "verdict": "SMOKE_VOID_SAME_SPLIT"
+}

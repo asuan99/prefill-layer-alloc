@@ -1,0 +1,8 @@
+{
+ "elapsed_s": 149.6,
+ "facts": {},
+ "reason": "6 sequential requests, empty []",
+ "stage": "off_seq",
+ "status": "PASS",
+ "t_end_utc": "2026-10-28T06:58:46Z"
+}

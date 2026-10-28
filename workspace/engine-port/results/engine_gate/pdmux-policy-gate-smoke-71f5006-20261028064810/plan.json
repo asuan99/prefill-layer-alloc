@@ -1,0 +1,1 @@
+{"sm_counts": [[108, 0], [74, 34], [54, 54], [0, 108]], "config": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/benchmarks/configs/pdmux_agnostic_manual.yml", "seq_lengths": [512, 2048, 8192], "static_d": 34, "conc": [24, [2048, 8192], 128, 2.0]}

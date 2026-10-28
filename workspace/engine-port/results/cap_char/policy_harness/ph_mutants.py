@@ -67,9 +67,15 @@ MUTANTS = [
     ("M50 engine digest placeholder allowed to run", "ph_job.sh", '== "PENDING_FINAL_TREE" ]]; }; then', '== "NEVER_MATCHES" ]]; }; then'),
     ("M51 sealed run may override digest paths (n4)", "ph_job.sh", 'if [[ "${PDMUX_POLICY_SEALED:-}" == 1 ]] && { [[ -n "${PDMUX_POLICY_ENGINE_DIGEST_FILE:-}" ]]', 'if false && { [[ -n "${PDMUX_POLICY_ENGINE_DIGEST_FILE:-}" ]]'),
     ("M52 CAP addendum skips the trace-identity check (n2)", "ph_analyze.py", "    if bad:\n        raise RuntimeError(f\"ABORT_TRACE_IDENTITY: CAP arms", "    if False:\n        raise RuntimeError(f\"ABORT_TRACE_IDENTITY: CAP arms"),
-    ("M53 smoke accepts the same split for D16 and D64", "ph_smoke.py", 'if modes["s16"] == modes["s64"]:', "if False:"),
-    ("M54 smoke does not require the target split", "ph_smoke.py", 'if info[a]["frac_at_target"] < APPLY_FRAC:', "if False:"),
+    ("M53 smoke accepts the same split for D16 and D64", "ph_smoke.py", 'if modes["s16"] == modes["s64"]:                    # the registered', 'if False:                    # the registered'),
+    ("M54 smoke does not require the target split", "ph_smoke.py", '        if info[a]["frac_at_target"] < APPLY_FRAC:\n            return "SMOKE_FAIL_NOT_APPLIED", info\n    dyn', '        if False:\n            return "SMOKE_FAIL_NOT_APPLIED", info\n    dyn'),
     ("M55 gate+smoke wrapper accepts the placeholder digest", "ph_gate_smoke.sh", 'if [[ "${digest}" == "PENDING_FINAL_TREE" || ${#digest} != 64 ]]; then', 'if false; then'),
+    ("M56 v2 counts decode-only iterations too (no prefill_in_flight filter)", "ph_smoke.py", 'd.get("prefill_in_flight") and not d.get("prefill_kernel_done_wait")', "True"),
+    ("M57 v2 counts kernel-done-wait iterations", "ph_smoke.py", 'and not d.get("prefill_kernel_done_wait")', ""),
+    ("M58 v2 observable reverted to span_start (old defect)", "ph_smoke.py", "smoke_verdict_v2(co, booted)", "smoke_verdict(pairs, booted)"),
+    ("M59 v2 minimum co-resident count removed", "ph_smoke.py", "        if n < N_CO_MIN:\n            return \"SMOKE_UNRESOLVED\", dict(info, why=f\"{a}", "        if False:\n            return \"SMOKE_UNRESOLVED\", dict(info, why=f\"{a}"),
+    ("M60 v2 mode-difference requirement removed", "ph_smoke.py", '    if modes["s16"] == modes["s64"]:\n        return "SMOKE_VOID_SAME_SPLIT", info\n    for a, D in (("s16", 16), ("s64", 64)):\n        if info[a]["frac_at_target"] < APPLY_FRAC:', '    for a, D in (("s16", 16), ("s64", 64)):\n        if info[a]["frac_at_target"] < APPLY_FRAC:'),
+    ("M61 v2 APPLY fraction 0.95 -> 0.5", "ph_smoke.py", "APPLY_FRAC = 0.95", "APPLY_FRAC = 0.50"),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

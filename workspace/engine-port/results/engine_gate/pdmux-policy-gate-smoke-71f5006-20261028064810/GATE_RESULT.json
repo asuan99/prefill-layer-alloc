@@ -1,0 +1,123 @@
+{
+ "checks": {
+  "D1_identity": {
+   "n": 6,
+   "n_diff": 0,
+   "verdict": "PASS",
+   "why": []
+  },
+  "D2_levels": {
+   "verdict": "PASS",
+   "why": []
+  },
+  "D3_records": {
+   "facts": {
+    "n_adjust": 34,
+    "n_chunks": 139,
+    "n_drains": 34,
+    "n_slo_switch": 0,
+    "n_spans_ended": 17,
+    "n_spans_started": 17,
+    "num_layers": 56
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D3_records_slo": {
+   "facts": {
+    "n_adjust": 8,
+    "n_chunks": 119,
+    "n_drains": 9,
+    "n_slo_switch": 1,
+    "n_spans_ended": 11,
+    "n_spans_started": 11,
+    "num_layers": 56
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D3_records_static_ns": {
+   "facts": {
+    "n_adjust": 9,
+    "n_chunks": 119,
+    "n_drains": 10,
+    "n_slo_switch": 1,
+    "n_spans_ended": 11,
+    "n_spans_started": 11,
+    "num_layers": 56
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D4_decode_probe": {
+   "facts": {
+    "n_decode_forward": 1240,
+    "n_gpu": 1240
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D5_clocks": {
+   "facts": {
+    "first_token_lag_after_span_end_ms": {
+     "n": 24,
+     "p50": 1.6116700135171413,
+     "p99": 2.437964081764221
+    },
+    "n_paired": 24
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D6_slo_switch": {
+   "facts": {
+    "n_slo_switch": 1
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D7_sync_audit": {
+   "facts": {
+    "diag_cuda_synchronize": 0,
+    "diag_event_synchronize": 0,
+    "diag_stream_synchronize": 0,
+    "diag_tensor_item": 0,
+    "dropped_events": 0,
+    "phase": "benchmark",
+    "record_kind": "sync_audit",
+    "record_schema": "pdmux.phase_diag/v1",
+    "request_id": "",
+    "run_id": "pdmux-policy-gate-smoke-71f5006-20261028064810",
+    "schema": "pdmux.runtime-event/v1",
+    "timestamp_monotonic_s": 695672.048119421,
+    "total_cuda_synchronize": 120,
+    "total_event_synchronize": 0,
+    "total_stream_synchronize": 49016,
+    "total_tensor_item": 11183,
+    "workload_id": "engine_gate_diag_on"
+   },
+   "verdict": "PASS",
+   "why": []
+  },
+  "D8_phase_only": {
+   "verdict": "PASS",
+   "why": []
+  },
+  "D9_static_nonsticky": {
+   "facts": {
+    "n_co": 115,
+    "n_decode_only": 153,
+    "n_drain_adjust": 9,
+    "n_drain_slo_switch": 1,
+    "n_prefill_only_chunks": 4,
+    "n_spans": 11
+   },
+   "verdict": "PASS",
+   "why": []
+  }
+ },
+ "note": "harness result on this Job's data; not a performance claim; observer cost not measured here",
+ "verdict": "PASS",
+ "verdict_for_D1": "PASS",
+ "verdict_for_D3": "PASS"
+}

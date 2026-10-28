@@ -622,6 +622,49 @@ class CapAddendumAndSmokeTests(unittest.TestCase):
         self.assertEqual(SM.smoke_verdict(ok, booted={"s16": True, "s64": True, "dyn": False})[0], "SMOKE_FAIL_BOOT")
         self.assertEqual(SM.smoke_verdict(dict(ok, s16=Counter()))[0], "SMOKE_UNRESOLVED")
 
+    @staticmethod
+    def _tel(path, co, decode_only, kdw=0, co_sms=16, spans=((0, 108),) * 10):
+        """Synthetic telemetry shaped like the retrieved smoke: span_start logged BEFORE the transition (mostly (0,108)),
+        co-resident decode iterations at the target D, plenty of decode-only iterations."""
+        ev = []
+        for p_, d_ in spans:
+            ev.append({"event": "prefill_span_start", "prefill_sms": p_, "decode_sms": d_})
+        ev += [{"event": "decode_iteration", "decode_sms": co_sms, "prefill_in_flight": True, "prefill_kernel_done_wait": False}] * co
+        ev += [{"event": "decode_iteration", "decode_sms": 108, "prefill_in_flight": False, "prefill_kernel_done_wait": False}] * decode_only
+        ev += [{"event": "decode_iteration", "decode_sms": 7, "prefill_in_flight": True, "prefill_kernel_done_wait": True}] * kdw
+        Path(path).write_text("\n".join(json.dumps(e) for e in ev) + "\n")
+
+    def test_smoke_v2_scores_the_coresident_split_not_span_start(self):
+        """The retrieved smoke: v1 (span_start mode) says VOID although co-resident decode ran at the target D 100 %."""
+        import ph_smoke as SM
+        with tempfile.TemporaryDirectory() as td:
+            arms = {}
+            for a, D in (("s16", 16), ("s64", 64), ("dyn", 34)):
+                self._tel(Path(td) / f"{a}.jsonl", co=110, decode_only=3500, kdw=300, co_sms=D, spans=((0, 108),) * 80 + ((108 - D, D),) * 20)
+                arms[a] = Path(td) / f"{a}.jsonl"
+            v1 = SM.smoke_verdict({a: SM.realized_pairs(p) for a, p in arms.items()})[0]
+            self.assertEqual(v1, "SMOKE_VOID_SAME_SPLIT")                       # the legacy observable's defect, kept as a regression record
+            co = {a: SM.realized_coresident(p) for a, p in arms.items()}
+            self.assertEqual(dict(co["s16"]), {16: 110})                          # decode-only (108) and kernel-done-wait (7) iterations excluded
+            v2, info = SM.smoke_verdict_v2(co)
+            self.assertEqual(v2, "SMOKE_PASS", info)
+
+    def test_smoke_main_uses_v2_as_the_verdict(self):
+        src = (PH / "ph_smoke.py").read_text()
+        self.assertIn("verdict, info = smoke_verdict_v2(co, booted)", src)           # authoritative; v1 only under legacy_v1
+
+    def test_smoke_v2_verdict_table(self):
+        from collections import Counter
+        import ph_smoke as SM
+        good = {"s16": Counter({16: 100}), "s64": Counter({64: 100}), "dyn": Counter({34: 60})}
+        self.assertEqual(SM.smoke_verdict_v2(good)[0], "SMOKE_PASS")
+        self.assertEqual(SM.smoke_verdict_v2(dict(good, s64=Counter({16: 100})))[0], "SMOKE_VOID_SAME_SPLIT")
+        self.assertEqual(SM.smoke_verdict_v2(dict(good, s64=Counter({64: 90, 16: 10})))[0], "SMOKE_FAIL_NOT_APPLIED")   # 0.90 < 0.95
+        self.assertEqual(SM.smoke_verdict_v2(dict(good, s64=Counter({64: 96, 16: 4})))[0], "SMOKE_PASS")                   # 0.96 >= 0.95
+        self.assertEqual(SM.smoke_verdict_v2(dict(good, s16=Counter({16: 29})))[0], "SMOKE_UNRESOLVED")                    # n_co < 30
+        self.assertEqual(SM.smoke_verdict_v2(dict(good, dyn=Counter({34: 5})))[0], "SMOKE_UNRESOLVED")
+        self.assertEqual(SM.smoke_verdict_v2(good, booted={"s16": True, "s64": False, "dyn": True})[0], "SMOKE_FAIL_BOOT")
+
     def test_smoke_parses_prefill_span_start(self):
         import ph_smoke as SM
         with tempfile.TemporaryDirectory() as td:

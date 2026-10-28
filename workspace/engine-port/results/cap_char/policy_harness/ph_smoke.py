@@ -6,6 +6,7 @@ Boots (Nano, flashinfer, cudagraph ON, the D64 candidate config, non-sticky -- d
              requested D for ~all spans AND differ between D16 and D64.  If the two splits are the same the seal is VOID
              (audit r2 caveat 1: 'smoke에서 D 간 분할이 같으면 이 봉인은 무효다').
   dyn      : bind+GATE (anchor idx 3 = D34, dwell 3) boots and decodes; reports the realized splits and the switch count.
+v2 (rev1.1, authoritative): the observable is the co-resident decode_iteration split, see smoke_verdict_v2; v1 (span_start) is legacy.
 Verdicts: SMOKE_PASS | SMOKE_VOID_SAME_SPLIT | SMOKE_FAIL_NOT_APPLIED | SMOKE_FAIL_BOOT.   rc 0 / 1 / 1 / 1 ; 4 = UNRESOLVED (no spans).
 """
 from __future__ import annotations
@@ -22,6 +23,7 @@ sys.path.insert(0, str(HERE))
 import ph_spec as P  # noqa: E402
 
 APPLY_FRAC = 0.95
+N_CO_MIN = 30          # v2: minimum co-resident decode iterations per static arm, else UNRESOLVED (fixed before the re-score)
 
 
 def realized_pairs(tel_path):
@@ -61,6 +63,45 @@ def smoke_verdict(pairs_by_arm, booted=None):
     return "SMOKE_PASS", info
 
 
+def realized_coresident(tel_path):
+    """v2 observable (rev1.1): decode_sms of `decode_iteration` events with prefill_in_flight AND NOT prefill_kernel_done_wait --
+    the engine_gate_diag D9 definition.  Unlike prefill_span_start (logged BEFORE the split transition) this is the split the
+    co-resident decode actually ran in."""
+    c = Counter()
+    for ln in open(tel_path):
+        if '"decode_iteration"' not in ln:
+            continue
+        d = json.loads(ln)
+        if d.get("event") == "decode_iteration" and d.get("prefill_in_flight") and not d.get("prefill_kernel_done_wait"):
+            c[int(d["decode_sms"])] += 1
+    return c
+
+
+def smoke_verdict_v2(co_by_arm, booted=None):
+    """co_by_arm: {'s16'|'s64'|'dyn': Counter{decode_sms: n_coresident_iterations}}.  v1 `smoke_verdict` is kept for the record."""
+    booted = booted or {a: True for a in co_by_arm}
+    if not all(booted.get(a, False) for a in ("s16", "s64", "dyn")):
+        return "SMOKE_FAIL_BOOT", {a: booted.get(a) for a in ("s16", "s64", "dyn")}
+    info, modes = {}, {}
+    for a, D in (("s16", 16), ("s64", 64)):
+        c = co_by_arm.get(a) or Counter()
+        n = sum(c.values())
+        info[a] = {"n_coresident": n, "decode_sms_hist": dict(c), "frac_at_target": (c.get(D, 0) / n) if n else None}
+        if n < N_CO_MIN:
+            return "SMOKE_UNRESOLVED", dict(info, why=f"{a}: {n} < {N_CO_MIN} co-resident iterations")
+        modes[a] = c.most_common(1)[0][0]
+    dyn = co_by_arm.get("dyn") or Counter()
+    info["dyn"] = {"n_coresident": sum(dyn.values()), "distinct_decode_sms": sorted(dyn)}
+    if modes["s16"] == modes["s64"]:
+        return "SMOKE_VOID_SAME_SPLIT", info
+    for a, D in (("s16", 16), ("s64", 64)):
+        if info[a]["frac_at_target"] < APPLY_FRAC:
+            return "SMOKE_FAIL_NOT_APPLIED", info
+    if info["dyn"]["n_coresident"] < N_CO_MIN:
+        return "SMOKE_UNRESOLVED", dict(info, why="dyn: too few co-resident iterations")
+    return "SMOKE_PASS", info
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser()
     ap.add_argument("--out", required=True)
@@ -73,7 +114,7 @@ def main(argv=None):
     out = Path(a.out)
     out.mkdir(parents=True, exist_ok=True)
     arms = {"s16": P.static_arm(16), "s64": P.static_arm(64), "dyn": P.dynamic_arm(3, 3)}
-    pairs, booted = {}, {}
+    pairs, booted, co = {}, {}, {}
     for name, arm in arms.items():
         bdir = out / name
         bdir.mkdir(exist_ok=True)
@@ -93,8 +134,10 @@ def main(argv=None):
             srv.stop()
         tel = bdir / "tel.jsonl"
         pairs[name] = realized_pairs(tel) if tel.exists() else Counter()
-    verdict, info = smoke_verdict(pairs, booted)
-    json.dump({"verdict": verdict, "info": info, "NOTE": "SMOKE_UNSEALED_NONMEASUREMENT: no number here is a result"},
+        co[name] = realized_coresident(tel) if tel.exists() else Counter()
+    verdict_v1, info_v1 = smoke_verdict(pairs, booted)           # legacy (span_start-based; kept for the record)
+    verdict, info = smoke_verdict_v2(co, booted)
+    json.dump({"verdict": verdict, "info": info, "legacy_v1": {"verdict": verdict_v1, "info": info_v1}, "NOTE": "SMOKE_UNSEALED_NONMEASUREMENT: no number here is a result"},
               open(out / "smoke.json", "w"), indent=1, sort_keys=True)
     print("ph_smoke:", verdict)
     return {"SMOKE_PASS": 0, "SMOKE_UNRESOLVED": 4}.get(verdict, 1)
