@@ -73,10 +73,11 @@ def server_argv(arm, context=POLICY_CONTEXT):
 
 # ------------------------------------------------------------------------------------------------ replay
 def default_replay(endpoint, requests, out_path, ttft_slo_ms=1e12, itl_slo_ms=1e12):
+    """Real replay via ph_loadgen (trace_loadgen.py stays byte-identical; W3 natural output + optional absolute stamps)."""
     import asyncio
-    sys.path.insert(0, str(P.HERE.parents[2] / "benchmarks"))
-    from pdmux_eval import trace_loadgen as L
-    summ = asyncio.run(L.replay(endpoint, requests, Path(out_path), ttft_slo_ms, itl_slo_ms))
+    import ph_loadgen as PL
+    abs_mono = os.environ.get("PDMUX_LOADGEN_ABS_MONO", "") == "1"
+    summ = asyncio.run(PL.replay_natural(endpoint, requests, Path(out_path), ttft_slo_ms, itl_slo_ms, abs_mono=abs_mono))
     recs = [json.loads(x) for x in Path(out_path).read_text().splitlines() if x.strip()]
     return summ["duration_s"], recs
 
@@ -86,10 +87,10 @@ def replay_segment(replay_fn, endpoint, seg, out_dir, w3_tokens=None):
     if w3_tokens and any("doc_id" in r for r in reqs):
         T.attach_w3_ids(reqs, w3_tokens)
     dur, recs = replay_fn(endpoint, reqs, Path(out_dir) / f"{seg['segment_id']}.jsonl")
-    keep = ("request_id", "phase", "input_tokens", "requested_output_tokens", "observed_output_tokens", "ttft_ms",
+    keep = ("request_id", "t_sent_mono", "t_finished_mono", "token_t_mono", "phase", "input_tokens", "requested_output_tokens", "observed_output_tokens", "ttft_ms",
             "token_itl_ms", "error", "error_kind", "scheduled_arrival_s", "completion_s")
     return {"segment_id": seg["segment_id"], "phase": seg["phase"], "round": seg.get("round", 0), "duration_s": float(dur),
-            "phase_len_s": seg.get("phase_len_s"), "requests": [{k: r.get(k) for k in keep} for r in recs]}
+            "phase_len_s": seg.get("phase_len_s"), "requests": [{k: r[k] for k in keep if k in r} for r in recs]}
 
 
 def parse_switches(log_text, anchor_idx):

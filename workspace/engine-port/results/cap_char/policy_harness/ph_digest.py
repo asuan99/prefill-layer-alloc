@@ -29,7 +29,7 @@ def covered():
     own = [p for p in sorted(HERE.glob("ph_*.py")) if p.name != "ph_mutants.py"] + [HERE / "ph_job.sh"]
     ct = [CT / n for n in ("ct_spec.py", "ct_runner.py", "ct_client.py", "ct_extract.py", "ct_fit.py",
                            "pdmux_costterms_D64_candidate.yml", "ENGINE_DIGEST.txt")]
-    ext = [ENG / "benchmarks/pdmux_eval/trace_loadgen.py", ENG / "benchmarks/pdmux_eval/analyze.py",
+    ext = [ENG / "benchmarks/pdmux_eval/trace_loadgen.py", ENG / "benchmarks/pdmux_eval/analyze.py", ENG / "benchmarks/pdmux_eval/abs_mono_loadgen.py",
            ENG / "scripts/multigpu/mg_x_pretokenize.py", ENG / "scripts/bootstrap/engine_digest.py", ENG / "scripts/vessl/job_entry.sh"]
     return own, ct, ext
 

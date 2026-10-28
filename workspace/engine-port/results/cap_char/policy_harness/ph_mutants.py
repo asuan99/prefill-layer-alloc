@@ -43,6 +43,9 @@ MUTANTS = [
     ("M25 boot env keeps PDMUX_* (instrumentation leak)", "ph_runner.py", "not (k.startswith(\"PDMUX_\") and k not in ALLOW_PDMUX)", "True"),
     ("M26 dwell bookkeeping drops the last interval", "ph_runner.py", "dwell[cur] = dwell.get(cur, 0.0) + (t_last - t_prev)", "pass"),
     ("M27 resume re-runs finished runs", "ph_runner.py", "            if f.exists():\n                continue\n", ""),
+    ("M29 natural-output wrapper does not flip ignore_eos", "ph_loadgen.py", 'payload["sampling_params"]["ignore_eos"] = False', "pass"),
+    ("M30 abs_mono flag ignored by the wrapper", "ph_loadgen.py", "inner = AM.replay_abs_mono if abs_mono else TL.replay", "inner = TL.replay"),
+    ("M31 natural set = every request", "ph_loadgen.py", 'if r.get("ignore_eos") is False}', 'if True}'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

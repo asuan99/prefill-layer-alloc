@@ -387,11 +387,61 @@ class RunnerTests(unittest.TestCase):
             self.assertIn("anchor_idx", pick["tuned_config"])
 
 
-class LoadgenPatchTest(unittest.TestCase):
-    def test_per_item_ignore_eos_with_old_default(self):
+sys.path.insert(0, str(ENG / "tests"))
+try:
+    import test_loadgen_outcome as LO
+    HAVE_LO = bool(LO.HAVE_AIOHTTP)
+except Exception:  # noqa: BLE001
+    HAVE_LO = False
+
+
+class SealedLoadgenTests(unittest.TestCase):
+    def test_trace_loadgen_untouched(self):
         src = (ENG / "benchmarks/pdmux_eval/trace_loadgen.py").read_text()
-        self.assertIn('bool(item.get("ignore_eos", True))', src)    # old traces (no key) keep ignore_eos True
-        self.assertNotIn('"ignore_eos": True,', src)
+        self.assertIn('"ignore_eos": True,', src)                      # sealed bytes: payload still hard-codes True
+        self.assertNotIn('item.get("ignore_eos"', src)
+        self.assertNotIn("PL.", src)
+
+
+@unittest.skipUnless(HAVE_LO, "aiohttp / test_loadgen_outcome not available")
+class NaturalOutputWrapperTests(unittest.TestCase):
+    def _run(self, abs_mono):
+        import asyncio
+        import ph_loadgen as PL
+
+        seen = {}
+
+        class Srv(LO._FakeServer):
+            async def generate(self, req):
+                body = await req.json()
+                seen[body["rid"]] = body["sampling_params"]["ignore_eos"]
+                return await super().generate(req)
+
+        reqs = [{"request_id": "short_nat", "phase": "W3", "arrival_s": 0.0, "input_tokens": 4, "output_tokens": 8, "ignore_eos": False},
+                {"request_id": "short_fix", "phase": "W1", "arrival_s": 0.0, "input_tokens": 4, "output_tokens": 8},
+                {"request_id": "full_nat", "phase": "W3", "arrival_s": 0.0, "input_tokens": 4, "output_tokens": 8, "ignore_eos": False}]
+        with tempfile.TemporaryDirectory() as td, Srv() as srv:
+            out = Path(td) / "o.jsonl"
+            summ = asyncio.run(PL.replay_natural(f"http://127.0.0.1:{srv.port}/generate", reqs, out, 3000.0, 60.0, abs_mono=abs_mono))
+            recs = {json.loads(l)["request_id"]: json.loads(l) for l in out.read_text().splitlines()}
+        import aiohttp
+        return seen, recs, summ, aiohttp
+
+    def test_natural_flag_and_classification(self):
+        seen, recs, summ, aiohttp = self._run(False)
+        self.assertEqual(seen, {"short_nat": False, "short_fix": True, "full_nat": False})
+        self.assertEqual(recs["short_nat"]["error"], "")                # natural short stream is NOT OUTPUT_SHORT
+        self.assertEqual(recs["short_fix"]["error_kind"], "OUTPUT_SHORT")  # fixed-length request still is
+        self.assertEqual(recs["full_nat"]["error"], "")
+        self.assertNotIn("t_sent_mono", recs["full_nat"])
+        self.assertTrue(aiohttp.ClientSession.__module__.startswith("aiohttp"))   # patch removed afterwards
+
+    def test_composes_with_abs_mono(self):
+        seen, recs, summ, _ = self._run(True)
+        self.assertEqual(seen["short_nat"], False)
+        self.assertEqual(seen["short_fix"], True)
+        self.assertIn("t_sent_mono", recs["full_nat"])
+        self.assertIn("benchmark_started_mono", summ)
 
 
 class JobShellTests(unittest.TestCase):
