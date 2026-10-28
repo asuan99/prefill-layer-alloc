@@ -1,8 +1,8 @@
-# 사전등록 rev0 (DIAG) — lockstep 정지 기전·동적 arm drain 대기 진단 Job, 2026-10-28
+# 사전등록 rev0.1.1 (DIAG) — lockstep 정지 기전·동적 arm drain 대기 진단 Job, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 성능·정책 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
-> 지위: **진단 Job**. 정책 주장이 아니다. 이 Job의 어떤 라벨도 goodput·정책 순위·HE0 판정으로 인용하지 않는다. Nano HE0 핵심 셀의 정책 비교는 별도 PREREG `../cap_char/PREREG_HD_HE0cell_rev0_2026-10-28.md`가 맡는다(결정 40).
-> 근거: 진단 `DIAG_lockstep_stall_share_2026-10-27.md` §5 · 감사 `../anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md`("해소 실험"·P1–P5 허용/금지 문안) · 사용자 결정 39–45(`tracks/main.md`; 결정 45 = Zamba2 arm은 Zamba2-7B) · 형식 `../cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
+> 지위: **진단 Job**. 정책 주장이 아니다. 이 Job의 어떤 라벨도 goodput·정책 순위·HE0 판정으로 인용하지 않는다. Nano HE0 핵심 셀의 정책 비교는 별도 PREREG `../cap_char/PREREG_HD_HE0cell_rev0_2026-10-28.md`가 맡는다(결정 40). **rev0.1(2026-10-28): 결정 46으로 Nano 단일 모델 진단 Job이다**(Zamba 배제, 결정 45 대체).
+> 근거: 진단 `DIAG_lockstep_stall_share_2026-10-27.md` §5 · 감사 `../anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md`("해소 실험"·P1–P5 허용/금지 문안) · 사용자 결정 39–45(`tracks/main.md`; 결정 46 = Zamba 배제·결정 45 대체) · 형식 `../cap_char/PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정](사용자 결정 또는 선행 작업 몫) · **[봉인 시 기입]**.
 
 ## 0. 무엇을 재고 무엇을 하지 않는가
@@ -14,7 +14,7 @@
 
 **하지 않는 것**
 - 정책 판정, goodput 비교, HE0·C2·layer-type 死의 등급 변경, "정지가 HE0의 원인/무관" 귀속(감사 금지).
-- 모델과 backend의 분리. **Nano(flashinfer)와 Zamba2-7B(triton)는 모델과 backend가 함께 다르다(게이트 #83).** 두 모델 사이 차이를 모델 효과나 backend 효과로 귀속하지 않는다. 이 Job은 분리를 시도하지 않는다.
+- 모델·backend 교락(게이트 #83)의 해소. 이 Job은 Nano(flashinfer) 단일 모델이라 모델·backend 교락은 **시험 대상이 아니다.** Nano 결과를 다른 모델·backend(특히 KISTI Zamba2·triton)로 옮기지 않는다.
 - KISTI 수치와의 비교·결합(기판 다름: 감사 P1 금지).
 
 ## 1. 선행 조건 (전부 충족돼야 봉인)
@@ -24,25 +24,22 @@
 | P-1 | **계측 커밋 해시 확정 + GPU 정확성 gate PASS.** 계측 = 진단 §5 (i) `prefill_chunk` 이벤트(`span_seq, split_index, forward_count, t_issue_start, t_issue_end` host + prefill stream CUDA event 쌍 GPU ms, query 비차단 회수), (ii) `drain` 이벤트(사유, 두 synchronize 각각의 host ms, **진행 중 prefill chunk 수**), (iii) `prefill_span_start`의 `rids`, (iv) I-4 `decode_fwd_gpu_ms`를 같은 boot에서 함께, (v) client 토큰 절대 CLOCK_MONOTONIC. 구현 중(engine-porter), 기본 OFF env. | **[봉인 시 기입: 계측 커밋 해시 / gate 통과값 / ENGINE_DIGEST]** | 봉인 |
 | P-2 | 계측 env 이름 확정 — 자리표시: chunk 이벤트 env = `TBD(engine-porter)` · drain 이벤트 env = `TBD(engine-porter)` · rids env = `TBD(engine-porter)`. 기존 env `PDMUX_PHASE_EVENTS`·`PDMUX_DECODE_PROBE_PATH`는 [코드] `multiplexing_mixin.py:2129-2302`·`decode_probe.py`. 봉인 때 실제 이름으로 치환한다. | 미정 | 봉인 |
 | P-3 | gate 내용(engine-porter 설계, 이 문서는 요구만 둔다): 계측 ON/OFF에서 greedy 출력 토큰 동일성, 계측이 새 동기화(`synchronize`·`.item()`·블로킹 `query` 대기)를 만들지 않음, CUDA event 쌍의 시각 정합. 통과가 PASS이고 "특성화 종결"은 PASS가 아니다(결정 22 선례). | 미정 | 봉인 |
-| P-4 | **Zamba2-7B VESSL 적재.** 확인 결과: 저장소의 모델 roster(`../model_roster/MODEL_ROSTER_2026-08-28.md`: `Zyphra/Zamba2-7B-Instruct`, 7.41B, ctx 4096, 정본 `Ha8`)와 이양 번들 `hf_hub_revisions.tsv`(rev `3146688c5286a3d1ac54ac287bc276b6803e193e`)에는 있으나, VESSL 스테이징 스크립트(`scripts/vessl/stage_data.sh`·`stage_llama.sh`)가 이 모델을 적재했다는 기록은 없다(2026-10-04 E1 PREREG는 "VESSL에는 Nemotron-Nano-9B-v2만 있다"고 적었고 이후 Llama가 `stage_llama.sh`로 추가됨). **적재 필요**: CPU Workspace `pdmux-build`에서 `stage_data.sh hf_hub_revisions.tsv Zyphra/Zamba2-7B-Instruct`(스토리지만, GPU 0, 비용 행위라 사용자 승인 필요) → `STAGING_LOG.tsv`·`STAGED_SHA256SUMS` 확인. | **미적재(추정)** — 실제 볼륨 확인은 Workspace 접근 필요, 이 초안에서는 하지 않음 | D-2 |
-| P-5 | **Zamba2-7B VESSL 부팅 smoke(비측정)**: VESSL 이미지·엔진 트리에서 `zamba2` 모델·triton backend·`manual_divisions` PD-mux·cudagraph ON이 부팅한다(Zamba2 VESSL run 0 [측정, 진단 §4]). 수치 인용 불가. | 미실시 | D-2 |
 | P-6 | 동적 arm에 쓰는 Nano 튜닝 구성과 Nano 용량 rate는 정책 PREREG(`PREREG_HD_HE0cell_rev0`)의 Job-CAP1·Job-TUNE 결과(addendum)에서 온다. D-3은 그 뒤에만 제출한다. | 대기 | D-3 |
 | P-7 | 하네스(신규 구현 항목 §9)는 감사 뒤 작성. | 대기 | 봉인 |
-| P-8 | 사용자 확인: Zamba2-7B arm의 프롬프트 8k 삭제(§4-2, 결정 30 형식 (P)) | 확인 대기 | 봉인 |
 
 ## 2. 측정 대상 arm
 
 ### 2-1. 정지 관측 격자 (저부하 고정 rate, PHASE ON + decode probe ON)
 
-| 축 | Nano-9B-v2-Base (flashinfer) | Zamba2-7B-Instruct (triton) |
-|---|---|---|
-| 모델 revision | `dc0661c…`(비용 항 PREREG와 동일, 봉인 시 전체 해시 기입) | `3146688c5286a3d1ac54ac287bc276b6803e193e`(결정 45) |
-| D (decode SM) = prefill SM | D {24, 44, 92} = prefill {84, 64, 16} (A100 108 SM, 실현 SM은 realized로 검증 — §6) | 같음 |
-| 프롬프트 길이 | {2k, 8k} | **{2k}** (8k는 모델 context 4096 초과 — §4-2) |
-| split 예산(`split_forward_token_budget`) | {8192, 65536} | {8192, 65536} |
-| 셀 수 | 3 × 2 × 2 = 12 | 3 × 1 × 2 = 6 |
+| 축 | Nano-9B-v2-Base (flashinfer) |
+|---|---|
+| 모델 revision | `dc0661c…`(비용 항 PREREG와 동일, 봉인 시 전체 해시 기입) |
+| D (decode SM) = prefill SM | D {24, 44, 92} = prefill {84, 64, 16} (A100 108 SM, 실현 SM은 realized로 검증 — §6) |
+| 프롬프트 길이 | {2k, 8k} |
+| split 예산(`split_forward_token_budget`) | {8192, 65536} |
+| 셀 수 | 3 × 2 × 2 = 12 |
 
-- 길이는 고정(분산 없음): 입력 2k 또는 8k 토큰, **출력 512 고정**(`ignore_eos`) [제안 — decode batch를 span 동안 비우지 않기 위한 값]. radix OFF, cudagraph ON, `--mem-fraction-static` 0.6(Nano, 결정 13 승계), max-running 48, backend·cap·KV capacity는 모델별 고정. Zamba2-7B의 mem·context는 [미정 — P-5 smoke 후 기입].
+- 길이는 고정(분산 없음): 입력 2k 또는 8k 토큰, **출력 512 고정**(`ignore_eos`) [제안 — decode batch를 span 동안 비우지 않기 위한 값]. radix OFF, cudagraph ON, `--mem-fraction-static` 0.6(Nano, 결정 13 승계), max-running 48, backend·cap·KV capacity는 모델별 고정.
 - **저부하 고정 rate**: 도착 Poisson, 입력 2k 0.5 req/s, 8k 0.2 req/s [제안]. 근거 = span 간 겹침을 줄여 정지를 관측하는 데 목적이 있고 goodput 판정이 아니므로 용량 이하로 둔다(Nano 8k shape B의 SLO 용량 0.15–0.22 req/s [측정, N3 감사 허용 문안 구간; 인용은 구간·병기와 함께만]; 8k 0.2 req/s는 그 용량 근방이라 정지 관측에 큐잉이 섞일 수 있음 — 그래서 큐 길이를 이벤트에 기록한다 [코드, `queue_len`]). 8k rate는 [미정 — 봉인 전 Nano 8k에서 TTFT 중앙값 ≤ 2× 단독 floor 확인].
 - 셀당 **60 요청**(span 60개 이상) + 꼬리 30 s. 반복 = seed 4개(트레이스 해시·workload seed·server seed가 seed마다 고정, 같은 Job 안 모든 셀에 동일 시퀀스 적용).
 - **PHASE OFF 대칭 arm**(관측자 비용): Job마다 1 boot, 해당 Job의 (D44, 예산 65536) 구성에서 PHASE·chunk·drain 계측 전부 OFF(decode probe도 OFF), 프롬프트는 그 Job이 가진 전부. 관측 지표는 client 측(TTFT, 토큰 간격 p50/p95/p99)만. 같은 Job 안의 ON 셀과 짝으로만 비교한다(다른 Job 비교 금지).
@@ -104,23 +101,20 @@
 원칙(고정): (P) 물리적 불가 또는 (R) 더 강한 증거로 대체될 때만 삭제, (C) 설정 제약이면 별도 boot·보정으로 살리거나 잃는 범위를 공시.
 
 ### 4-1. 이번에 포함한 것 (사용자 지시 대비 변경 없음)
-Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × {8192, 65536}, 동적/static/OFF.
+Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, 동적/static/OFF.
 
 ### 4-2. 삭제·미포함
 
 | # | 측정점 | 이유 | 분류 | 상태 | 잃는 범위·대안 |
 |---|---|---|---|---|---|
-| X-1 | Zamba2-7B × 프롬프트 8k (3 D × 2 예산 = 6 셀) | **Zamba2 전 계열 context 4096**(roster 확인: 1.2B/2.7B/7B 전부) — 입력 8k는 모델 context 초과 | **(P) 모델 사양** (rope 확장은 모델을 바꾸므로 대안 아님) | 삭제(사용자 확인 대기, P-8) | 잃는 범위: Zamba2-7B의 긴 프롬프트 축. 2k 한 길이뿐이라 "Zamba2의 정지가 프롬프트 길이에 어떻게 반응하는가"는 답하지 못한다. Nano {2k, 8k}와 Zamba2 {2k}의 교집합은 2k뿐이며, 모델 대비는 2k에서만 한다. 대안(제시일 뿐): Zamba2-7B의 3k 한 점(입력 3k + 출력 512 ≤ 4096)을 추가하면 길이 축 2점 — 비용 약 +0.5 GPU-h [유도], [미정, O-DX1] |
-| X-2 | Zamba2-2.7B arm | 결정 45가 Zamba2-7B로 대체 | (R) 사용자 결정(KISTI 정지 관측 모델이 7B) | 삭제 | 잃는 범위: HE0 모델(2.7B)과 같은 모델의 정지 관측. 감사 판정 "HE0는 판단 불가(데이터 없음)"는 이 Job 후에도 유지된다(2.7B phase 계측 run 0). **이 Job으로 HE0 모델의 정지 여부를 말할 수 없다.** |
-| X-3 | static arm의 PHASE OFF 짝(D-3) | 사용자 지시가 OFF 대칭 arm 1개 | (C) 설정·예산 — 허용 사유 아님(공시) | 삭제 | 잃는 범위: static ON/OFF 차를 동적 ON/OFF 차와 같은 Job에서 비교하지 못함(관측자 비용의 arm 의존성 미측정). 대안: D-3에 static OFF boot 4개(n=4) 추가 시 +1.3 GPU-h [유도] |
+| X-1 | **Zamba 계열 전체(Zamba2-7B 정지 격자 6 ON 셀 + OFF 1, Zamba2-2.7B)와 D-2 Job** | **결정 46(2026-10-28, 사용자)**: Zamba(2.7B·7B 모두) 실험 대상에서 배제, 재실행하지 않음. 배경: 모델 context 4096으로 8k 불가 + 이전 배제 이력. 결정 45(Zamba2-7B arm)는 46으로 대체됨 | (R) 사용자 배제 결정 | 삭제 | 잃는 범위: **KISTI Zamba2 정지의 기전과 그 모델/backend 의존성은 이 Job으로 판별 불가.** HE0 범위 문장("phase 계측 0이라 lockstep 정지의 기여는 판단할 수 없다")은 그대로 유지된다. 복구 비용: 해당 없음(재실행 안 함) |
+| X-3 | static arm의 PHASE OFF 짝(D-3) | 사용자 지시가 OFF 대칭 arm 1개 | (C) 설정·예산 — 허용 사유 아님(공시) | 삭제 | 잃는 범위: static ON/OFF 차를 동적 ON/OFF 차와 같은 Job에서 비교하지 못함(관측자 비용의 arm 의존성 미측정). 대안: D-3에 static OFF boot 1개(seed 4)(n=4) 추가 시 +1.3 GPU-h [유도] |
 | X-4 | 예산 중간값(16384·32768), D 중간값(34·64) | 사용자 지시 격자가 양 끝(SPEC R13-3 격자의 양 끝) | (C) 설정 선택 | 미포함 | 잃는 범위: 기울기의 선형성 검사. 3점 D 격자로 b\_j의 선형 형태 가정만 가능, 비선형 반응(knee)은 못 봄 |
 | X-5 | KISTI 설정(Zamba2-2.7B ShareGPT ~2k, triton, 0.82 mem) 재현 셀 | 기판 다름·모델 다름 | (R) 비교 불가 | 삭제 | 감사 P1 선택 편향 (2): "KISTI 설정 0셀"은 이 Job 후에도 일부 유지(Zamba2-7B/triton/2k만 근접) |
 
 ## 5. 공시 (모든 결과 문장에 붙임)
 
-- **모델과 backend 미분리(게이트 #83)**: Nano = flashinfer, Zamba2-7B = triton. 정지 유무 차이를 모델 때문이라 쓰지 않고 backend 때문이라도 쓰지 않는다.
-- Zamba2-7B 셀은 Instruct 체크포인트(Ha8)이고 Nano는 Base다.
-- Zamba2-7B는 ctx 4096, 프롬프트 2k 한 길이.
+- **단일 모델·단일 backend(Nano, flashinfer)**: 게이트 #83의 모델·backend 교락은 이 Job에서 시험 대상이 아니다. 결과는 Nano·flashinfer 범위이며 KISTI Zamba2·triton의 정지에 대해 말하지 않는다.
 - 계측 ON 조건이다(OFF arm 1개 제외). "PHASE ON 조건에서"로 시작한다.
 - Job 간 기판(GPU·드라이버)이 다르면 Job 간 값을 한 풀로 합치지 않는다. 한 Job 안의 arm끼리만 비교한다.
 - n = 4 seed, 정지 사건은 희귀할 수 있어 `UNRESOLVED_FEW`가 정상 결과일 수 있다.
@@ -130,7 +124,6 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × 
 - 모든 arm 동일 trace hash·workload seed·server seed(Job 내), 실행 순서 randomize.
 - cudagraph ON(운영점), backend·KV capacity·max-running 고정. GPU clock/power는 VESSL에서 고정 불가 — `clk.csv`·`substrate.json` 기록, arm 간 동일성 검사. no-cudagraph면 하한 표시.
 - **realized-SM 검증**: 요청 D ≠ 실현 SM일 수 있다(생성 성공 ≠ 요청 수신). 각 boot의 `prefill_sms`·`decode_sms`(span_start 이벤트 [코드])로 실현 SM을 기록하고, 요청 SM과 다르면 셀을 `D_NOT_REALIZED`로 표시해 해당 D 라벨에서 제외한다(Stage 0 교훈: pin은 realized로 검증).
-- triton cache race: Zamba2-7B(triton)는 boot마다 `TRITON_CACHE_DIR` 분리(과거 ssm floor 누락 전례).
 - secret을 Job에 넣지 않는다. 결과·사전등록·엔진 코드를 이미지에 넣지 않는다.
 
 ## 7. Job 구성, 시간, GPU-h [유도 — 측정 아님, Job 크기 결정용]
@@ -140,22 +133,20 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × 
 | Job | 내용 | 스펙 | boot | 셀/run | 예상 h [유도] | 하드캡(×1.2) [제안] | 사용 GPU 시간(사용률) |
 |---|---|---|---|---|---|---|---|
 | **D-1** Nano 정지 격자 | 12 ON 셀(6 boot, 각 boot에 2k·8k × seed 4) + OFF 대칭 1 boot(D44·65536, 2k·8k × seed 4) | `resourcespec-a100x1` | 7 | 7 × 4 × (2.75 + 5.75) min | 4.47 | 5.4 | 셀 3.97 h / 4.47 h = 89% |
-| **D-2** Zamba2-7B 정지 격자 | 6 ON 셀(6 boot, 각 boot에 2k × seed 4) + OFF 1 boot | `resourcespec-a100x1` | 7 | 7 × 4 × 2.75 min | 1.78 | 2.1 | 1.28 h / 1.78 h = 72% (boot 지배) |
 | **D-3** 동적 drain 블록 | 3 arm(bind+GATE ON, best static ON, bind+GATE OFF) × seed 4 = 12 run. 동적 arm은 컨트롤러 상태가 boot에 남으므로 seed마다 재부팅(8 boot), static은 1 boot에서 seed 4개 | `resourcespec-a100x1` | 9 | 12 × 15 min | 3.65 | 4.4 | 3.0 h / 3.65 h = 82% |
-| 합계 | arm-cell 24(ON 18 + OFF 3 + 동적/static 3) | | 23 | | **약 9.9 GPU-h** | 약 11.9 | |
+| 합계 | arm-cell 16(정지 격자 ON 12 + OFF 1 + 동적/static/OFF 3) | | 16 | | **약 8.1 GPU-h** | 약 9.8 | |
 
-- **같은 비교의 arm은 한 Job 안**: 비교 단위 = (D, 예산, 프롬프트)와 ON/OFF 짝 → D-1, D-2 각각 모두 한 Job. 모델 간(Nano vs Zamba2-7B)은 다른 Job이므로 **짝 비교가 아니고 기술 병기**다(기판 교락 + 게이트 #83).
-- **Job당 ≤ 6 h**: 세 Job 모두 하드캡 포함 ≤ 5.4 h. D-1이 rev3의 "기대 ≤ 4.4 h" 관례를 4.47 h로 넘는다 — 반복을 seed 3으로 줄이면 3.4 h(`+` 잃는 범위: n = 3 → t(2) = 4.30, 구간 확대) [미정, O-DX2, 초안은 n = 4 유지].
-- **사용률(GPU Job 적정 크기)**: 모두 GPU 1장 사용 스펙 `resourcespec-a100x1`(동시 사용 GPU 1). boot 구간(약 4.3 min)에 GPU가 서빙하지 않으므로 사용률은 셀 시간 비율(72–89%). D-2는 boot 지배라 낮다 — D-2를 D-3과 합치면 5.4 h(하드캡 6.5 h > 6 h)라 합치지 않는다.
+- **같은 비교의 arm은 한 Job 안**: 비교 단위 = (D, 예산, 프롬프트)와 ON/OFF 짝 → D-1 한 Job, 동적/static/OFF → D-3 한 Job.
+- **Job당 ≤ 6 h**: 두 Job 모두 하드캡 포함 ≤ 5.4 h. D-1이 rev3의 "기대 ≤ 4.4 h" 관례를 4.47 h로 넘는다 — 반복을 seed 3으로 줄이면 3.4 h(`+` 잃는 범위: n = 3 → t(2) = 4.30, 구간 확대) [미정, O-DX2, 초안은 n = 4 유지].
+- **사용률(GPU Job 적정 크기)**: 모두 GPU 1장 사용 스펙 `resourcespec-a100x1`(동시 사용 GPU 1). boot 구간(약 4.3 min)에 GPU가 서빙하지 않으므로 사용률은 셀 시간 비율(D-1 89%, D-3 82%).
 - 재개: 셀 단위 DONE 마커·`vessl_jobs.tsv`·sha 승계. 자동 재시도 없음, 재실행은 새 job name(실패 셀만 골라 재실행한 사실을 결과에 적는다).
 - 이 Job이 채우는 COSTMODEL 칸: **CM-4(동거 간섭·정지 항의 기전)** — D-3의 drain 몫은 CM-4의 "정지 항" 보조 입력. 정책 칸 아님.
 
 ## 8. 순서
 
 1. 계측 구현(engine-porter) → P-1·P-3 gate → 계측 커밋 해시 확정.
-2. P-4 Zamba2-7B 적재(사용자 승인) → P-5 smoke(Workspace `pdmux-probe`, 비측정).
-3. 하네스 구현 → **하네스층 감사 1회** → 봉인(§10 체크리스트) → `launch.sh` dry-run(명령·job name·`$/h` 표시) → **사용자 승인** → `--submit`. D-1 → D-2는 독립 제출 가능. D-3은 정책 PREREG의 Job-CAP1·Job-TUNE 회수 뒤.
-4. `fetch.sh`(DONE + `sha256sum -c`) 통과가 "완료". result-analyst가 §3 판별량 계산.
+2. 하네스 구현 → **하네스층 감사 1회** → 봉인(§10 체크리스트) → `launch.sh` dry-run(명령·job name·`$/h` 표시) → **사용자 승인** → `--submit`. D-1은 독립 제출 가능. D-3은 정책 PREREG의 Job-CAP1·Job-TUNE 회수 뒤.
+3. `fetch.sh`(DONE + `sha256sum -c`) 통과가 "완료". result-analyst가 §3 판별량 계산.
 
 ## 9. 신규 하네스 구현 항목 (감사 뒤 작성, 이 문서에서는 코드 0)
 
@@ -165,7 +156,7 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × 
 
 | # | 항목 | 상태 |
 |---|---|---|
-| 1 | P-1…P-8 충족 | 대기 |
+| 1 | P-1…P-3, P-6, P-7 충족 | 대기 |
 | 2 | 하네스 구현·CPU 시험·변이 | 대기 |
 | 3 | 하네스층 감사 1회 | 대기 |
 | 4 | 봉인(규칙·하네스·엔진·config digest, 이 문서의 [봉인 시 기입] 칸) | 대기 |
@@ -174,7 +165,6 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × 
 
 ## 11. 열린 결정 [미정]
 
-- O-DX1 Zamba2-7B 3k 한 점 추가(길이 축 2점, +0.5 GPU-h).
 - O-DX2 D-1 반복 n = 4(초안) 대 3.
 - O-DX3 D-3 static arm = D44 사전 지정(초안) 대 정책 PREREG HE0 평가의 사후 best static.
 - O-DX4 8k rate 0.2 req/s의 큐잉 영향(봉인 전 확인).
@@ -187,12 +177,12 @@ Nano {D24, D44, D92} × {2k, 8k} × {8192, 65536}, Zamba2-7B {D24, D44, D92} × 
 **금지 문안(감사 `VERDICT_lockstep_diag_claims_r1` P1–P5 승계 + 이 PREREG)**
 - "VESSL 기판에는 lockstep 정지가 없다"(한정 생략)·"L\_stall = 0"·"ρ\_on ≈ 1.17이 동거 간섭의 크기다"·"정지가 goodput에 영향 없다"·이 수치를 KISTI 수치와 비교·결합.
 - "HE0은 lockstep 정지 기판의 산물이다"·"정지 없는 기판에서는 동적 제어가 이길 수 있다"·"layer-type 死는 KISTI 정지 기판 한정이다"·"VESSL·Nano에서 HE0이 뒤집힌다/유지된다"·"정지가 HE0를 설명/반증한다".
-- "현 구현은 매 반복 lockstep이라 ITL이 span에 묶인다"(범위 없이)·"KISTI Ha8 정지는 이 Job의 기전과 같다"(Zamba2-7B 셀이 정지를 보여도 KISTI 정지와의 기전 동일성은 별도 주장).
+- "현 구현은 매 반복 lockstep이라 ITL이 span에 묶인다"(범위 없이)·"KISTI Ha8 정지는 이 Job의 기전과 같다/다르다".
 - "C2 꼬리는 lockstep 정지에 오염됐다"·"C2 p50은 정지 없는 decode step 시간이다"·Job 865493 d24–d92 다리 인용.
-- 모델 차이나 backend 차이로의 귀속("Zamba2가 정지를 만든다", "triton이 정지를 만든다", "flashinfer가 정지를 없앤다").
+- 다른 모델·backend(특히 Zamba2·triton)로의 전이 서술.
 - `DRAIN_MATERIAL`/`DRAIN_NEGLIGIBLE`을 "동적 제어가 진 이유/이길 수 있는 이유"로 쓰는 것, drain 몫을 static과의 goodput 차이로 환산하는 것.
 - 동등성 여유가 등록된 판별량 A 라벨 이전의 사후 진단 수치(진단 §3)를 "등록된 P4 판별 예측"으로 인용하는 것(S-6/K8: P4는 동등성 여유가 미등록이었다).
 - PHASE ON 접두 없는 인용, "계측은 영향이 없다", OFF 짝 비를 다른 arm·모델·부하의 보정 계수로 쓰는 것(결정 22 추가 금지 승계).
-- Job 간 값을 한 표에서 비교해 모델 효과를 말하는 것. 8k Zamba2-7B 결과가 있는 듯한 서술.
+- Job 간 값을 한 표에서 비교하는 것. Zamba 결과가 있는 듯한 서술.
 
 **허용 문안 틀**: "VESSL A100-SXM4 · &lt;모델&gt; · &lt;backend&gt; · cudagraph ON · &lt;D&gt; · &lt;예산&gt; · &lt;프롬프트&gt; · PHASE ON 조건의 &lt;Job&gt;에서, 정지 반복의 host 차단은 &lt;라벨&gt;이었다(기울기 구간 …, n = 4 seed). 모델과 backend가 함께 다르므로 모델 간 차이를 귀속하지 않는다. 정책 판정이 아니다."

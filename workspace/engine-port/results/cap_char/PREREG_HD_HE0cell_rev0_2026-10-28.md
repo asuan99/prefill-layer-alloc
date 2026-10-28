@@ -1,8 +1,9 @@
-# 사전등록 rev0 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev0.1 (POLICY-1) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
 > 근거: 설계 `PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 §2(결정 32·33 반영본; 이 문서는 §2를 **그대로 승계**하고 아래 명시한 곳만 더한다) · 결정 43–45(`tracks/main.md`) · 변화 trace 감사 `../anchor_audit/VERDICT_change_trace_validity_r1_2026-10-27.md` · 진단 짝 PREREG `../lockstep_diag/PREREG_DIAG_stall_drain_rev0_2026-10-28.md` · 형식 `PREREG_COSTMODEL_TERMS_MEAS_rev3_2026-10-20.md`(봉인 S1′ 형식).
+> **rev0.1(2026-10-28, 미봉인): 결정 47(W3 = arXiv-Sum 16k 자연 출력, G0·O-V2 의존 제거, shape C는 V-O 2차)·결정 48(phase 사이클 1) 반영.**
 > 수치 라벨: [측정](출처 명시) · [유도](식 대입·시간 모형, 측정 아님) · [코드] · [결정] · [제안](이 문서가 고른 값, 봉인 시 사용자 확인) · [미정] · **[봉인 시 기입]**. `[미정→초안 채택]` = 사용자 결정이 아직 없어 초안이 채택한 값.
 > **V-O(oracle 격차)는 이 PREREG에 없다**(결정 43: V\_REG·G0 PREREG 뒤 2차).
 
@@ -20,8 +21,8 @@
 
 | # | 선행 조건 | 상태 | 막는 것 |
 |---|---|---|---|
-| Q-1 | **W3 정의**(긴 입력 phase): arXiv-Sum 입력(≤16,384 필터, Nano 토크나이저 p50 6,484 [측정, `COMPARE_shapeC_workloads_2026-10-20.md`]) × 강제 출력 길이 — shape C 출력 길이(1k/4k)는 **G0 PREREG·O-V2 몫** [미정]. 이 문서는 W3 출력 길이를 **G0 결정을 받아 봉인 시 기입**한다. 대안으로 H-D만 W3 출력 1k로 먼저 가는 경우는 사용자 결정 [미정, O-P1]. | 미정 | 봉인 |
-| Q-2 | VESSL 볼륨에 ShareGPT(`/data/hf/raw/ShareGPT_V3_unfiltered_cleaned_split.json`, 비용 항·N3 등에서 사용 [측정]) 존재 확인(다른 캠페인에서 사용된 이력으로 존재 추정) · arXiv-Sum 입력 적재 여부는 확인 안 됨. 없으면 `stage_data.sh` 적재(CPU Workspace, 사용자 승인). | W3 데이터 미확인 | Job-CAP2 |
+| Q-1 | **W3 = arXiv-Sum 입력(≤16,384 필터, Nano 토크나이저 p50 6,484 [측정, `COMPARE_shapeC_workloads_2026-10-20.md`]) × 자연 출력**(`ignore_eos` 강제 없음; 자연 출력 평균 203 [측정, 같은 문서]) [결정 47]. shape C(강제 긴 출력)는 V-O 2차. G0·O-V2 의존 없음. | 확정 | — |
+| Q-2 | VESSL 볼륨에 ShareGPT(`/data/hf/raw/ShareGPT_V3_unfiltered_cleaned_split.json`, 비용 항·N3 등에서 사용 [측정]) 존재 확인(다른 캠페인에서 사용된 이력으로 존재 추정) · **arXiv-Sum 입력 적재 확인만 남은 선행 조건**(확인 안 됨). 없으면 `stage_data.sh` 적재(CPU Workspace, 사용자 승인). | W3 데이터 미확인 | Job-CAP2·H-D |
 | Q-3 | **동적 arm의 Nano 실현 가능성(O-H3와 같은 엔진 질문)**: reactive bind+GATE(`PDMUX_SLO_SCHED=1`·`PDMUX_SLO_MODE=binding`·`PDMUX_SLO_FEAS_GATE`)와 다중 division 부팅이 Nano(nemotron\_h)·flashinfer·cudagraph ON·VESSL에서 부팅하고 전환(`switch_count`)이 기록되는지 engine-porter가 확인한다. 이 컨트롤러는 Zamba2-2.7B·triton 위에서만 돌았다 [측정 이력]. 실패 시 (B)의 동적 arm은 `INFEASIBLE_BY_RULE`, 비교는 static 격자만 남고 §6 표 R-4에 공시한다. | 미확인 | Job-TUNE |
 | Q-4 | 하네스(§9) 구현·CPU 시험·변이 → **하네스층 감사 1회** → 봉인. | 대기 | 봉인 |
 | Q-5 | **PHASE 계측 OFF 확인**: 이 PREREG의 모든 측정 run은 PHASE\_EVENTS·chunk/drain 계측 OFF(정책 지표를 관측자 비용 없이 얻는다. 진단 PREREG D-3이 ON/OFF 짝으로 관측자 비용과 drain 몫을 따로 잰다). decode probe(I-4)도 OFF. | 규칙 | 봉인 |
@@ -55,7 +56,7 @@
 - 쓰임(결정 31): PRESENT는 HyMux PREREG 착수 허가일 뿐 성능 주장이 아니다.
 
 ### 3-2. 이 문서가 더하는 것
-- **phase 사이클 수 = 1 (W1 한 블록 + W3 한 블록)** [미정→초안 채택, O-P2]. 사유: 예산(§7). 연속 변형의 경계는 한 번뿐이며 시작 phase는 **seed 홀수 = W1 먼저, 짝수 = W3 먼저**로 교차한다(seed 1–4와 5–8 각각 2:2). 사이클 2는 H-D 비용이 약 34.5 → 약 66 GPU-h가 된다 [유도, §7]. 잃는 범위는 §6 표 R-5.
+- **phase 사이클 수 = 1 (W1 한 블록 + W3 한 블록)** [결정 48]. **사이클 내 반복 없음을 공시한다**(run 안에서 phase 종류당 인스턴스 1개). 반복은 seed 8 교차적합이 담당한다. 연속 변형의 경계는 한 번뿐이며 시작 phase는 **seed 홀수 = W1 먼저, 짝수 = W3 먼저**로 교차한다(seed 1–4와 5–8 각각 2:2). (참고) 사이클 2는 H-D 비용이 약 34.5 → 약 66 GPU-h가 된다 [유도, §7]. 잃는 범위는 §6 표 R-5.
 - **phase 길이 O-H1 = {120 s, 600 s} [미정→초안 채택]**. 120 s 변형은 깨끗한 시작에서만, 600 s는 깨끗한 시작과 연속 둘 다.
 - **시간 척도 공시(변화 trace 감사 허용 요구, 모든 H-D·HE0 셀 결과 문장에 붙임)**: "HE0 phase는 약 17 s/67 s(도착 기준), H-D phase는 120 s/600 s이며 둘 다 실 trace 시간 단위 변화보다 짧다." 실 trace 재생은 이 Job에 없다(결정 42).
 - HE0 범위 문장(감사 허용 문장, 문자 그대로): "HE0는 KISTI A100·Zamba2-2.7B·cudagraph-ON에서, ShareGPT rate 3↔12 교대(구간당 200요청, 도착 약 67 s/17 s, 구간 사이 drain, 3라운드)와 같은 계열의 mix-스윙 trace로 관측한 *달성된* reactive 동적 제어 계열의 결과다. 분–시간 척도의 실 trace, 중간 rate·혼합, 다른 기판·모델로의 일반화는 측정되지 않았고, HE0 run에는 phase 계측이 없어 lockstep 정지의 기여는 판단할 수 없다."
@@ -131,7 +132,7 @@ rate가 용량 환산이라 HI에서 TTFT가 SLO 근방에 놓일 수 있다. `C
 | R-2 | 전환 가능 구성 대조 arm(O-H3, 다중 division 부팅 D\* 고정) | 실현 가능성 미확인 | (C) 설정 — 확인 전 미포함 | **선택 블록, engine-porter 확인 전 미포함** | 잃는 범위: "전환 가능 구성 자체의 비용"을 못 잼 → 동적 정책이 static보다 지는 경우 비용을 구성 때문인지 정책 때문인지 분리 못 함. 확인되면 Job 안 arm 1개 추가(H-D: +1/5 비용, 약 +6.9 GPU-h; HE0 셀: +1 arm ≈ +1.2 GPU-h) [유도] |
 | R-3 | q = 0.8 (H-D) | 결정 33 O-H4 | (C) 예산(허용 사유 아님) | 1차 미포함; `UNRESOLVED`일 때만 추가 | 잃는 범위: 1차 결과로 `HEADROOM_ABSENT` 선언 불가. 조건부 Job H-D-q08 약 34.5 GPU-h [유도] |
 | R-4 | 동적 arm(Q-3 실패 시) | Nano에서 컨트롤러 실현 불가 | (P)가 될 수 있음(엔진 구조) — 실패 시 분류 확정 | 조건부 | 잃는 범위: HE0 셀의 동적 대 static 비교 자체 |
-| R-5 | 연속 변형 120 s, phase 사이클 > 1 | 결정 33(연속은 600 s만) / O-P2(사이클 1) | (C) 예산(허용 사유 아님) | 미포함 | 잃는 범위: 연속 변형 phase 120 s 기술값; 연속 trace의 W1→W3 경계가 run당 1회뿐이라 이월 편향 추정이 seed 간 교차(W1→W3와 W3→W1)로만 가능. 사이클 2: H-D 약 66 GPU-h [유도] |
+| R-5 | 연속 변형 120 s, phase 사이클 > 1 | 결정 33(연속은 600 s만) / 결정 48(사이클 1) | (C) 예산(허용 사유 아님) | 미포함 | 잃는 범위: 연속 변형 phase 120 s 기술값; 연속 trace의 W1→W3 경계가 run당 1회뿐이라 이월 편향 추정이 seed 간 교차(W1→W3와 W3→W1)로만 가능. 사이클 2: H-D 약 66 GPU-h [유도] |
 | R-6 | HE0 셀 h 스윕(HI = 1.5 λ\* 한 점), LO/HI 비 4× 한 점, 다른 SLO(chat 300/50) | 결정 44가 4× 유지 한 점 | (C) 예산·결정 | 미포함 | 잃는 범위: 동적이 이기는 operating regime 탐색(정본 §1-19는 용량 이하 = static 자명). 한 점에서의 결과를 "Nano에서 동적은 못 이긴다"로 일반화하지 못한다 |
 | R-7 | 튜닝 Job의 static 대조, 튜닝 seed 수 > 2 | 예산 | (C) 예산 | 미포함 | 잃는 범위: 튜닝 신뢰 구간. 튜닝 구성 선택이 2 seed에 의존 |
 | R-8 | KISTI 설정(Zamba2-2.7B) 재현 | 결정 44의 별도 claim 원칙 | (R) 기판·모델 교락 | 삭제 | 잃는 범위: KISTI HE0와의 직접 비교. 이 PREREG의 결과는 KISTI HE0를 확인·반박하지 못한다 |
@@ -158,7 +159,7 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 - **같은 비교의 arm은 한 Job 안**: H-D(5 arm × 한 seed)·HE0(6 arm × 두 seed)·CAP(5 D)·TUNE(6 구성) 모두 비교 단위가 한 Job에 완결된다. seed는 Job에 따라 달라지므로 seed 효과와 Job 효과가 교락한다 — CI는 같은 Job 안 arm 쌍의 짝차로만 계산하고 Job을 공변량으로 병기한다.
 - **Job당 ≤ 6 h**: 모든 Job 하드캡 ≤ 5.2 h(최대 H-D 5.2 h). 정지 선례(약 9.5 h 외부 정지)보다 충분히 아래.
 - **사용률(GPU Job 적정 크기)**: 모두 `resourcespec-a100x1`(GPU 1장, 동시 사용 1장). boot 구간 외에는 서빙 중이라 사용률은 셀 시간 비율(86–92%). TP2·다중 GPU 항목 없음.
-- 의존: CAP1 → (rate addendum) → TUNE → HE0-a/b. CAP1 + CAP2 → (rate addendum) → HD-1…8. TUNE·HE0는 W1만 쓰므로 CAP2를 기다리지 않는다. H-D는 W3 정의(Q-1)를 기다린다.
+- 의존: CAP1 → (rate addendum) → TUNE → HE0-a/b. CAP1 + CAP2 → (rate addendum) → HD-1…8. TUNE·HE0는 W1만 쓰므로 CAP2를 기다리지 않는다.
 - 이 Job들이 채우는 COSTMODEL 칸: **`미지정`**(정책 검증 칸 — 비용 구조 CM-1…CM-7 중 어느 칸도 채우지 않는다. 용량 측정 블록만 CM 칸 연결 가능 여부를 봉인 시 정한다).
 
 ### 7-3. 조건부 Job (이 초안의 합계에 포함 안 함)
@@ -189,15 +190,13 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 ## 10. 봉인 절차
 
-1. Q-1…Q-5 충족, 하네스 구현·CPU 시험·변이.
+1. Q-2…Q-5 충족, 하네스 구현·CPU 시험·변이.
 2. **하네스층 감사 1회**(규칙층 재감사 없음 — 이 PREREG는 rev4 §2 승계 + 위 추가분이라 새 규칙은 §4(B)와 §3-3에 한정).
 3. 봉인(규칙·하네스·엔진·config digest, [봉인 시 기입] 칸, 장부류는 봉인 바이트 확정 뒤 1회).
 4. Job-CAP1·CAP2 → `launch.sh` dry-run(명령·job name·`$/h` 표시) → **사용자 승인** → `--submit` → `fetch.sh`(DONE + `sha256sum -c`) → rate/구성 addendum 봉인 → 후속 Job 같은 절차. **이 문서 작성 시점에는 dry-run도 하지 않았다.**
 
 ## 11. 열린 결정 [미정]
 
-- O-P1 W3 정의·출력 길이(G0/O-V2 대기); H-D만 먼저 W3 출력 1k로 갈지.
-- O-P2 phase 사이클 1(초안) 대 2(약 66 GPU-h).
 - O-P3 HE0 셀 h = 1.5(초안) — 원 HE0의 HI/λ\* 정량 배율은 정본에서 찾지 못함.
 - O-P4 튜닝 노브·격자(6 구성)와 ANCHOR\_IDX↔D 매핑(Q-3 확인 뒤).
 - O-P5 용량 격자 범위(비용 항 모델 예측으로 기입).
