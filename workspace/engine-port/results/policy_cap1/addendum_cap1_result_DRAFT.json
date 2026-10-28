@@ -1,0 +1,54 @@
+{
+ "NOTE": "CAP1 result addendum DRAFT, UNSEALED, NOT SUBMITTED. Descriptive. Source job pdmux-policy-cap1-1217d68-20261028075615.",
+ "best_D_argmax_tied": 44,
+ "cap_ladder_for_rerun": {
+  "W1": {
+   "rmin": 7.4468725439326215
+  },
+  "W3": {
+   "rmin": 0.1
+  }
+ },
+ "capacity_by_D": {
+  "16": {
+   "first_fail": 2.242017,
+   "last_pass": 1.660753
+  },
+  "24": {
+   "first_fail": 5.516202,
+   "last_pass": 4.086075
+  },
+  "34": {
+   "first_fail": 7.446873,
+   "last_pass": 5.516202
+  },
+  "44": {
+   "first_fail": null,
+   "last_pass": 7.446873
+  },
+  "64": {
+   "first_fail": null,
+   "last_pass": 7.446873
+  }
+ },
+ "he0_rates": "NOT COMPUTABLE (lambda* None -> ABORT_NO_LAMBDA)",
+ "ladder_used": [
+  0.5,
+  0.675,
+  0.91125,
+  1.230188,
+  1.660753,
+  2.242017,
+  3.026723,
+  4.086075,
+  5.516202,
+  7.446873
+ ],
+ "lambda_star": {
+  "W1": null
+ },
+ "registered_rerun_rmin_W1": 7.4468725439326215,
+ "rerun_rule": "PREREG 13-1 / caveat 2: NOT_BRACKETED -> shift up rmin*1.35^9, new job name, max 1 rerun; lambda* from the last CAP job only",
+ "status": "CAPACITY_NOT_BRACKETED",
+ "ttft_slo_ms": 3000.0
+}
