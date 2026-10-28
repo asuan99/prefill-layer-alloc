@@ -34,7 +34,7 @@ POLICY_CONTEXT = 20480                        # 16,384 + 1,024 (W3 cap) + slack 
 FORBIDDEN_ENV = ("PDMUX_PHASE_EVENTS", "PDMUX_DECODE_PROBE_PATH", "PDMUX_ADMISSION_PATH", "PDMUX_TELEMETRY_PATH")
 ALLOW_PDMUX = set(R.KEEP_ENV)
 TS_RE = re.compile(r"^\[(\d{4}-\d\d-\d\d \d\d:\d\d:\d\d)")
-BIND_RE = re.compile(r"SLO-BIND (\d+)->(\d+)")
+BIND_RE = re.compile(r"SLO-(?:BIND|SCHED) (\d+)->(\d+)")          # controller decision changes (binding path SLO-BIND; non-binding SLO-SCHED)
 
 
 def dump(obj, path):
@@ -103,7 +103,10 @@ def idx_after(log_text, anchor_idx):
 
 
 def parse_switches(log_slice, start_idx, t0=None, t1=None):
-    """switch_count + dwell seconds per D for ONE run: `log_slice` is only the bytes the server logged while this run executed
+    """controller_decision_changes (= gate-5 `switch_count`, decision 53: a change of the controller's TARGET D, counted from the
+    `SLO-BIND`/`SLO-SCHED` server-log lines; static arms are 0 by definition) + dwell seconds per D for ONE run.  This is NOT
+    the number of physical stream transitions (those also happen at every decode-only <-> co-resident edge, static arms
+    included); that count is a separate quantity `physical_stream_transitions`, recorded None = not observed.  `log_slice`: `log_slice` is only the bytes the server logged while this run executed
     (audit M2: the whole boot log would add warm-up and earlier runs); dwell starts at the run start t0 (wall clock) in
     `start_idx` and ends at t1.  Logger timestamps have 1 s resolution."""
     import datetime as dt
@@ -189,6 +192,8 @@ def run_boot(boot, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None
             rec = execute_run(run, arm, endpoint, replay_fn, w1_pool, w3_pool, out, w3_tokens)
             t1 = time.time()
             before, sl = _log_split(srv, off0)
+            rec["switch_count_definition"] = "controller_decision_change"           # decision 53
+            rec["physical_stream_transitions"] = None                                # not observed (PHASE_EVENTS OFF, Q-5)
             if arm["kind"] == "dynamic":
                 rec["switch_count"], rec["split_dwell"] = parse_switches(sl, idx_after(before, arm["anchor_idx"]), t0, t1)
             else:

@@ -102,7 +102,9 @@ def gate5_row(runs, ttft_slo_ms):
         for k, v in (run.get("split_dwell") or {}).items():
             dwell[k] += float(v)
     tot = sum(dwell.values())
-    return {"switch_count": [run.get("switch_count", 0) for run in runs],
+    return {"switch_count": [run.get("switch_count", 0) for run in runs],                       # decision 53: controller decision changes
+            "switch_count_definition": "controller_decision_change (target-D change; static = 0 by definition)",
+            "physical_stream_transitions": [run.get("physical_stream_transitions") for run in runs],
             "dwell_frac": {k: v / tot for k, v in sorted(dwell.items())} if tot > 0 else {},
             "ttft_ms": {f"p{int(q * 100)}": percentile(tt, q) for q in (.5, .95, .99)},
             "itl_ms": {f"p{int(q * 100)}": percentile(il, q) for q in (.5, .95, .99)}}

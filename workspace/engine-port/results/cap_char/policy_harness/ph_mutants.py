@@ -76,6 +76,14 @@ MUTANTS = [
     ("M59 v2 minimum co-resident count removed", "ph_smoke.py", "        if n < N_CO_MIN:\n            return \"SMOKE_UNRESOLVED\", dict(info, why=f\"{a}", "        if False:\n            return \"SMOKE_UNRESOLVED\", dict(info, why=f\"{a}"),
     ("M60 v2 mode-difference requirement removed", "ph_smoke.py", '    if modes["s16"] == modes["s64"]:\n        return "SMOKE_VOID_SAME_SPLIT", info\n    for a, D in (("s16", 16), ("s64", 64)):\n        if info[a]["frac_at_target"] < APPLY_FRAC:', '    for a, D in (("s16", 16), ("s64", 64)):\n        if info[a]["frac_at_target"] < APPLY_FRAC:'),
     ("M61 v2 APPLY fraction 0.95 -> 0.5", "ph_smoke.py", "APPLY_FRAC = 0.95", "APPLY_FRAC = 0.50"),
+    ("M62 control tolerance unbounded", "ph_switch_control.py", "return max(2, math.ceil(0.25 * log_count))", "return 10 ** 9"),
+    ("M63 control counts decode-only iterations as changes", "ph_switch_control.py", 'd.get("prefill_in_flight") and not d.get("prefill_kernel_done_wait")', "True"),
+    ("M64 control: NO_SWITCH reported as PASS", "ph_switch_control.py", 'if tel_changes == 0 and log_count == 0:\n        return "SWITCH_CONTROL_NO_SWITCH"', 'if tel_changes == 0 and log_count == 0:\n        return "SWITCH_CONTROL_PASS"'),
+    ("M65 control: telemetry-saw-switch/log-saw-none not flagged", "ph_switch_control.py", 'if tel_changes >= 1 and (log_count == 0 or abs(log_count - tel_changes) > tol):', 'if False:'),
+    ("M66 control log regex ignores SLO-SCHED", "ph_switch_control.py", 'SLO-(?:BIND|SCHED) (\\d+)->(\\d+)")\n\n\ndef tolerance', 'SLO-(?:BIND) (\\d+)->(\\d+)")\n\n\ndef tolerance'),
+    ("M67 runner count ignores SLO-SCHED", "ph_runner.py", 'r"SLO-(?:BIND|SCHED) (\\d+)->(\\d+)"', 'r"SLO-(?:BIND) (\\d+)->(\\d+)"'),
+    ("M68 CAP1 wrapper accepts any job", "ph_cap1_control.sh", '[[ "${PDMUX_POLICY_JOB:-}" == CAP1 ]] ||', 'true ||'),
+    ("M69 switch_count definition not recorded", "ph_runner.py", 'rec["switch_count_definition"] = "controller_decision_change"', 'pass'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

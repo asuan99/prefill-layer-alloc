@@ -1,4 +1,4 @@
-# 사전등록 rev1.1 (POLICY-1, 봉인본 + §16 smoke 판별 기준 addendum, 재채점·재봉인 대기) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.2 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -37,7 +37,7 @@
 - 동일 trace hash·workload seed·server seed(Job 내 모든 arm), 실행 순서 randomize(boot 단위 블록 무작위, 계획 해시에서 파생, 봉인 시 기입).
 - cudagraph(운영점 ON), backend(flashinfer), KV capacity, max-running 고정. GPU clock/power는 VESSL에서 고정 불가 — `clk.csv`·`substrate.json`·`clk_summary.json` 기록, arm 간 동일성 검사. **대조 arm은 같은 Job 안.**
 - warm-up(60 s) / correctness(첫 요청 출력 길이 검사) / benchmark phase 분리.
-- 게이트 5: 모든 arm에 `switch_count`(static은 0)·split 체류 분포·TTFT/ITL p50/p95/p99 병기(§5의 표).
+- 게이트 5: 모든 arm에 `switch_count`·split 체류 분포·TTFT/ITL p50/p95/p99 병기(§5의 표). **`switch_count` = 컨트롤러 결정 변경 횟수(목표 D 변경), static arm은 정의상 0, 서버 로그의 `SLO-BIND`/`SLO-SCHED` 줄 집계(결정 53)**. 물리 스트림 전환 수(decode-only ↔ 동거 경계마다 static도 발생)는 다른 이름 `physical_stream_transitions`의 기술값이며 관측 가능할 때만 보고한다(정책 Job은 PHASE\_EVENTS OFF라 `None` = 미관측).
 - 게이트 6: 어느 arm·phase든 TTFT가 SLO ± 5% 안에 드는 요청 비율 > 10%면 `CLIFF_ADJACENT`. 그 arm·phase는 해당 라벨에서 cliff 규칙(§3-3, §5-3)을 따른다.
 - 비교의 짝 = **같은 seed**. CI는 **seed 수준 짝 비의 t(n−1) 95% 구간**이며 **percentile bootstrap은 쓰지 않는다**(정본 §3 항목56: n = 4 재표집 공간 35개 퇴화). "rep SD" 문구 금지.
 - seed 수준 반복은 **여러 Job**에 나눈다. hostname·GPU UUID는 공변량으로 남긴다.
@@ -89,7 +89,7 @@
 ### 4-3. 튜닝 절차 (게이트 8 — 데이터 전에 등록)
 - **튜닝 대상**: reactive bind+GATE(`PDMUX_SLO_MODE=binding` + `PDMUX_SLO_FEAS_GATE`). 튜닝 노브 = [코드: `multiplexing_mixin.py:988-1142`] `PDMUX_SLO_ANCHOR_IDX`(앵커 division 인덱스), `PDMUX_SLO_DWELL`(최소 체류, 기본 3), `PDMUX_SLO_FEAS_OCC`(0.85)·`PDMUX_SLO_FEAS_MARGIN`(0.9) 중 선택. 초안 격자 = ANCHOR\_IDX ∈ {2, 3, 4} × DWELL ∈ {3, 6} = **6 구성** [제안; 인덱스↔D 매핑(Nano의 {16, 24, 34, 44, 64}에서 어느 D인가)과 노브 목록은 engine-porter가 Q-3에서 확인해 봉인 전 기입, 미정].
 - **튜닝 트레이스 = 평가와 같은 HE0 셀**(같은 rate·구조) 이지만 **튜닝 seed 101·102는 평가 seed 1–8과 겹치지 않는다**. 튜닝 run은 Job-TUNE에서만 돈다.
-- **선택 규칙(데이터 전)**: 구성별 두 튜닝 seed의 TRUE goodput(duration 합산) 평균이 최대인 구성. 1% 이내 동률이면 `switch_count`가 적은 쪽. 결과(구성·튜닝 goodput·switch\_count)는 addendum에 기입해 봉인하고 평가 전에 바꾸지 않는다.
+- **선택 규칙(데이터 전)**: 구성별 두 튜닝 seed의 TRUE goodput(duration 합산) 평균이 최대인 구성. 1% 이내 동률이면 `switch_count`(= 컨트롤러 결정 변경 횟수, 결정 53 정의)가 적은 쪽. 결과(구성·튜닝 goodput·switch\_count)는 addendum에 기입해 봉인하고 평가 전에 바꾸지 않는다.
 - **SLO는 채점 SLO(3 s/60 ms)와 일치**하게 둔다(튜닝 노브가 아님).
 - **비대칭 공시**: 동적 arm은 독립 seed로 튜닝되지만 static D는 평가 seed 위에서 사후 best를 고른다(5개 중 최댓값의 낙관 편향이 static 쪽에 있다). 따라서 "동적 > best static" 결론에는 보수적이고 "동적 ≤ static" 결론에는 관대하다. 이를 막기 위해 비교는 두 가지로 한다: (a) **사전 지정 static D44**(KISTI HE0 승자 D, 데이터 전 지정) 대 동적, (b) **사후 best static** 대 동적. 두 비교 모두 보고하고 어느 쪽이 라벨에 쓰이는지는 §5-2에 정했다.
 - 튜닝 Job의 static arm은 두지 않는다(비용). 잃는 범위: 튜닝 시점의 동적 대 static 비교 없음.
@@ -102,7 +102,7 @@
 ## 5. (B)의 판정
 
 ### 5-1. 지표
-phase별(LO/HI)·라운드 합산 TRUE goodput(게이트 7), 전체 goodput. TTFT/ITL p50/p95/p99, `switch_count`, split 체류 분포(동적), 요청 내부 ITL p95 > SLO인 요청 비율, `CLIFF_ADJACENT` 플래그.
+phase별(LO/HI)·라운드 합산 TRUE goodput(게이트 7), 전체 goodput. TTFT/ITL p50/p95/p99, `switch_count`(컨트롤러 결정 변경, 결정 53), split 체류 분포(동적), 요청 내부 ITL p95 > SLO인 요청 비율, `CLIFF_ADJACENT` 플래그.
 
 ### 5-2. 짝 비교와 라벨
 - 기준 쌍: 동적 대 (a) D44 · (b) 사후 best static(평가 seed 평균 최대 D). 각 쌍에서 `d_s = ln(G_dyn,s / G_ref,s)`, seed 4개, t(3) 95% 구간(t = 3.182).
@@ -306,7 +306,7 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 ### 16-2. 새 판별 기준 v2 (`ph_smoke.smoke_verdict_v2`, 구 `smoke_verdict` v1은 이력으로 보존)
 - **관측량**: `decode_iteration` 이벤트 중 **`prefill_in_flight == True` 이고 `prefill_kernel_done_wait == False`** 인 반복의 `decode_sms` (engine\_gate\_diag D9와 같은 정의, `engine_gate_diag.py:260-287`). 필드 이름은 telemetry 그대로(`decode_iteration.decode_sms`, `.prefill_in_flight`, `.prefill_kernel_done_wait`). decode만 도는 반복(108)과 kernel-done-wait 반복은 세지 않는다.
-- **판정(고정 순서)**: ① 세 arm(s16, s64, dyn) 중 하나라도 boot 실패 → `SMOKE_FAIL_BOOT` ② 정적 arm의 동거 반복 수 < **N\_CO\_MIN = 30** → `SMOKE_UNRESOLVED`(회수 자료는 s16 113·s64 107개 [측정, 진단 문서 §2.3]이며 30은 재채점 전에 고정한 값) ③ 두 정적 arm의 동거 decode\_sms **최빈값이 같으면** `SMOKE_VOID_SAME_SPLIT`(= 아래 caveat 1이 겨냥한 현상) ④ 각 정적 arm의 동거 반복 중 목표 D(s16 → 16, s64 → 64)에 있는 비율 < **APPLY\_FRAC = 0.95**(v1과 같은 값 유지) → `SMOKE_FAIL_NOT_APPLIED` ⑤ dyn의 동거 반복 수 < 30 → `SMOKE_UNRESOLVED` ⑥ 그 외 `SMOKE_PASS`. dyn은 부팅하고 동거 반복이 충분했는지만 요구한다(전환 여부는 요구하지 않음 — §16-4).
+- **판정(고정 순서)**: ① 세 arm(s16, s64, dyn) 중 하나라도 boot 실패 → `SMOKE_FAIL_BOOT` ② 정적 arm의 동거 반복 수 < **N\_CO\_MIN = 30** → `SMOKE_UNRESOLVED`(회수 자료는 s16 113·s64 107개 [측정, 진단 문서 §2.3]이며 30은 재채점 전에 고정한 값) ③ 두 정적 arm의 동거 decode\_sms **최빈값이 같으면** `SMOKE_VOID_SAME_SPLIT`(= 아래 caveat 1이 겨냥한 현상) ④ 각 정적 arm의 동거 반복 중 목표 D(s16 → 16, s64 → 64)에 있는 비율 < **APPLY\_FRAC = 0.95**(v1과 같은 값 유지) → `SMOKE_FAIL_NOT_APPLIED` ⑤ dyn의 동거 반복 수 < 30 → `SMOKE_UNRESOLVED` ⑥ 그 외 `SMOKE_PASS`. dyn은 부팅하고 동거 반복이 충분했는지만 요구한다(전환 여부는 요구하지 않음 — **Q-3의 dyn 전환 기록 부분은 이 smoke가 닫지 않으며 §17 양성 대조로 넘긴다**). 공시(감사 r1 문제 2): ③ 최빈값 상이 검사는 ④ 목표 D 비율 ≥ 0.95와 D16 ≠ D64가 함께 성립하면 **잉여**이며, 실패 시 어떤 라벨을 붙일지만 정한다.
 - 시험: `test_smoke_v2_scores_the_coresident_split_not_span_start`(회수 자료와 같은 형태의 합성 telemetry에서 v1은 VOID, v2는 PASS), `test_smoke_v2_verdict_table`(0.95·30 경계), 변이 M56–M61(필터 제거, kernel-done-wait 포함, 판별량을 span\_start로 되돌림, 최소 개수·최빈값 상이·비율 제거) 전부 검출.
 
 ### 16-3. caveat 1 (개정)
@@ -318,5 +318,38 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 - 회수 자료 확인(`results/cap_char/policy_runs/<job>/smoke/dyn/`): 서버 로그에는 모듈 logger의 INFO 줄이 나온다(`PD-Multiplexing enabled with 7 stream groups …` 1건; `[YYYY-mm-dd HH:MM:SS]` 접두 — `ph_runner.TS_RE`와 형식이 맞는다). 그러나 이 로그에 **`SLO-BIND`/`SLO-` 줄은 0건**이고, telemetry의 동거 decode\_sms는 전부 34(112/112, anchor idx 3)다 — 즉 이 smoke 부하(LO 1.2/HI 4.8 req/s, 각 60요청)에서 컨트롤러는 **전환하지 않았다**. 전환이 없었으므로 "로그 집계가 전환을 관측한다"는 **양성 대조가 없다**.
 - 기록: (a) 로그 기반 switch\_count는 원리상 관측 가능해 보이나 **미확인**, (b) 0을 "전환 없음"으로 읽으려면 전환이 일어난 부하에서 같은 경로가 ≥ 1건을 세는지의 양성 대조가 필요, (c) 대안은 엔진 변경(SLO 경로의 전환 이벤트)이거나 전환이 확실한 부하의 양성 대조 smoke다. 어느 쪽도 이 addendum이 정하지 않는다 — 사용자 결정. 결정 전까지 HE0 셀 동적 arm의 게이트 5 항목은 `UNOBSERVABLE_UNCONFIRMED`로 표시한다.
 
+### 16-3b. caveat 1 끝 문장 (감사 r1 승인)
+개정 caveat 1의 끝에 다음을 덧붙인다: "판정은 stream 라벨 기준이며 SM 실현량 측정이 아니다."
+
 ### 16-5. 상태
-재채점 미실행(감사 전) · `ph_smoke.py` 변경으로 `HARNESS_DIGEST.txt`(`71f5006a` 봉인)는 **의도적으로 오래된 상태**다 — 감사·재채점 뒤 재봉인(새 digest 커밋)한다 · CAP1 제출 보류 유지.
+**재채점 실행 완료**: `results/policy_gate_smoke/RESCORE_smoke_v2_2026-10-28.md` — `SMOKE_PASS`(s16 113/113 at D16, s64 107/107 at D64, dyn 112 co-resident). 감사 추가 문장과 §16 공시 문장은 그 문서에 문자 그대로 있다: "v2 관측량은 smoke 전부터 있던 gate D9 정의이지만, 기준 채택 시점에 회수 원자료(s16 113/113, s64 107/107)는 이미 알려져 있었다. 따라서 이 PASS는 사전 고정 판정이 아니다. N_CO_MIN(1–107)·APPLY_FRAC(0.5–1.0)·kernel-done-wait 포함 여부는 판정을 바꾸지 않았다. decode_sms는 decode를 띄운 stream의 config 라벨이며 하드웨어 SM 실측이 아니다. 이 smoke는 dyn arm의 전환 기록(Q-3 후반)을 확인하지 않았다." · (rev1.1 당시 서술:) `ph_smoke.py` 변경으로 `HARNESS_DIGEST.txt`(`71f5006a` 봉인)는 **의도적으로 오래된 상태**다 — 감사·재채점 뒤 재봉인(새 digest 커밋)한다 · CAP1 제출 보류 유지.
+
+
+## 17. addendum rev1.2 — 양성 대조(switch 관측성)와 switch\_count 정의 (결정 52·53, 데이터 전 등록)
+
+### 17-1. 정의 (결정 53, 감사 r1 문제 4)
+- 게이트 5 **`switch_count` = 컨트롤러 결정 변경 횟수 = 목표 D 변경**, 서버 로그의 `SLO-BIND`(binding 경로)·`SLO-SCHED`(비binding 경로) 줄 집계. static arm은 정의상 0. `SLO-FEAS refused`(게이트가 거부한 이동)는 세지 않는다. `ph_runner`는 run 기록에 `switch_count_definition = "controller_decision_change"`를 남기고 `physical_stream_transitions = None`(미관측)을 둔다. TUNE 동률 규칙(§4-3)은 이 정의의 `switch_count`를 쓴다.
+- 감사가 지적한 비대칭(비sticky에서 decode-only → anchor 물리 전환은 span마다 static도 ≈ 88회)은 이 정의에서 제외된다 — 그 양은 별도 이름 `physical_stream_transitions`다.
+
+### 17-2. 양성 대조 smoke (`ph_switch_control.py`, 엔진 변경 없음, 비측정)
+- **목적**: dyn arm이 목표 D를 실제로 바꿀 때 로그 집계가 그것을 세는지 확인한다(첫 smoke는 전환이 없어 0이 증거가 아니었다).
+- **구성**: dyn 1 boot — bind+GATE, TUNE 격자 구성 (anchor idx 3, dwell 3), 정책 D64 config, 측정 dyn arm과 같은 엔진 경로. 이 boot에서만 `PDMUX_PHASE_EVENTS`+telemetry를 켠다(측정 boot 아님, Q-5 예외 아님을 문서화).
+- **부하(전환을 노린 값, 데이터 전)**: HI = 입력 8,192·출력 32 요청 40개를 1.5 req/s로(prefill 정체 → prefill-ward 이동 압력), LO = 입력 128·출력 64 요청 15개를 0.5 req/s로(여유 → anchor로 복귀 압력), HI/LO 2사이클.
+- **관측량**: `log_count` = server.log의 `SLO-BIND|SLO-SCHED` 줄 수; `tel_changes` = 동거 `decode_iteration`(`prefill_in_flight` ∧ ¬`prefill_kernel_done_wait`)을 `iter_seq` 순으로 놓았을 때 연속한 `decode_sms`가 바뀐 횟수(**하한**: span 사이 동거 반복이 없는 결정이나 내려갔다 올라간 쌍은 안 보인다).
+- **허용 오차(데이터 전)**: `TOL = max(2, ceil(0.25 × log_count))`.
+- **판정**: `SWITCH_CONTROL_PASS` — tel ≥ 1 ∧ log ≥ 1 ∧ \|log − tel\| ≤ TOL (rc 0) · `SWITCH_CONTROL_NO_SWITCH` — tel = 0 ∧ log = 0 (부하가 결정 변경을 만들지 못함: **양성 대조를 얻지 못한 것**이지 관측 불가가 아님, rc 4) · `SWITCH_LOG_UNOBSERVABLE` — tel ≥ 1 ∧ (log = 0 ∨ \|log − tel\| > TOL) (rc 1; **엔진 이벤트 추가는 사용자 결정**) · 그 밖 `SWITCH_CONTROL_UNRESOLVED`(rc 4).
+- **결과의 쓰임**: PASS이면 게이트 5 dyn 항목의 `UNOBSERVABLE_UNCONFIRMED` 표시를 해제한다(Job-TUNE·HE0 봉인 조건). NO_SWITCH이면 부하를 바꾼 새 대조(사용자 결정), UNOBSERVABLE이면 엔진 이벤트 추가 여부를 사용자에게 묻는다. 이 smoke의 어떤 수치도 결과로 인용하지 않는다.
+
+### 17-3. CAP1 Job에 붙이기
+`policy_harness/ph_cap1_control.sh` = 1단계 CAP1(`ph_job.sh`, 사다리 W1 rmin 0.5·W3 rmin 0.1, bracket 재실행 규칙 §13-1·caveat 2 그대로) → 2단계 `ph_switch_control.py`(별도 프로세스, CAP1 측정 boot 이후). **CAP1 데이터·판정·Job rc에 영향이 없다**(Job rc = CAP1 rc; 대조 결과는 `switch_control/CONTROL_RESULT.json`과 `stages.txt`). 같은 Job에 붙이는 이유: 이미지 pull·설치·substrate 1회와 같은 최종 트리·노드. CAP1 addendum `addendum_cap1.json`(저장소에 추적, digest 포함)이 사다리를 정한다.
+
+### 17-4. 감사 r1(smoke v2) → 수리 위치
+| 감사 | 수리 | 위치 |
+|---|---|---|
+| 1 `ph_smoke.py` docstring이 v1 | v2 기준·순서·legacy 표기로 정정 | `ph_smoke.py` 머리 |
+| 2 최빈값 검사 잉여 | 공시(§16-2) + docstring | §16-2 |
+| 3 Q-3 dyn 부분 미폐쇄 | §17 양성 대조로 넘김 | §16-2, §17-2 |
+| 4 switch\_count 의미 결함 | 결정 53 정의, `ph_runner` 기록 키·`gate5_row`·TUNE 동률 규칙·§2 게이트 5 반영, 물리 전환 수 별도 이름 | §17-1, `ph_runner.py`, `ph_verdict.py`; 시험 `test_switch_count_definition_is_recorded`, 변이 M69·M67 |
+| caveat 1 끝 문장 | §16-3b | §16-3b |
+| 재채점 | 실행·문서화 | `RESCORE_smoke_v2_2026-10-28.md` |
+| 양성 대조 설계·구현 | `ph_switch_control.py` + 시험 + 변이 M62–M66·M68 | §17-2, `tests/test_policy_harness.py::SwitchControlTests` |

@@ -687,6 +687,70 @@ class CapAddendumAndSmokeTests(unittest.TestCase):
         self.assertIn("ph_smoke.py", src)
 
 
+class SwitchControlTests(unittest.TestCase):
+    def test_log_count_counts_decisions_not_feasibility_refusals(self):
+        import ph_switch_control as C
+        log = ("[2026-10-28 10:00:01] SLO-BIND 3->2 dec_sm=24\n[2026-10-28 10:00:02] SLO-FEAS refused idx=2->1 dec_sm=24->16\n"
+               "[2026-10-28 10:00:03] SLO-SCHED 2->3 decode_sm=34\n")
+        self.assertEqual(C.log_switch_count(log), 2)
+        self.assertEqual(RU.parse_switches(log, 3)[0], 2)                       # the runner counts the same lines
+
+    def test_telemetry_changes_are_coresident_only_and_ordered(self):
+        import ph_switch_control as C
+        def it(seq, sms, inflight=True, kdw=False):
+            return {"event": "decode_iteration", "iter_seq": seq, "decode_sms": sms, "prefill_in_flight": inflight, "prefill_kernel_done_wait": kdw}
+        ev = [it(3, 34), it(1, 34), it(2, 108, inflight=False), it(4, 24), it(5, 7, kdw=True), it(6, 24), it(7, 16), it(8, 108, inflight=False), it(9, 16)]
+        with tempfile.TemporaryDirectory() as td:
+            pth = Path(td) / "t.jsonl"
+            pth.write_text("\n".join(json.dumps(e) for e in ev) + "\n")
+            self.assertEqual(C.telemetry_target_changes(pth), 2)                # 34->24, 24->16; decode-only (108) and kdw (7) ignored
+
+    def test_control_verdict_table(self):
+        import ph_switch_control as C
+        self.assertEqual(C.tolerance(0), 2)
+        self.assertEqual(C.tolerance(20), 5)
+        self.assertEqual(C.control_verdict(4, 4), "SWITCH_CONTROL_PASS")
+        self.assertEqual(C.control_verdict(2, 4), "SWITCH_CONTROL_PASS")        # |4-2| = 2 <= max(2, 1)
+        self.assertEqual(C.control_verdict(1, 5), "SWITCH_LOG_UNOBSERVABLE")      # |5-1| = 4 > max(2, 2)
+        self.assertEqual(C.control_verdict(3, 0), "SWITCH_LOG_UNOBSERVABLE")      # telemetry saw changes, the log saw none
+        self.assertEqual(C.control_verdict(0, 0), "SWITCH_CONTROL_NO_SWITCH")     # no positive control obtained (NOT unobservable)
+        self.assertEqual(C.control_verdict(0, 2), "SWITCH_CONTROL_UNRESOLVED")
+        self.assertEqual(C.control_verdict(3, 3, booted=False), "SWITCH_CONTROL_UNRESOLVED")
+        self.assertEqual(C.RC["SWITCH_CONTROL_NO_SWITCH"], 4)
+        self.assertEqual(C.RC["SWITCH_LOG_UNOBSERVABLE"], 1)
+
+    def test_control_load_pushes_prefill(self):
+        import ph_switch_control as C
+        segs = C.control_segments()
+        self.assertEqual([s["phase"] for s in segs], ["HI", "LO", "HI", "LO"])
+        hi = segs[0]["requests"]
+        self.assertEqual(len(hi), 40)
+        self.assertTrue(all(r["input_tokens"] == 8192 and r["ignore_eos"] is True for r in hi))
+        self.assertTrue(all(r["input_tokens"] == 128 for r in segs[1]["requests"]))
+        self.assertEqual(C.CONTROL_ARM, (3, 3))
+
+    def test_cap1_wrapper_only_runs_cap1(self):
+        e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        e["PDMUX_POLICY_JOB"] = "HD-1"
+        with tempfile.TemporaryDirectory() as td:
+            e["PDMUX_POLICY_SUMMARY"] = td
+            r = subprocess.run(["bash", str(PH / "ph_cap1_control.sh")], env=e, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 16)
+        self.assertIn("must be CAP1", r.stderr)
+
+    def test_switch_count_definition_is_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            Srv, replay = RunnerTests()._fakes(td)
+            rates = P.he0_rates(3.0)
+            boot = {"boot_id": "b", "arm": P.static_arm(44), "runs": [P.he0_run("rs", 1, rates, np_=20, rounds=1)]}
+            RU.run_boot(boot, Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            r = json.loads((Path(td) / "raw/runs/rs.json").read_text())
+            self.assertEqual((r["switch_count"], r["switch_count_definition"], r["physical_stream_transitions"]),
+                             (0, "controller_decision_change", None))
+            g = V.gate5_row([r], 3000)
+            self.assertIn("physical_stream_transitions", g)
+
+
 class JobShellTests(unittest.TestCase):
     def run_sh(self, env):
         e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}

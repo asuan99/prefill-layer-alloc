@@ -2,12 +2,16 @@
 """Q-3 smoke for the policy PREREG (NON-MEASUREMENT; numbers are never cited): does the engine do what the registered arms assume?
 
 Boots (Nano, flashinfer, cudagraph ON, the D64 candidate config, non-sticky -- decision 49), PHASE_EVENTS + telemetry ON for the smoke only:
-  s16, s64 : static non-sticky `R2_POLICY=fixed` -- the realized (prefill_sms, decode_sms) of prefill_span_start must equal the
+  s16, s64 : static non-sticky `R2_POLICY=fixed` -- the realized (v1, legacy) (prefill_sms, decode_sms) of prefill_span_start must equal the
              requested D for ~all spans AND differ between D16 and D64.  If the two splits are the same the seal is VOID
              (audit r2 caveat 1: 'smoke에서 D 간 분할이 같으면 이 봉인은 무효다').
   dyn      : bind+GATE (anchor idx 3 = D34, dwell 3) boots and decodes; reports the realized splits and the switch count.
 v2 (rev1.1, authoritative): the observable is the co-resident decode_iteration split, see smoke_verdict_v2; v1 (span_start) is legacy.
-Verdicts: SMOKE_PASS | SMOKE_VOID_SAME_SPLIT | SMOKE_FAIL_NOT_APPLIED | SMOKE_FAIL_BOOT.   rc 0 / 1 / 1 / 1 ; 4 = UNRESOLVED (no spans).
+Verdicts (v2): SMOKE_PASS | SMOKE_VOID_SAME_SPLIT | SMOKE_FAIL_NOT_APPLIED | SMOKE_FAIL_BOOT | SMOKE_UNRESOLVED.   rc 0 / 1 / 1 / 1 / 4.
+v2 order: boot -> N_CO_MIN -> mode(s16) != mode(s64) -> frac_at_target >= APPLY_FRAC -> dyn N_CO_MIN.  The mode test is redundant once both
+arms sit >= 95 % on different targets; it only decides which LABEL a failing run gets (audit r1, issue 2).  The dyn arm is checked for
+boot and co-resident volume only -- its decision-change record (Q-3, second half) is the job of ph_switch_control.py (PREREG §17).
+(The module header above describes the legacy v1 criterion, which counted prefill_span_start -- logged BEFORE the split transition.)
 """
 from __future__ import annotations
 
