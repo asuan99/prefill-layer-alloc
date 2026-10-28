@@ -37,7 +37,8 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- `pdmux-policy-gate-smoke-71f5006-20261028064810`(job-0duhieqx2go8, 2026-10-28 제출, commit 71f5006a, A100×1, 하드캡 3.25 h): 진단 계측 GPU gate D0–D9 + 정책 Q-3 bind+GATE smoke(비측정). `SMOKE_VOID_SAME_SPLIT`이면 정책 봉인 무효. 회수 `scripts/vessl/fetch.sh policy_gate_smoke <job name>`
+- `pdmux-policy-cap1-1217d68-20261028075615`(job-d8gi0770ezms, 2026-10-28 제출, commit 1217d684 봉인 S2, A100×1, 하드캡 4.3 h): CAP1(W1 용량, static D 5 동일 trace) + 양성 대조 smoke(dyn switch 로그 관측성). 회수 `scripts/vessl/fetch.sh policy_cap1 <job name>`
+- 회수 완료: gate+smoke(job-0duhieqx2go8) — gate D0–D9 PASS, smoke v2 재채점 SMOKE_PASS
 
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
