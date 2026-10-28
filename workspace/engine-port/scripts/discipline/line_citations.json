@@ -446,9 +446,9 @@
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:1368-1368": {
-   "anchor": "stream_idx, stream_group = self.adjust_stream_groups()",
+   "anchor": "stream_idx, stream_group = self.adjust_stream_groups(); self._phase_on_drain(\"adjust\", stream_idx)  # PDMUX_PHASE_DIAG",
    "anchor_offset": 0,
-   "sha": "7535edbeb8f693b5",
+   "sha": "57fc93e51ebae2df",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:1518-1518": {
@@ -756,15 +756,15 @@
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:1341-1357": {
-   "anchor": "if getattr(self, \"true_dual_worker_runtime\", None) is not None:",
-   "anchor_offset": 5,
-   "sha": "6fac6bfac255b41c",
+   "anchor": "self._phase_drain_begin(stream_idx, wait_prefill_kernel_done); prefill_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG",
+   "anchor_offset": 3,
+   "sha": "e75a1d11e4845c05",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:1358-1368": {
-   "anchor": "if getattr(self, \"true_dual_worker_runtime\", None) is not None:",
-   "anchor_offset": 5,
-   "sha": "f62cd1c86fb3a75f",
+   "anchor": "self._phase_drain_begin(stream_idx, wait_prefill_kernel_done); prefill_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG",
+   "anchor_offset": 3,
+   "sha": "5cc5d4b079ab1698",
    "target": "sglang_engine_dev/python/sglang/srt/multiplex/multiplexing_mixin.py"
   },
   "multiplexing_mixin.py:1376-1404": {

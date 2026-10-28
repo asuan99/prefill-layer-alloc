@@ -683,7 +683,7 @@ class SchedulerMultiplexMixin:
 
     def _close_pdmux_runtime(self: Scheduler) -> None:
         """Best-effort shutdown for writer and role threads."""
-        telemetry = getattr(self, "pdmux_telemetry", None)
+        self._phase_diag_close(); telemetry = getattr(self, "pdmux_telemetry", None)  # PDMUX_PHASE_DIAG close record
         if telemetry is not None:
             telemetry.close()
         runtime = getattr(self, "true_dual_worker_runtime", None)
@@ -1341,14 +1341,14 @@ class SchedulerMultiplexMixin:
                 if _tgt != stream_idx:
                     if getattr(self, "dual_worker_enabled", False):
                         self.dual_worker_state.arbiter.active_roles.clear()
-                    prefill_stream.synchronize()
-                    decode_stream.synchronize()
+                    self._phase_drain_begin(stream_idx, wait_prefill_kernel_done); prefill_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG
+                    decode_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG
                     if getattr(self, "true_dual_worker_runtime", None) is not None:
                         if not self.true_dual_worker_runtime.arbiter.safe_to_switch():
                             raise RuntimeError(
                                 "unsafe split transition after stream drain"
                             )
-                    set_current_stream_idx(_tgt)
+                    set_current_stream_idx(_tgt); self._phase_on_drain("slo_switch", _tgt)  # PDMUX_PHASE_DIAG
                     self.tp_worker.model_runner.update_decode_attn_backend(_tgt)
                     stream_idx = _tgt
                     stream_group = self.stream_groups[_tgt]
@@ -1358,14 +1358,14 @@ class SchedulerMultiplexMixin:
             elif adjust_stream_group:
                 if getattr(self, "dual_worker_enabled", False):
                     self.dual_worker_state.arbiter.active_roles.clear()
-                prefill_stream.synchronize()
-                decode_stream.synchronize()
+                self._phase_drain_begin(stream_idx, wait_prefill_kernel_done); prefill_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG
+                decode_stream.synchronize(); self._phase_drain_mark()  # PDMUX_PHASE_DIAG
                 if getattr(self, "true_dual_worker_runtime", None) is not None:
                     if not self.true_dual_worker_runtime.arbiter.safe_to_switch():
                         raise RuntimeError(
                             "unsafe automatic split transition after stream drain"
                         )
-                stream_idx, stream_group = self.adjust_stream_groups()
+                stream_idx, stream_group = self.adjust_stream_groups(); self._phase_on_drain("adjust", stream_idx)  # PDMUX_PHASE_DIAG
                 prefill_stream = stream_group[0]
                 decode_stream = stream_group[1]
                 adjust_stream_group = False
@@ -1465,7 +1465,7 @@ class SchedulerMultiplexMixin:
                             stream=prefill_stream,
                         )
                     else:
-                        prefill_result = self.run_batch(self.split_prefill_batch)
+                        _pdc = self._phase_chunk_begin(prefill_stream, stream_idx, forward_count); prefill_result = self.run_batch(self.split_prefill_batch); self._phase_chunk_end(_pdc)  # PDMUX_PHASE_DIAG
                     # A submitted batch belongs to the prefill task until its
                     # future resolves: run_batch reads `split_index` to decide
                     # whether to build `split_forward_batch`
@@ -2160,14 +2160,14 @@ class SchedulerMultiplexMixin:
     # The observer cost is NOT claimed to be zero: a campaign that turns this
     # on measures it with a symmetric on/off arm (E-1 prereg sec 5).
     def _init_phase_events(self: Scheduler, trace_path: str) -> bool:
-        self.pdmux_phase_events = resolve_phase_events(trace_path)
+        self.pdmux_phase_events = resolve_phase_events(trace_path); self._init_phase_diag(trace_path)  # PDMUX_PHASE_DIAG (default OFF)
         self._phase_span_seq = 0
         self._phase_decode_mark = None
         self._phase_events_error_logged = False
         return False  # value of the `dual_worker_trace_error_logged` line it rides on
 
     def _phase_events_disable(self: Scheduler, exc: BaseException) -> None:
-        self.pdmux_phase_events = False
+        self.pdmux_phase_events = False; self.pdmux_phase_diag = False  # PDMUX_PHASE_DIAG rides on PHASE_EVENTS
         self._phase_decode_mark = None
         if not getattr(self, "_phase_events_error_logged", False):
             logger.warning("PDMUX_PHASE_EVENTS disabled after failure: %s", exc)
@@ -2201,7 +2201,7 @@ class SchedulerMultiplexMixin:
         except (AttributeError, TypeError, ValueError, IndexError) as exc:
             self._phase_events_disable(exc)
             return
-        self._phase_emit("prefill_span_start", fields)
+        self._phase_emit("prefill_span_start", self._phase_diag_span_fields(fields, batch))  # +rids iff PDMUX_PHASE_DIAG
 
     def _phase_on_prefill_end(self: Scheduler, batch: ScheduleBatch) -> None:
         # Called from `_dual_worker_prefill_ready`, i.e. the moment the loop
@@ -2221,7 +2221,7 @@ class SchedulerMultiplexMixin:
         except (AttributeError, TypeError, ValueError) as exc:
             self._phase_events_disable(exc)
             return
-        self._phase_emit("prefill_span_end", fields)
+        self._phase_diag_poll(); self._phase_emit("prefill_span_end", fields)  # PDMUX_PHASE_DIAG: resolve chunk GPU times first
 
     def _phase_on_decode_launch(self: Scheduler, stream_idx: int, kernel_done_wait: bool) -> None:
         # Called on the `decode_done = True` line, i.e. right AFTER the decode
@@ -2299,6 +2299,346 @@ def resolve_phase_events(trace_path: str, env=None) -> bool:
             "coordinated per-type loop (PDMUX_LA_COORD)"
         )
     return True
+
+
+# ----------------------------------------------------------------------------
+# PDMUX_PHASE_DIAG  (default OFF; diag Job, decision 40, 2026-10-28)
+# ----------------------------------------------------------------------------
+# WHAT.  An extension of PDMUX_PHASE_EVENTS for the lockstep stall / drain
+# diagnosis (results/lockstep_diag/DIAG_lockstep_stall_share_2026-10-27.md
+# sec 5, PREREG_DIAG_stall_drain).  Same async writer, same `phase` column:
+#   prefill_chunk     one split-prefill chunk of the LEGACY loop: host issue
+#                     bracket of `run_batch` (t_issue_start / t_issue_end), its
+#                     place in the span (span_seq, split_index = first layer,
+#                     forward_count, num_layers) and `chunk_gpu_ms` = elapsed
+#                     time of a CUDA event pair recorded on the prefill stream
+#                     around the same call.  Emitted when the pair RESOLVES
+#                     (non-blocking `query()`), so records arrive after issue;
+#                     `t_resolved_host` is an upper bound on GPU completion.
+#   drain             one partition-switch drain of `event_loop_pdmux`:
+#                     reason `slo_switch` (PDMUX_SLO_SCHED / PDMUX_R2_POLICY
+#                     target change) or `adjust` (adjust_stream_groups path),
+#                     host ms of `prefill_stream.synchronize()` and of
+#                     `decode_stream.synchronize()` separately, and the prefill
+#                     state at drain start (split_index / num_layers, chunk
+#                     events still unresolved after a non-blocking poll).
+#   prefill_span_start  gains `rids` (request ids of the admitted batch).
+#   phase_diag_boot / phase_diag_close  clock pairs (perf_counter, which is
+#                     CLOCK_MONOTONIC on Linux, + an explicit CLOCK_MONOTONIC
+#                     and wall-clock read) and chunk-accounting counters.
+# I-4 `decode_fwd_gpu_ms` is NOT re-implemented here: it is the decode probe
+# (PDMUX_DECODE_PROBE_PATH, decode_probe.py), which is independent of this
+# flag and may be enabled in the same boot.  The chunk pairs reuse that
+# module's `PendingForward` / `drain_ready` (FIFO, `query()` only).
+#
+# DEFAULT-OFF GUARANTEE.  Unset or "0": `_init_phase_diag` sets one attribute
+# (False) and creates nothing else; every hook returns after one attribute
+# test; `_phase_chunk_begin` returns None and `_phase_chunk_end(None)` returns;
+# `_phase_diag_span_fields` returns the dict it was given, unchanged; no event
+# is recorded and nothing is emitted.  "1" requires PDMUX_PHASE_EVENTS=1 (and
+# so PDMUX_TELEMETRY_PATH) and is refused with PDMUX_TRUE_DUAL_WORKER (the
+# chunk hook is on the legacy issue line only; a true-dual run would silently
+# carry no chunk records).  Any other value is refused.
+#
+# NO NEW SYNCHRONISATION.  Nothing below calls `synchronize()`, `.item()` or
+# waits on an event: completion is `Event.query()` (cudaEventQuery) and
+# `elapsed_time` is read only after it returned True.  The two event records
+# are on the stream the chunk's kernels go to (`prefill_stream`) and add no
+# cross-stream dependency.  The host clock reads around the two existing
+# drains do not change what is waited for.
+#
+# LINE-NEUTRAL.  Call sites are same-line edits (`...; hook(...)`) and the
+# hooks live in this block, attached to SchedulerMultiplexMixin, so no line
+# above it moves.  The block sits BEFORE the M2 multi-GPU block on purpose:
+# test_multigpu_guard execs the file tail from the M2 marker on its own, so the
+# M2 block must stay last (it moved down; none of its lines is cited).  The
+# edited drain lines sit inside the cited ranges :1341-1357, :1358-1368 and
+# :1368, whose fingerprints were re-baselined (scripts/discipline).
+#
+# OBSERVATION ONLY.  Nothing here feeds scheduling, admission, partition
+# selection or batch composition.  A failure disables PDMUX_PHASE_DIAG for the
+# rest of the boot (logged once) and leaves PDMUX_PHASE_EVENTS running.  The
+# observer cost is not claimed to be zero; the diag PREREG measures it with a
+# symmetric OFF arm.
+
+PHASE_DIAG_EVENT_TYPES = ("prefill_chunk", "drain", "phase_diag_boot", "phase_diag_close")
+PHASE_DIAG_SCHEMA = "pdmux.phase_diag/v1"
+PHASE_DIAG_MAX_PENDING = 4096
+PHASE_DIAG_DRAIN_REASONS = ("slo_switch", "adjust")
+
+
+def resolve_phase_diag(trace_path: str, env=None) -> bool:
+    """PDMUX_PHASE_DIAG: unset/"0" -> OFF, "1" -> ON, anything else refused."""
+    env = os.environ if env is None else env
+    raw = (env.get("PDMUX_PHASE_DIAG", "") or "").strip()
+    if raw in ("", "0"):
+        return False
+    if raw != "1":
+        raise ValueError(
+            f"PDMUX_PHASE_DIAG={raw!r}: only unset, '0' or '1' are defined"
+        )
+    if not resolve_phase_events(trace_path, env):
+        raise RuntimeError(
+            "PDMUX_PHASE_DIAG=1 requires PDMUX_PHASE_EVENTS=1 (it extends the "
+            "phase-event stream: span_seq, decode_iteration pairing)"
+        )
+    if env.get("PDMUX_TRUE_DUAL_WORKER", "0") in ("1", "true", "True"):
+        raise RuntimeError(
+            "PDMUX_PHASE_DIAG is defined for the lockstep (legacy) issue path "
+            "only; under PDMUX_TRUE_DUAL_WORKER no prefill_chunk would be recorded"
+        )
+    return True
+
+
+def _phase_diag_probe_module():
+    try:
+        from sglang.srt.multiplex import decode_probe
+    except ImportError:  # loaded as a loose file by a CPU test
+        import decode_probe  # type: ignore[no-redef]
+    return decode_probe
+
+
+def _phase_diag_clock_pair() -> dict:
+    return dict(
+        t_perf=time.perf_counter(),
+        t_monotonic=time.clock_gettime(time.CLOCK_MONOTONIC),
+        t_realtime=time.time(),
+        perf_counter_impl=time.get_clock_info("perf_counter").implementation,
+    )
+
+
+class _PhaseDiagHooks:
+    """Methods attached to SchedulerMultiplexMixin below (see block comment)."""
+
+    def _init_phase_diag(self: Scheduler, trace_path: str) -> None:
+        self.pdmux_phase_diag = resolve_phase_diag(trace_path)
+        if self.pdmux_phase_diag:
+            self._phase_diag_setup(lambda: torch.cuda.Event(enable_timing=True))
+
+    def _phase_diag_setup(self: Scheduler, event_factory) -> None:
+        """State for an ON boot.  Tests call this with a fake event factory."""
+        from collections import deque
+
+        mod = _phase_diag_probe_module()
+        self._phase_diag_pending_cls = mod.PendingForward
+        self._phase_diag_drain_ready = mod.drain_ready
+        self._phase_diag_event_factory = event_factory
+        self._phase_diag_pending = deque()
+        self._phase_diag_pool = []
+        self._phase_chunk_seq = 0
+        self._phase_drain_seq = 0
+        self._phase_drain_state = None
+        self._phase_drain_marks = None
+        self._phase_diag_counts = dict(
+            n_chunks_issued=0, n_chunks_resolved=0, n_chunks_dropped=0,
+            n_drains=0,
+        )
+        self._phase_diag_boot_emitted = False
+        self._phase_diag_error_logged = False
+        self.pdmux_phase_diag = True
+
+    def _phase_diag_disable(self: Scheduler, exc: BaseException) -> None:
+        self.pdmux_phase_diag = False
+        self._phase_drain_marks = None
+        self._phase_drain_state = None
+        if not getattr(self, "_phase_diag_error_logged", False):
+            logger.warning("PDMUX_PHASE_DIAG disabled after failure: %r", exc)
+            self._phase_diag_error_logged = True
+
+    def _phase_diag_emit(self: Scheduler, event: str, fields: dict) -> None:
+        if not self._phase_diag_boot_emitted:
+            self._phase_diag_boot_emitted = True
+            self.pdmux_telemetry.emit(
+                "phase_diag_boot", self.pdmux_experiment_phase,
+                record_schema=PHASE_DIAG_SCHEMA,
+                num_layers=int(self.model_config.num_hidden_layers),
+                split_forward_token_budget=getattr(
+                    self.pdmux_config, "split_forward_token_budget", None),
+                max_pending=PHASE_DIAG_MAX_PENDING,
+                **_phase_diag_clock_pair(),
+            )
+        self.pdmux_telemetry.emit(
+            event, self.pdmux_experiment_phase,
+            record_schema=PHASE_DIAG_SCHEMA, **fields,
+        )
+
+    # -- chunk GPU-time resolution (non-blocking) ---------------------------
+    def _phase_diag_poll(self: Scheduler) -> None:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return
+        try:
+            ready = self._phase_diag_drain_ready(self._phase_diag_pending)
+            if not ready:
+                return
+            t_res = time.perf_counter()
+            for item, gpu_ms in ready:
+                item.fields["chunk_gpu_ms"] = gpu_ms
+                item.fields["t_resolved_host"] = t_res
+                self._phase_diag_pool.append((item.start, item.end))
+                self._phase_diag_counts["n_chunks_resolved"] += 1
+                self._phase_diag_emit("prefill_chunk", item.fields)
+        except Exception as exc:  # observation must never break the loop
+            self._phase_diag_disable(exc)
+
+    def _phase_diag_take_pair(self: Scheduler):
+        if self._phase_diag_pool:
+            return self._phase_diag_pool.pop()
+        factory = self._phase_diag_event_factory
+        return factory(), factory()
+
+    def _phase_chunk_begin(self: Scheduler, stream, stream_idx: int, forward_count: int):
+        if not getattr(self, "pdmux_phase_diag", False):
+            return None
+        try:
+            self._phase_diag_poll()
+            if not self.pdmux_phase_diag:
+                return None
+            batch = self.split_prefill_batch
+            prefill_sms, decode_sms = self.sm_counts[stream_idx]
+            self._phase_chunk_seq += 1
+            fields = dict(
+                chunk_seq=self._phase_chunk_seq,
+                span_seq=getattr(self, "_phase_span_seq", 0),
+                split_index=int(batch.split_index),
+                forward_count=int(forward_count),
+                num_layers=int(self.model_config.num_hidden_layers),
+                extend_tokens=int(getattr(batch, "extend_num_tokens", 0) or 0),
+                n_reqs=len(batch.reqs),
+                stream_idx=stream_idx,
+                prefill_sms=prefill_sms,
+                decode_sms=decode_sms,
+                # decode_iteration pairing: a decode step launched in THIS loop
+                # iteration (its mark is cleared at decode sync, which comes
+                # after this chunk) carries iter_seq == decode_iter_seq.
+                decode_iter_seq=int(getattr(self, "_r2_decode_iterations", 0)),
+                decode_launched=getattr(self, "_phase_decode_mark", None) is not None,
+                chunk_gpu_ms=None,
+            )
+            pair = self._phase_diag_take_pair()
+            t0 = time.perf_counter()
+            pair[0].record(stream)
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+            return None
+        return (fields, pair, stream, t0)
+
+    def _phase_chunk_end(self: Scheduler, token) -> None:
+        if token is None:
+            return
+        try:
+            fields, pair, stream, t0 = token
+            pair[1].record(stream)
+            t1 = time.perf_counter()
+            if not self.pdmux_phase_diag:  # disabled while the chunk ran
+                return
+            fields["t_issue_start"] = t0
+            fields["t_issue_end"] = t1
+            fields["issue_host_ms"] = (t1 - t0) * 1000.0
+            pending = self._phase_diag_pending
+            pending.append(self._phase_diag_pending_cls(fields, pair[0], pair[1]))
+            self._phase_diag_counts["n_chunks_issued"] += 1
+            while len(pending) > PHASE_DIAG_MAX_PENDING:
+                pending.popleft()  # never waited for; counted
+                self._phase_diag_counts["n_chunks_dropped"] += 1
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+
+    # -- drains --------------------------------------------------------------
+    def _phase_drain_begin(self: Scheduler, stream_idx: int, kernel_done_wait: bool) -> None:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return
+        try:
+            self._phase_diag_poll()  # resolve what is already done (non-blocking)
+            if not self.pdmux_phase_diag:
+                return
+            batch = self.split_prefill_batch
+            running = getattr(self, "running_batch", None)
+            self._phase_drain_state = dict(
+                stream_idx_from=stream_idx,
+                span_seq=getattr(self, "_phase_span_seq", 0),
+                split_present=batch is not None,
+                split_index=int(batch.split_index) if batch is not None else None,
+                num_layers=int(self.model_config.num_hidden_layers),
+                prefill_kernel_done_wait=bool(kernel_done_wait),
+                prefill_chunks_unresolved=len(self._phase_diag_pending),
+                running_bs=running.batch_size() if running is not None else 0,
+                queue_len=len(self.waiting_queue),
+                decode_iter_seq=int(getattr(self, "_r2_decode_iterations", 0)),
+            )
+            self._phase_drain_marks = [time.perf_counter()]
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+
+    def _phase_drain_mark(self: Scheduler) -> None:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return
+        marks = self._phase_drain_marks
+        if marks is not None:
+            marks.append(time.perf_counter())
+
+    def _phase_on_drain(self: Scheduler, reason: str, stream_idx_to: int) -> None:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return
+        marks, state = self._phase_drain_marks, self._phase_drain_state
+        self._phase_drain_marks = self._phase_drain_state = None
+        try:
+            if marks is None or state is None or len(marks) != 3:
+                raise RuntimeError(f"drain marks incomplete: {marks!r}")
+            t0, t1, t2 = marks
+            p_from, d_from = self.sm_counts[state["stream_idx_from"]]
+            p_to, d_to = self.sm_counts[stream_idx_to]
+            self._phase_drain_seq += 1
+            self._phase_diag_counts["n_drains"] += 1
+            fields = dict(
+                drain_seq=self._phase_drain_seq,
+                reason=reason,
+                controller=(getattr(self, "r2_policy_name", "") or "slo_sched")
+                if reason == "slo_switch" else None,
+                t_drain_start=t0,
+                t_prefill_sync_end=t1,
+                t_drain_end=t2,
+                prefill_sync_ms=(t1 - t0) * 1000.0,
+                decode_sync_ms=(t2 - t1) * 1000.0,
+                stream_idx_to=stream_idx_to,
+                prefill_sms_from=p_from, decode_sms_from=d_from,
+                prefill_sms_to=p_to, decode_sms_to=d_to,
+                **state,
+            )
+            self._phase_diag_emit("drain", fields)
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+
+    # -- rids, close ---------------------------------------------------------
+    def _phase_diag_span_fields(self: Scheduler, fields: dict, batch) -> dict:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return fields
+        try:
+            fields["rids"] = [str(req.rid) for req in batch.reqs]
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+        return fields
+
+    def _phase_diag_close(self: Scheduler) -> None:
+        if not getattr(self, "pdmux_phase_diag", False):
+            return
+        try:
+            self._phase_diag_poll()
+            if not self.pdmux_phase_diag:
+                return
+            self._phase_diag_emit("phase_diag_close", dict(
+                n_chunks_unresolved=len(self._phase_diag_pending),
+                **self._phase_diag_counts,
+                **_phase_diag_clock_pair(),
+            ))
+        except Exception as exc:
+            self._phase_diag_disable(exc)
+
+
+for _name, _fn in list(vars(_PhaseDiagHooks).items()):
+    if callable(_fn) and _name.startswith(("_phase_", "_init_phase_diag")):
+        assert not hasattr(SchedulerMultiplexMixin, _name), _name  # never shadow an existing hook
+        setattr(SchedulerMultiplexMixin, _name, _fn)
+del _name, _fn
 
 
 # ----------------------------------------------------------------------------

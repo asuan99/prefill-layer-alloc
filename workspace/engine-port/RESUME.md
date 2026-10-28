@@ -140,6 +140,7 @@ https://<user>:<PAT>@github.com/...`, `credential.helper = store`로
 | `PDMUX_RUN_ID`, `PDMUX_WORKLOAD_ID` | trace 식별자 |
 | `R2C_ATTN_BACKEND` / `PDMUX_ATTENTION_BACKEND` | attention 백엔드 선택(커밋 `87213a9`, 2026-09-13 신설). **기본값 `triton`**(Zamba2 재현 보존) — NemotronH는 `flashinfer` 명시 필요 |
 | `R2C_CTX` | correctness 게이트 ctx 명시(커밋 `87213a9`). 미지정 시 모델 config에서 유도, 실패하면 `exit 2`(조용한 폴백 금지). Zamba2는 4096, NemotronH(Nano-9B-v2-Base)는 **16384 권고**(131072 아님) |
+| `PDMUX_PHASE_DIAG=1` (client: `benchmarks/pdmux_eval/abs_mono_loadgen.py`) | 2026-10-28 진단 Job 계측, **기본 OFF**. `PDMUX_PHASE_EVENTS=1` 필수, true-dual 거부. `prefill_chunk`(chunk host 발행 구간 + prefill stream CUDA event 쌍 `chunk_gpu_ms`, 비차단 query 회수)·`drain`(사유 `adjust`/`slo_switch`, 두 synchronize 각 host ms, drain 시작 시 split_index·미회수 chunk 수)·`prefill_span_start.rids`·`phase_diag_boot/close`(clock 쌍). I-4는 `PDMUX_DECODE_PROBE_PATH`와 같은 boot에서 병용. 코드 `multiplexing_mixin.py` 끝 블록, 시험 `tests/test_phase_diag.py`. GPU gate 미통과 |
 
 True dual은 thread-local role capability가 없으면 fail-fast한다. GPU correctness
 gate를 통과하기 전에는 기본값을 켜지 않는다.

@@ -602,3 +602,47 @@ sync wiring + entry 30), `tests/test_engine_gate_checks.py` (21 tests: gate scor
 UNRESOLVED on non-discriminating data); entry counts 29 -> 30 in `test_engine_digest.py`,
 `test_mg_agnostic_manual_equiv.py`, `test_conv1d_int64_patch.py`. Split GPU gate design:
 `results/engine_gate/GATE_SPLIT_DESIGN_2026-10-20.md`. GPU correctness gate: NOT RUN.
+
+## Decision 40: diag-Job instrumentation `PDMUX_PHASE_DIAG` (2026-10-28, GPU 0)
+
+37. `multiplex/multiplexing_mixin.py` <- `src/multiplex/multiplexing_mixin.py` (installed by `sync_engine_tree.sh`;
+    file sha256 `c2483a14...` -> `dcfe3442...`, manifest entry 3 only; entry count stays 30).
+    **ENGINE_DIGEST `99bbef91...` -> `3ab5295e28087e81534bd1f4bea6f9038f1df6d7e55dc31e42f2cb6cabc03c6a`** (pathless-v1,
+    scratch tree = copy of the local dev tree -> `install_runtime.sh` from this commit; the HEAD-before install of the
+    same copy reproduces `99bbef91...`).
+    Requirement: `results/lockstep_diag/DIAG_lockstep_stall_share_2026-10-27.md` sec 5 (i)-(v),
+    `PREREG_DIAG_stall_drain_rev0_2026-10-28.md` P-1/P-2/P-3.
+    - **Events** (same async writer, schema tag `pdmux.phase_diag/v1`): `prefill_chunk` (legacy issue line only:
+      `chunk_seq, span_seq, split_index, forward_count, num_layers, extend_tokens, n_reqs, stream_idx, prefill_sms,
+      decode_sms, decode_iter_seq, decode_launched, t_issue_start, t_issue_end, issue_host_ms, chunk_gpu_ms,
+      t_resolved_host`; GPU ms = CUDA event pair on `prefill_stream`, resolved by `query()` only, reusing
+      `decode_probe.PendingForward`/`drain_ready`, bounded 4096, overflow counted), `drain` (`reason`
+      `slo_switch|adjust`, `controller`, `t_drain_start, t_prefill_sync_end, t_drain_end, prefill_sync_ms,
+      decode_sync_ms`, from/to partition + SM, and at drain start `span_seq, split_present, split_index, num_layers,
+      prefill_kernel_done_wait, prefill_chunks_unresolved, running_bs, queue_len, decode_iter_seq`),
+      `prefill_span_start.rids`, `phase_diag_boot` / `phase_diag_close` (perf_counter + CLOCK_MONOTONIC + wall clock,
+      counters).
+    - **Flag.** `PDMUX_PHASE_DIAG`: unset/"0" OFF; "1" requires `PDMUX_PHASE_EVENTS=1`; refused with
+      `PDMUX_TRUE_DUAL_WORKER`; other values refused. OFF: one attribute set, every hook returns after one attribute
+      test, `_phase_diag_span_fields` returns its dict unchanged, no event recorded. I-4 stays the decode probe
+      (`PDMUX_DECODE_PROBE_PATH`), independent and usable in the same boot.
+    - **Line-neutral above the block** (same-line edits; the hook block is inserted after `resolve_phase_events` and
+      BEFORE the M2 multi-GPU block, which moves down uncited -- `test_multigpu_guard` execs the file tail from the M2
+      marker, so M2 must stay last; methods attached to the class): `_close_pdmux_runtime`,
+      both drain branches of `event_loop_pdmux` (6 lines), the legacy prefill `run_batch` line, `_init_phase_events`,
+      `_phase_events_disable`, the two span emit lines. The edited drain lines lie inside the cited ranges
+      `:1341-1357`, `:1358-1368`, `:1368` (`results/hybrid_sched_s0/engine_porter_review_2026-09-30.md`,
+      `audit_a4_split_2026-10-01/VERDICT.md`): citations re-verified by hand (still the drain / adjust call) and their
+      three fingerprints re-baselined in `line_citations.json` (sha/anchor only, `target` kept). `check_line_citations
+      --check --all` against a dev tree synced to this commit: 201 compared, 0 violations from this change (the
+      unsynced local `sglang_engine_dev` reports "ambiguous across 2 DIFFERENT contents" until it is synced).
+    - Client (item v): NEW `benchmarks/pdmux_eval/abs_mono_loadgen.py` wraps the unchanged `trace_loadgen.replay`
+      (byte-identical; its sha256 is pinned by `results/multigpu/REGISTRATION_rev12_SEAL.txt`) and adds
+      `t_sent_mono, t_finished_mono, token_t_mono` = the same perf_counter stamps anchored on replay's own first read
+      (`benchmark_started`) + one CLOCK_MONOTONIC offset; summary `benchmark_started_mono`, `abs_mono_offset_s`.
+    - Fail-closed on a tree from this commit: every check pinned to `99bbef91...` (costterms harness
+      `results/cap_char/costterms_harness/ENGINE_DIGEST.txt`, engine_gate driver `DIGEST_BASE`, policy PREREG Q-7 draft).
+CPU regression: `tests/test_phase_diag.py` (resolve/OFF/ON content/drain/rids/no-blocking/isolation; lagging fake CUDA
+events that raise on synchronize/wait; 9 mixin mutants killed with the unmutated control), `tests/test_engine_gate_diag.py`
+(gate scorers on real fake-loop records + 11 single-defect corruptions), `tests/test_loadgen_abs_mono.py` (wrapper exactness vs StreamState stamps, source pin, early-anchor mutant).
+GPU gate prepared, NOT RUN / NOT SUBMITTED: `scripts/vessl/engine_gate_diag.{sh,py}` (D0-D6).
