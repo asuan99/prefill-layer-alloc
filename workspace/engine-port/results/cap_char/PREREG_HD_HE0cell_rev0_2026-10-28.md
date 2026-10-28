@@ -1,4 +1,4 @@
-# 사전등록 rev1.2 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.3 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -353,3 +353,10 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 | caveat 1 끝 문장 | §16-3b | §16-3b |
 | 재채점 | 실행·문서화 | `RESCORE_smoke_v2_2026-10-28.md` |
 | 양성 대조 설계·구현 | `ph_switch_control.py` + 시험 + 변이 M62–M66·M68 | §17-2, `tests/test_policy_harness.py::SwitchControlTests` |
+
+
+## 18. addendum rev1.3 — raw 반출 규칙 (결정 54)
+
+**규칙(한 줄)**: 모든 정책 Job은 종료 시 run 원자료 트리(`${raw}`, 기본 `/data/runs/<job>/raw` = 클러스터 볼륨)를 `${summary}/raw`(= `results/cap_char/policy_runs/<job>/raw`, job\_entry가 object 볼륨 `results/<job>/results/`로 반출하고 `fetch.sh`가 `workspace/engine-port/results/`에 병합하는 경로)로 복사하고 그 사본의 `SHA256SUMS`를 `sha256sum -c`로 검증하며 파일 수가 같아야 `RAW_EXPORT_OK`를 쓴다. 실패는 `ABORT_RAW_EXPORT`(rc 18, 측정 rc가 0일 때)로 크게 알린다. `/data` 사본은 유지한다. 구현 `ph_job.sh`(종료부); 시험 `RawExportTests`, 변이 M70–M72.
+
+**CAP1 결과의 유효성은 이 변경과 무관하다**(CAP1 Job `job-d8gi0770ezms`, 커밋 `1217d684`): 그 커밋 이후 정책 하네스 diff는 `ph_job.sh` 13줄 **추가**(삭제 0, 종료부의 반출 블록)와 `ph_mutants.py` 3줄 추가뿐이며(`git diff 1217d684 -- workspace/engine-port/results/cap_char/policy_harness`), `ph_runner.py`·`ph_spec.py`·`ph_trace.py`·`ph_verdict.py`·`ph_analyze.py`·`ph_smoke.py`·`ph_switch_control.py`·`ph_loadgen.py`는 바이트 동일이다. 즉 측정 경로(서버 boot·trace 생성·replay·판정)는 불변이고 바뀐 것은 측정이 끝난 뒤의 반출 단계뿐이다. 이 변경의 동기: 그 Job에서 raw가 클러스터 볼륨에만 남아 `vesslctl`로 회수할 수 없었다.

@@ -84,6 +84,9 @@ MUTANTS = [
     ("M67 runner count ignores SLO-SCHED", "ph_runner.py", 'r"SLO-(?:BIND|SCHED) (\\d+)->(\\d+)"', 'r"SLO-(?:BIND) (\\d+)->(\\d+)"'),
     ("M68 CAP1 wrapper accepts any job", "ph_cap1_control.sh", '[[ "${PDMUX_POLICY_JOB:-}" == CAP1 ]] ||', 'true ||'),
     ("M69 switch_count definition not recorded", "ph_runner.py", 'rec["switch_count_definition"] = "controller_decision_change"', 'pass'),
+    ("M70 raw export to the object-volume path omitted (decision 54)", "ph_job.sh", 'cp -a "${raw}/." "${summary}/raw/"', "true"),
+    ("M71 raw export failure not reported", "ph_job.sh", 'echo "ABORT_RAW_EXPORT: could not export/verify ${raw} -> ${summary}/raw" >&2', "true"),
+    ("M72 export copy not verified against its sums", "ph_job.sh", '(cd "${summary}/raw" && sha256sum --quiet -c SHA256SUMS) \\\n', 'true \\\n'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

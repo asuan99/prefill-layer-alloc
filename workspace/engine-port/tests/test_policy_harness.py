@@ -751,6 +751,56 @@ class SwitchControlTests(unittest.TestCase):
             self.assertIn("physical_stream_transitions", g)
 
 
+class RawExportTests(unittest.TestCase):
+    """Decision 54: the raw tree must also live under ${summary} (a results/ path that job_entry exports and fetch.sh merges)."""
+
+    def _run(self, td, pre_block_export=False, corrupt_copy=False):
+        raw, summ = Path(td) / "raw", Path(td) / "sum"
+        w1 = Path(td) / "w1.json"
+        w1.write_text(json.dumps(W1_POOL))
+        if pre_block_export:
+            summ.mkdir()
+            (summ / "raw").write_text("a file, so mkdir -p raw fails")
+        e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        e.update(PDMUX_POLICY_JOB="CAP1", PDMUX_POLICY_TEST_MODE="1", PDMUX_COSTTERMS_TEST_MODE="1",
+                 PDMUX_CT_SERVER_CMD="python3 -c 'import sys; sys.exit(3)'",       # every boot dies at once: no GPU, no server
+                 PDMUX_POLICY_OUT=str(raw), PDMUX_POLICY_SUMMARY=str(summ), PDMUX_POLICY_W1_LENGTHS=str(w1),
+                 PDMUX_POLICY_ADDENDUM=str(PH / "addendum_cap1.json"), PDMUX_DATA=td)
+        if corrupt_copy:                       # a `cp` shim that damages the exported plan.json -> the sha check must catch it
+            shim = Path(td) / "bin"
+            shim.mkdir()
+            (shim / "cp").write_text('#!/bin/bash\n/bin/cp "$@"; rc=$?\nlast="${@: -1}"\n'
+                                     '[[ "$last" == */raw/ && -f "$last/plan.json" ]] && echo damaged >> "$last/plan.json"\nexit $rc\n')
+            (shim / "cp").chmod(0o755)
+            e["PATH"] = f"{shim}:{e['PATH']}"
+        r = subprocess.run(["bash", str(PH / "ph_job.sh")], env=e, capture_output=True, text=True, timeout=120)
+        return r, raw, summ
+
+    def test_raw_is_exported_under_summary_and_verified(self):
+        with tempfile.TemporaryDirectory() as td:
+            r, raw, summ = self._run(td)
+            self.assertEqual(r.returncode, 17, r.stderr[-500:])                     # boot failures (fake dead servers) -- the runner's rc
+            self.assertTrue((summ / "RAW_EXPORT_OK").exists())
+            self.assertTrue((summ / "raw" / "plan.json").exists())
+            self.assertEqual(sorted(p.relative_to(raw).as_posix() for p in raw.rglob("*") if p.is_file()),
+                             sorted(p.relative_to(summ / "raw").as_posix() for p in (summ / "raw").rglob("*") if p.is_file()))
+            ok = subprocess.run(["sha256sum", "--quiet", "-c", "SHA256SUMS"], cwd=summ / "raw", capture_output=True)
+            self.assertEqual(ok.returncode, 0)                                      # the exported copy verifies against its own sums
+
+    def test_export_failure_is_loud(self):
+        with tempfile.TemporaryDirectory() as td:
+            r, raw, summ = self._run(td, pre_block_export=True)
+            self.assertIn("ABORT_RAW_EXPORT", r.stderr)
+            self.assertFalse((summ / "RAW_EXPORT_OK").exists())
+
+
+    def test_corrupted_export_is_caught(self):
+        with tempfile.TemporaryDirectory() as td:
+            r, raw, summ = self._run(td, corrupt_copy=True)
+            self.assertIn("ABORT_RAW_EXPORT", r.stderr)
+            self.assertFalse((summ / "RAW_EXPORT_OK").exists())
+
+
 class JobShellTests(unittest.TestCase):
     def run_sh(self, env):
         e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}

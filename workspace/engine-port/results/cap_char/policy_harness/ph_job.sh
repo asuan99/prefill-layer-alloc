@@ -78,5 +78,18 @@ rc=$?
 [[ -f "${data}/runs/${name}/meta/clk.csv" ]] && { mkdir -p "${raw}/clk"; cp "${data}/runs/${name}/meta/clk.csv" "${raw}/clk/${name}.csv" 2>/dev/null || true; }
 cp "${raw}/RUN_DONE.json" "${raw}/plan.json" "${summary}/" 2>/dev/null || true
 (cd "${raw}" && find . -type f ! -name SHA256SUMS -print0 | sort -z | xargs -0 -r sha256sum > SHA256SUMS) && cp "${raw}/SHA256SUMS" "${summary}/RAW_SHA256SUMS"
+# Decision 54 (raw export): job_entry exports ONLY ${RUN}/results (-> object volume results/<job>/results -> fetch.sh merges it into
+# workspace/engine-port/results/).  ${raw} defaults to /data/runs/<job>/raw on the CLUSTER volume, which vesslctl cannot download.
+# So copy the whole raw tree under ${summary}/raw (a results/ path, exported unchanged) and verify it against its own SHA256SUMS.
+# The /data copy stays.  An export failure is loud (rc 18) and never hidden behind a successful measurement rc.
+if [[ "${raw}" != "${summary}"/* && "${raw}" != "${summary}" ]]; then
+  if mkdir -p "${summary}/raw" && cp -a "${raw}/." "${summary}/raw/" && (cd "${summary}/raw" && sha256sum --quiet -c SHA256SUMS) \
+     && [[ "$(find "${raw}" -type f | wc -l)" == "$(find "${summary}/raw" -type f | wc -l)" ]]; then
+    echo "raw exported to ${summary}/raw ($(find "${summary}/raw" -type f | wc -l) files, sha256 verified)" > "${summary}/RAW_EXPORT_OK"
+  else
+    echo "ABORT_RAW_EXPORT: could not export/verify ${raw} -> ${summary}/raw" >&2
+    [[ "${rc}" -eq 0 ]] && rc=18
+  fi
+fi
 echo "policy ${job}: rc=${rc} raw=${raw}"
 exit "${rc}"
