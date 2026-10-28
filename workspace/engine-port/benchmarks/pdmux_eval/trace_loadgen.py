@@ -63,7 +63,8 @@ async def replay(
                 "sampling_params": {
                     "max_new_tokens": int(item["output_tokens"]),
                     "temperature": 0.0,
-                    "ignore_eos": True,
+                    # per-item override (policy PREREG rev0.1, W3 natural output); absent key keeps the old behaviour
+                    "ignore_eos": bool(item.get("ignore_eos", True)),
                 },
                 "stream": True,
                 "rid": str(item["request_id"]),
