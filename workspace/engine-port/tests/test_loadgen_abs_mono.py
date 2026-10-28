@@ -37,19 +37,19 @@ def _trace():
 
 
 def _run(fn):
-    seen = {}
+    seen = []  # one entry per classify() call; an id()-keyed dict collapses when CPython reuses ids of freed StreamState objects
     real_state = TL.StreamState
 
     class Spy(real_state):
         def classify(self, *a, **k):
-            seen[id(self)] = list(self.token_times)
+            seen.append(list(self.token_times))
             return super().classify(*a, **k)
 
     with tempfile.TemporaryDirectory() as tmp, LO._FakeServer() as srv, mock.patch.object(TL, "StreamState", Spy):
         out = Path(tmp) / "requests.jsonl"
         summary = asyncio.run(fn(f"http://127.0.0.1:{srv.port}/generate", _trace(), out, 3000.0, 50.0, 0))
         recs = [json.loads(line) for line in out.read_text().splitlines()]
-    return summary, recs, sorted(seen.values(), key=lambda v: (len(v), v[:1]))
+    return summary, recs, sorted(seen, key=lambda v: (len(v), v[:1]))
 
 
 class SourcePinTest(unittest.TestCase):
