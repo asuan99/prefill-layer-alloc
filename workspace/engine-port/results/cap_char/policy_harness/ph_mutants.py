@@ -101,6 +101,17 @@ MUTANTS = [
     ("M84 sustain writes into CAP2's raw tree", "ph_cap2_sustain.sh", '--out "${summary}/sustain"', '--out "${summary}/raw/sustain"'),
     ("M85 Job rc taken from the sustain stage", "ph_cap2_sustain.sh", 'exit "${rc1}"', 'exit "${rc2}"'),
     ("M86 sustain wrapper runs for any job", "ph_cap2_sustain.sh", '[[ "${PDMUX_POLICY_JOB:-}" == CAP2 ]] ||', 'true ||'),
+    ("M87 seed-across-Jobs not refused (Job is not the block)", "ph_analyze.py", "    if bad:\n        raise RuntimeError(f\"ABORT_SEED_ACROSS_JOBS", "    if False:\n        raise RuntimeError(f\"ABORT_SEED_ACROSS_JOBS"),
+    ("M88 HE0 output drops the block record", "ph_analyze.py", 'out["blocks"] = {', 'out["blocks_dropped"] = {'),
+    ("M89 reference cell on D34", "ph_refcell.py", "REF_D, REF_RATE, REF_N, REF_SEED = 44, 7.29491, 120, 201", "REF_D, REF_RATE, REF_N, REF_SEED = 34, 7.29491, 120, 201"),
+    ("M90 reference cell rate 6.29", "ph_refcell.py", "REF_D, REF_RATE, REF_N, REF_SEED = 44, 7.29491, 120, 201", "REF_D, REF_RATE, REF_N, REF_SEED = 44, 6.29491, 120, 201"),
+    ("M91 throttle counts GpuIdle (covariates)", "ph_covariates.py", "thr = (int(p[4], 16) & ~0x1) != 0", "thr = int(p[4], 16) != 0"),
+    ("M92 completion rate uses attempted requests", "ph_covariates.py", '"completion_rate_req_s": (len(ok) / dur)', '"completion_rate_req_s": (len(reqs) / dur)'),
+    ("M93 drain time = full duration", "ph_covariates.py", '"drain_s": max(0.0, dur - last_arrival)', '"drain_s": dur'),
+    ("M94 wall window removed from segment records", "ph_runner.py", '"wall_start_epoch": t_wall0, "wall_end_epoch": t_wall1, ', ''),
+    ("M95 covariate wrapper accepts any job", "ph_cov_job.sh", 'case "${PDMUX_POLICY_JOB:-}" in TUNE|EVAL-a|EVAL-b) ;; *)', 'case "${PDMUX_POLICY_JOB:-}" in TUNE|EVAL-a|EVAL-b|HD-1) ;; *)'),
+    ("M96 covariate wrapper returns the last stage's rc", "ph_cov_job.sh", 'exit "${rc1}"', 'exit 0'),
+    ("M97 TUNE hard cap reverted", "ph_spec.py", '"TUNE": 220,', '"TUNE": 278,'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

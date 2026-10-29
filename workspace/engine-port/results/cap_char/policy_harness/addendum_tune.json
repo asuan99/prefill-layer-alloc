@@ -1,0 +1,1 @@
+{"lambda_star": {"W1": 7.29491}, "NOTE": "TUNE / HE0 addendum (PREREG 21): rate_HI = 1.5 x lambda*_W1 = 10.9424, rate_LO = HI/4 = 2.7356 (CAP1-R input value); W1 ShareGPT, SLO 3000 ms / ITL p95 60 ms fixed; W3 floor is not used. tuned_config is added after TUNE (EVAL addendum)."}

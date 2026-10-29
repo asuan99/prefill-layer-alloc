@@ -87,11 +87,13 @@ def replay_segment(replay_fn, endpoint, seg, out_dir, w3_tokens=None):
     reqs = seg["requests"]
     if w3_tokens and any("doc_id" in r for r in reqs):
         T.attach_w3_ids(reqs, w3_tokens)
+    t_wall0 = time.time()                      # substrate covariates only (decision 57): joins clk.csv, never a decision input
     dur, recs = replay_fn(endpoint, reqs, Path(out_dir) / f"{seg['segment_id']}.jsonl")
+    t_wall1 = time.time()
     keep = ("request_id", "t_sent_mono", "t_finished_mono", "token_t_mono", "phase", "input_tokens", "requested_output_tokens", "observed_output_tokens", "ttft_ms",
             "token_itl_ms", "error", "error_kind", "scheduled_arrival_s", "completion_s")
     return {"segment_id": seg["segment_id"], "phase": seg["phase"], "round": seg.get("round", 0), "duration_s": float(dur),
-            "phase_len_s": seg.get("phase_len_s"), "requests": [{k: r[k] for k in keep if k in r} for r in recs]}
+            "phase_len_s": seg.get("phase_len_s"), "wall_start_epoch": t_wall0, "wall_end_epoch": t_wall1, "requests": [{k: r[k] for k in keep if k in r} for r in recs]}
 
 
 def idx_after(log_text, anchor_idx):

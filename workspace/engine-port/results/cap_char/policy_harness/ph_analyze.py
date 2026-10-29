@@ -68,11 +68,14 @@ def eval_labels(runs):
     bad = eval_trace_problems(runs)
     if bad:
         raise RuntimeError(f"ABORT_TRACE_IDENTITY: arms of seeds {bad} saw different requests")
+    blocks = job_blocks(runs)                      # raises if a seed's arms were not all measured in one Job
     by = {}
     for r in runs:
         name = "dyn" if r["arm"]["kind"] == "dynamic" else f"s{r['arm']['D']}"
         by.setdefault(name, {})[r["seed"]] = r
-    return V.he0_compare(by, P.W1_TTFT_MS, P.ITL_MS)
+    out = V.he0_compare(by, P.W1_TTFT_MS, P.ITL_MS)
+    out["blocks"] = {"seed_to_job": blocks, "n_jobs": len(set(blocks.values())), "note": "Job = block; seeds nest in Jobs"}
+    return out
 
 
 def hd_labels(runs, w3_ttft_ms, qs_run=(1.0,)):
@@ -143,3 +146,15 @@ def hd_trace_problems(runs):
 
 def cap_trace_problems(runs):
     return trace_identity_problems(runs, lambda r: (r["spec"]["rate"], r["seed"]))
+
+
+def job_blocks(runs):
+    """HE0/TUNE blocking (decision 57): the Job is the BLOCK and seeds nest inside Jobs (HE0 n=4 = 2 Jobs x 2 seeds).  Every seed's
+    arms must lie in ONE Job (same-Job rule); returns {seed: job}."""
+    by = {}
+    for r in runs:
+        by.setdefault(r["seed"], set()).add(r["run_id"].split("_")[0])
+    bad = {s: sorted(j) for s, j in by.items() if len(j) != 1}
+    if bad:
+        raise RuntimeError(f"ABORT_SEED_ACROSS_JOBS: arms of a seed span several Jobs {bad}")
+    return {s: next(iter(j)) for s, j in sorted(by.items())}

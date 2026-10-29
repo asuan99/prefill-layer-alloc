@@ -884,6 +884,107 @@ class SustainBlockTests(unittest.TestCase):
         self.assertEqual(P.HARD_CAP_MIN["CAP2"], 342)
 
 
+class CovariateTests(unittest.TestCase):
+    CLK = ("timestamp, clocks.sm [MHz], power.draw [W], temperature.gpu, clocks_throttle_reasons.active, index\n"
+           "2026/10/28 06:00:05.000, 1410 MHz, 300.00 W, 50, 0x0000000000000004, 0\n"
+           "2026/10/28 06:00:15.000, 1410 MHz, 400.00 W, 60, 0x0000000000000000, 0\n"
+           "2026/10/28 06:00:25.000, 1200 MHz, 200.00 W, 40, 0x0000000000000001, 0\n"
+           "2026/10/28 06:01:05.000, 1410 MHz, 100.00 W, 30, 0x0000000000000004, 0\n")
+
+    def test_clk_window_stats(self):
+        import ph_covariates as C
+        rows = C.parse_clk(self.CLK)
+        self.assertEqual(len(rows), 4)                                          # header skipped
+        t0 = rows[0][0] - 5.0
+        w = C.window_stats(rows, t0, t0 + 30.0)
+        self.assertEqual(w["n_samples"], 3)
+        self.assertAlmostEqual(w["throttle_frac"], 1 / 3)                       # SW power cap only; GpuIdle (0x1) is not a throttle
+        self.assertEqual(w["power_w_median"], 300.0)
+        self.assertEqual(w["temp_c_median"], 50)
+        self.assertEqual(w["sm_mhz_median"], 1410)
+        self.assertAlmostEqual(w["power_w_p95"], 390.0)
+        self.assertEqual(C.window_stats(rows, 0.0, 1.0), {"n_samples": 0})
+
+    def test_segment_completion_rate_and_drain(self):
+        import ph_covariates as C
+        reqs = [dict(rq(500, i=i), scheduled_arrival_s=float(i)) for i in range(10)] + [dict(rq(None, err="x", i=99), scheduled_arrival_s=9.5)]
+        s = C.segment_stats({"phase": "HI", "round": 1, "duration_s": 20.0, "requests": reqs})
+        self.assertEqual((s["n"], s["n_completed"]), (11, 10))
+        self.assertAlmostEqual(s["completion_rate_req_s"], 0.5)                 # completed (not attempted) / duration
+        self.assertAlmostEqual(s["drain_s"], 20.0 - 9.5)                         # duration after the LAST scheduled arrival
+
+    def test_report_is_descriptive_and_decisions_ignore_it(self):
+        import ph_covariates as C
+        runs_by = he0_runs(81, 54)
+        base = V.he0_compare(runs_by, 3000, 60)
+        runs = [r for a in runs_by.values() for r in a.values()]
+        for r in runs:
+            for k, s in enumerate(r["segments"]):
+                s["wall_start_epoch"], s["wall_end_epoch"] = 1.0 + 100 * k, 50.0 + 100 * k
+        rep = C.cov_report(runs, self.CLK, {"gpu": {"uuid": "GPU-x", "driver_version": "580", "name": "A100"}, "hostname": "h",
+                                           "gpu_uuids": ["GPU-x"], "job_name": "j"})
+        self.assertEqual(rep["job"]["gpu_uuids"], ["GPU-x"])
+        self.assertEqual(rep["job"]["driver_version"], "580")
+        blob = json.dumps(rep).lower()
+        for banned in ('"label"', '"verdict"'):
+            self.assertNotIn(banned, blob)
+        self.assertEqual(V.he0_compare(runs_by, 3000, 60), base)                 # wall-time / covariate fields change no decision
+        src = (PH / "ph_verdict.py").read_text()
+        self.assertNotIn("covariate", src)
+        self.assertNotIn("refcell", src)
+
+    def test_segment_records_carry_wall_window(self):
+        with tempfile.TemporaryDirectory() as td:
+            Srv, replay = RunnerTests()._fakes(td)
+            rates = P.he0_rates(3.0)
+            boot = {"boot_id": "b", "arm": P.static_arm(44), "runs": [P.he0_run("rw", 1, rates, np_=20, rounds=1)]}
+            RU.run_boot(boot, Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            r = json.loads((Path(td) / "raw/runs/rw.json").read_text())
+            self.assertTrue(all(s["wall_end_epoch"] >= s["wall_start_epoch"] > 0 for s in r["segments"]))
+
+    def test_job_is_the_block_and_seeds_nest(self):
+        runs = []
+        for jid, seeds in (("EVAL-a", (1, 2)), ("EVAL-b", (3, 4))):
+            for a, sd in [(a, s) for a in ("s16", "dyn") for s in seeds]:
+                runs.append({"run_id": f"{jid}_{a}_s{sd}", "seed": sd})
+        self.assertEqual(A.job_blocks(runs), {1: "EVAL-a", 2: "EVAL-a", 3: "EVAL-b", 4: "EVAL-b"})
+        runs.append({"run_id": "EVAL-b_s44_s1", "seed": 1})                       # seed 1 now spans two Jobs
+        with self.assertRaises(RuntimeError):
+            A.job_blocks(runs)
+
+    def test_eval_labels_expose_blocks(self):
+        runs_by = he0_runs(81, 54)
+        flat = []
+        for a, bys in runs_by.items():
+            for s, r in bys.items():
+                r = dict(r, run_id=f"EVAL-a_{a}_s{s}", trace_hash=f"h{s}", spec={})
+                flat.append(r)
+        out = A.eval_labels(flat)
+        self.assertEqual(out["blocks"]["n_jobs"], 1)
+        self.assertEqual(out["blocks"]["seed_to_job"], {1: "EVAL-a", 2: "EVAL-a", 3: "EVAL-a", 4: "EVAL-a"})
+
+    def test_registered_reference_cell_and_rates(self):
+        import ph_refcell as RC
+        self.assertEqual((RC.REF_D, RC.REF_RATE, RC.REF_N, RC.REF_SEED), (44, 7.29491, 120, 201))
+        add = json.loads((PH / "addendum_tune.json").read_text())
+        plan = P.make_plan("TUNE", add)
+        self.assertEqual(len(plan["boots"]), 12)
+        self.assertEqual((round(plan["rates"]["lo"], 4), round(plan["rates"]["hi"], 4)), (2.7356, 10.9424))
+        self.assertEqual((P.HARD_CAP_MIN["TUNE"], P.HARD_CAP_MIN["EVAL-a"]), (220, 195))
+
+    def test_cov_wrapper_contract(self):
+        src = (PH / "ph_cov_job.sh").read_text()
+        self.assertIn('exit "${rc1}"', src)                                       # Job rc = the measurement's rc
+        self.assertIn("covariates", src)
+        e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        e["PDMUX_POLICY_JOB"] = "HD-1"
+        with tempfile.TemporaryDirectory() as td:
+            e["PDMUX_POLICY_SUMMARY"] = td
+            r = subprocess.run(["bash", str(PH / "ph_cov_job.sh")], env=e, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 16)
+        self.assertIn("TUNE|EVAL-a|EVAL-b", r.stderr)
+
+
 class RawExportTests(unittest.TestCase):
     """Decision 54: the raw tree must also live under ${summary} (a results/ path that job_entry exports and fetch.sh merges)."""
 

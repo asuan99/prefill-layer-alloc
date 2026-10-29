@@ -1,4 +1,4 @@
-# 사전등록 rev1.5 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.6 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -415,3 +415,37 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 ### 20-6. 수리 위치
 `ph_sustain.py`·`ph_cap2_sustain.sh`·`addendum_cap2.json`(신규), `ph_spec.HARD_CAP_MIN`·`ph_job.sh`(CAP2 캡 342), `ph_digest.py`(신규 파일 포함). raw 반출(§18)은 `ph_job.sh`가 CAP2에도 그대로 적용한다.
+
+
+## 21. addendum rev1.6 — TUNE + HE0 셀 먼저, H-D 보류, 공변량 기록 (결정 57)
+
+### 21-1. 결정 57 (사용자, 2026-10-29)
+**TUNE + HE0 셀 먼저, H-D 보류.** H-D 재개 조건: (i) W3 λ\*를 **seed ≥ 4로 같은 GPU에서 재측정**하고 (ii) **W1 rate를 지속 기준(완료 처리율 ≈ 3.0 req/s)으로 둘지 사용자가 결정**한다. 근거(CAP2+지속성 결과 감사 `results/policy_cap2/AUDIT_cap2_sustain_result_r1_2026-10-29.md`): λ\*\_W3 = 0.3375는 통과 여유가 1요청뿐이라 취약하고, 지속성 블록에서 W1 7.29는 600 s 유지되지 않았다(완료 처리율 약 3.0). 이 PREREG의 H-D(§3) 규칙은 그대로 두되 **제출하지 않는다**.
+
+### 21-2. 승계 caveat (감사, 문자 그대로)
+1. "λ*_W3=0.3375의 통과 여유는 1요청이며, floor를 평균으로 바꾸면(−3.4%) 0.225, 문턱 0.875에서는 0.50625(D24)로 바뀐다."
+2. "W3 floor의 산포는 입력 길이에 비례하는 결정적 차이이며, SLO 2814.84 ms는 문서 표본에 종속된다."
+3. "지속 W1 7.29 req/s에서 완료 처리율은 약 3.0 req/s이고, 5.1–5.4는 첫 토큰 속도다. HE0 LO 2.74는 그 0.9배 근방이다."
+4. "CAP1·CAP1-R·CAP2·TUNE·HE0는 서로 다른 GPU에서 측정됐고, throttle은 부하 기인 전력 상한이라 Job 간 차이를 표류로 해석하지 않는다."
+금지 문안(감사): "W3 용량은 0.34 req/s" · "W3 비중 4.4%" · "지속 처리율 5.2 req/s" · "throttle은 D와 상관" · "기판이 점점 throttle된다".
+
+### 21-3. HE0·TUNE rate 확정
+CAP1-R λ\*\_W1 = 7.29491(입력값, §20-1)에서 §4-2 규칙: `rate_HI = 1.5 × 7.29491 = 10.9424 req/s`, `rate_LO = rate_HI / 4 = 2.7356 req/s`(`addendum_tune.json`). **HE0·TUNE은 W1 ShareGPT, SLO TTFT 3000 ms / 요청 내부 ITL p95 60 ms 고정이며 W3 floor를 쓰지 않는다**(W3 floor는 H-D 전용). 감사 (caveat 3): LO 2.74는 지속 완료율의 0.9배 근방, HI 10.94는 CAP 셀(약 16 s)과 척도가 같은 200요청(약 18 s)이다.
+
+### 21-4. TUNE Job
+12 boot(구성 {anchor idx 2, 3, 4} × {dwell 3, 6}) × 튜닝 seed {101, 102}(구성·seed마다 boot, 컨트롤러 상태가 boot에 남음), 선택 규칙 §4-3(구성별 두 seed의 TRUE goodput 평균 최대, 1% 이내 동률이면 `switch_count`가 적은 쪽; **`switch_count` = 컨트롤러 결정 변경 횟수, 결정 53**, §17-1). target `ph_cov_job.sh`(`PDMUX_POLICY_JOB=TUNE`, addendum `addendum_tune.json`), raw 반출(§18) 적용.
+
+### 21-5. 기판 공변량 기록 (감사 issue 4; 판정 무영향 기술값, 데이터 전 등록)
+- **Job별**: GPU UUID·이름·hostname·드라이버(`meta/substrate.json`).
+- **run·구간(LO/HI)별**: 구간의 wall 창에서 `clk.csv`의 throttle 비율(GpuIdle 제외 모든 사유), 전력 중앙값·p95, 온도 중앙값, SM clk 중앙값; 구간별 **완료율**(완료 요청 수 / 구간 duration)과 **drain 시간**(duration − 마지막 예약 도착). 구현 `ph_covariates.py`(segment 기록에 `wall_start_epoch`/`wall_end_epoch` 추가 — 측정 후처리용 시각일 뿐).
+- **기준 셀(Job 시작·끝, 기술값)**: W1 · static D44 · 7.29491 req/s · 120요청 · seed 201 (boot + 60 s warm-up 뒤 약 17 s), 각각 `REFCELL_start/end.json`에 attainment·TTFT p50/p95·그 창의 기판 통계(`ph_refcell.py`).
+- **Job = block**: HE0 분석에서 Job을 block으로 명시한다(HE0 n = 4 = 2 Job × 2 seed, seed가 Job에 중첩). `eval_labels`는 `blocks.seed_to_job`을 출력하고 한 seed의 arm이 여러 Job에 걸치면 `ABORT_SEED_ACROSS_JOBS`.
+- **판정 무영향**: 공변량·기준 셀은 `he0_compare`·`select_tune`·어떤 라벨의 입력도 아니다(`ph_verdict.py`에 해당 단어 없음, 시험 `test_report_is_descriptive_and_decisions_ignore_it`); 별도 단계(`ph_cov_job.sh` stage 0·2·3, 별도 프로세스·boot)이며 Job rc는 측정 단계의 rc다. 해석 금지: 위 caveat 4·금지 문안.
+
+### 21-6. 하드캡·예상 시간 [유도, 모형 U 갱신]
+- 갱신 사유: §7의 HE0 run 15 min은 rate 3/12 가정이었다. 새 rate에서 구간 길이는 LO 200/2.7356 = 73 s, HI는 완료 처리율 2.0–3.0 req/s로 67–100 s drain → 라운드 약 140–200 s, 3라운드 + 오버헤드 → **run ≈ 11 min(보수값)**.
+- **TUNE**: 12 run × 11 = 132 min + 12 boot × 4.3 = 51.6 → 183.6 min(3.06 h) + 기준 셀 2회·공변량 약 12 min = 약 196 min(3.3 h). 사용률(셀 시간 / 컨테이너) 약 68%(boot 12개가 지배). 측정 하드캡 **220 min**(= 1.2 × 183.6, `HARD_CAP_MIN["TUNE"]` 278 → 220) + 기준 셀 timeout 20 min × 2 → 최악 약 265 min(4.4 h) ≤ 6 h.
+- **EVAL-a/b**(각 6 arm × 2 seed, boot 7): 12 × 11 + 7 × 4.3 = 162 min(2.7 h) + 약 12 min; 사용률 약 76%; 하드캡 **195 min**(`HARD_CAP_MIN["EVAL-a"/"EVAL-b"]` 252 → 195); ≤ 6 h.
+
+### 21-7. 수리·구현 위치
+`ph_covariates.py`·`ph_refcell.py`·`ph_cov_job.sh`·`addendum_tune.json`(신규), `ph_runner.replay_segment`(wall 창), `ph_analyze.job_blocks/eval_labels`, `ph_spec.HARD_CAP_MIN`·`ph_job.sh`, `ph_digest.py`; 시험 `CovariateTests`, 변이 M87–M97.
