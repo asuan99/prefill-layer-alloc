@@ -30,6 +30,7 @@
 - **Phase 2 엔진 수정(2026-10-29, 브랜치 `impl-defects-e123` worktree `prefill-layer-alloc-implfix`, HEAD `ab4b1ba1`)**: E2 발행 깊이·E1 span budget|time|time_typed(`span_policy.py`, analytic_terms 정수 일치)·E3 handoff(split_index>0만)·E5 diag v2, 전부 기본 OFF. stub 151 OK(재실행 확인), T-OFF golden 일치, 변이 25 전부 검출. digest 30→31항 `fad4f110…`(보고서 기록값 0a5a2533 재현 안 돼 정정). GPU 정확성 gate G-0…G-5 미실행, 성능 주장 0. main 미병합
 - **결정 57(2026-10-29, 사용자)**: 구현 결함 후속 진행 — ① impl-defects GPU 정확성 gate G-0…G-5 PREREG 작성·launch.sh dry-run까지(제출은 별도 승인) ② 진단 PREREG 새 rev addendum(M1 2k×512×D44 셀·B1 진행 중 전환 측정, main digest 유지 범위) ③ 범위 정정 문구 diff 작성 → claims-auditor 2차(마지막) → promote — promote 필요: 아니오 (7차 promote 2026-10-29; ②는 rev2 addendum 초안 `7af52ffb` 미봉인)
 - **결정 59(2026-10-29, 사용자)**: impl-defects GPU 정확성 gate의 승인 필요 선택지는 권고대로 — 하드캡 180 min 유지 · G5(계측 효과) 보고 전용 · 결정론 추론 pair 유지 · fused 대비는 보고 전용 · 양성 대조 문턱 8/4/1/5/30·handoff sync 0.5 ms 유지 · 하네스 감사 1회 → 봉인·digest·dry-run 재실행 → 제출 — promote 필요: 예 (결정)
+- **impl-defects GPU gate 결과(2026-10-30, 미감사)** job-zwl9f7e8lrc0(봉인 `c03d6222`) 회수(DONE+sha256), 봉인 규칙대로 **FAIL**(G0·G1·G4 FAIL, G2 UNRESOLVED, G3 PASS; CPU 재채점 일치). result-analyst: 원인은 E1–E3 경로 결함이 아니라 ① det 쌍이 flashinfer 결정론 workspace 부족으로 사망(플래그 OFF det_off도 동일) ② CO3_B 키 실행 간 2변형 flip(플래그 없는 boot에도) ③ G4(b) tensor_item이 idle 회전의 `flags.item()`을 셈 — 플래그별 G2 양성 대조는 전부 PASS(유효 handoff 20, E2 깊이=k, E1 k≥2 162–163). `implfix:results/impl_defects_gate/RESULT_impl_gate_c03d622_2026-10-30.md`(`fcb1c7da`) — promote 필요: 아니오(감사 전)
 - **방향 재정리(제안, 미결정, 감사 반영)**: 부정 결론은 "KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증"으로 범위만 재진술(정지 기판 귀속 금지, layer-type 死 제외) · 승계 기본값(D=44·cap 48·budget 65536)은 Nano에서 재결정 · HyMux 원고는 구현 구조로 낮추고 R1–R3를 단일 처치 ablation 가설로(R3·R1 > R2) · 비동기 기판 arm은 후순위 · 구조 검증 T1–T5 완료(`7a7a2c08`, 원고 대조는 Revision Letter R3 기준, 본문 직접 대조 미실시)
 - 동결 설계: V-O·H-D `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 · DP 라우팅(감사 r2). 사소한 결함: `ct_harness_digest.py check --dir` 상대 경로
 ## 다음 행동
@@ -45,7 +46,7 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **impl-defects GPU 정확성 gate** / PREREG rev0(미봉인)·driver·CPU 테스트 46·dry-run rc=0 완료(브랜치 `ba5a94ab`·`d6ab832c`, 1 Job 26+2 boot, 약 118 min [유도], digest `fad4f110…` 재현) / 제출 완료(job-zwl9f7e8lrc0) — 회수·채점 대기
+- **impl-defects GPU 정확성 gate** / rev0.1 FAIL(분석상 하네스·기준 원인, 미감사) / H1–H4 수정 후 rev0.2 재봉인·새 Job(데이터 본 뒤 규칙 변경 공시, rev0.1 FAIL 보존)(권고) · 결과 감사 먼저 · 중단
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - `pdmux-policy-tune-074ffc3-20261029140207`(job-9t469viisz2i, 2026-10-29 제출, commit 074ffc37 봉인 S6, A100×1, 예상 3.3 h·하드캡 ≈4.4 h): TUNE(bind+GATE 구성 6 × 튜닝 seed 101·102, 12 boot) + 공변량·기준 셀. 회수 `scripts/vessl/fetch.sh policy_tune <job name>`
