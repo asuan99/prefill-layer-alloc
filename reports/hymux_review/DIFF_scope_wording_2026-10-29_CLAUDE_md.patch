@@ -1,0 +1,21 @@
+--- a/CLAUDE.md
++++ b/CLAUDE.md
+@@ -35,13 +35,13 @@
+ 
+ ## 현재 결론 (재도출 금지 — 이미 확정된 것)
+ 
+-- A100·cudagraph-ON에서, 미조율 기본 fused 대비 PD-mux 활성화의 꼬리 SLO goodput 우위는 Zamba2-2.7B +40.5%(r2)·+185.8%(r3), Granite-4.0-h-micro +27.0%(r4)다. 기전 귀속은 미확립. "4모델 전부·~3×"는 철회됨(묶음 처치 3-플래그, fused 미조율; PROJECT_STATUS.md:6664-6750 2026-08-05 정정, CONSENSUS §1-1, 2026-10-15 REVIEW_handoff_prompt §1). **운영점 = cudagraph-ON**.
+-- **layer-type 런타임 정책은 全형태 死**(서빙 직접 측정으로 반증; coordinated per-type
++- A100·cudagraph-ON에서, 미조율 기본 fused 대비 SGLang 공개 PD-mux 구현(lockstep 단일 프로세스 루프, budget 65536, 적체 영역; MuxWise 논문 시스템과 동일시 금지; 2026-10-29 범위 정정, 감사 r1 #4) 활성화의 꼬리 SLO goodput 우위는 Zamba2-2.7B +40.5%(r2)·+185.8%(r3), Granite-4.0-h-micro +27.0%(r4)다. 기전 귀속은 미확립. "4모델 전부·~3×"는 철회됨(묶음 처치 3-플래그, fused 미조율; PROJECT_STATUS.md:6664-6750 2026-08-05 정정, CONSENSUS §1-1, 2026-10-15 REVIEW_handoff_prompt §1). **운영점 = cudagraph-ON**.
++- **layer-type 런타임 정책은 全형태 死**(★2026-10-29 범위 정정, 감사 r1 #2: KISTI A100·Zamba2-2.7B·triton·no-cudagraph, SGLang 공개 PD-mux 루프 위 "층 경계마다 SM 분할을 바꾸는" 계열[coord R0d·OPT·v4·PF] 한정, span 크기·박자 영역·handoff·preemption·cudagraph-ON은 미시험; 서빙 직접 측정으로 반증; coordinated per-type
+   TPOT 42→124ms). 시뮬레이터의 per-layer 이득(1.37–2.02×)은 실엔진으로 전이되지 않음.
+-- **단일-GPU 동적 제어(SLO-aware/binding-first/gate)는 best decode-heavy static을 못 넘음**
+-  — 관대(3s)·tight(chat 300/50ms) SLO 양쪽 확정. 실패 원인 = switch overhead 아님,
++- **단일-GPU 동적 제어(SLO-aware/binding-first/gate)는 best decode-heavy static을 못 넘음(SGLang 공개 PD-mux 루프: 결정 = prefill 배치 입장 시점, 전환 = 진행 중 prefill drain, HE0 trace 배치의 94–95%는 span 1개; 2026-10-29 범위 정정, 감사 r1 #5)**
++  — 관대(3s)·tight(chat 300/50ms) SLO 양쪽 확정. 실패 원인 = 컨트롤러 CPU·agnostic 경로 전환 비용 아님(진행 중 drain은 미측정, bind+GATE 상한 ≤0.72%, slo arm 배제 불가; 2026-10-29 범위 정정 #6),
+   **positioning + entanglement**(decode 굶김→ITL↑→batch 정체→admission 차단→TTFT 폭발).
+-- **실무 기본값 = peak decode 부하 기준 decode-heavy static 고정**(검증된 profile 없으면 agnostic).
++- **실무 기본값 = peak decode 부하 기준 decode-heavy static 고정**(검증된 profile 없으면 agnostic). 비sticky SGLang PD-mux 루프 한정(decode-only·prefill-only 구간은 전 SM 복귀; 라벨은 목표 D, 결정 49), 기본값은 Nano에서 재결정(결정 40/43) — 2026-10-29 범위 정정, 감사 r1 #8.
+ - **미검증 라이브 가설(R2)**: H-Architecture(true dual-worker로 coupling 감소),
+   H-Policy(offline hybrid-profile decode-floor 예측이 generic/static보다 나은 SLO goodput).
+   구현 완료 ≠ 성능 주장 성립.
