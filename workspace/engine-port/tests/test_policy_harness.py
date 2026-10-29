@@ -807,6 +807,83 @@ class Cap1RerunTests(unittest.TestCase):
         self.assertIn("ABORT_UNSEALED", r.stderr)                                                    # past the job-name check, stopped by the seal
 
 
+class SustainBlockTests(unittest.TestCase):
+    @staticmethod
+    def _reqs(n, span=120.0, bad_after=None):
+        out = []
+        for i in range(n):
+            t = span * i / n
+            bad = bad_after is not None and t >= bad_after
+            out.append({"request_id": f"r{i}", "phase": "W1", "ttft_ms": 9000.0 if bad else 500.0, "token_itl_ms": [30.0],
+                        "error": "", "scheduled_arrival_s": t})
+        return out
+
+    def test_registered_constants(self):
+        import ph_sustain as S
+        self.assertEqual((S.SUSTAIN_D, S.SUSTAIN_SEEDS, S.DURATION_S, S.WINDOW_S), ((44, 64), (201, 202), 600, 60.0))
+        self.assertEqual(S.LAMBDA_STAR_W1, 7.29491)
+        self.assertEqual(S.n_requests(S.LAMBDA_STAR_W1), 4377)
+
+    def test_plan_is_fixed_rate_and_count_nonsticky(self):
+        import ph_sustain as S
+        boots = S.plan()
+        self.assertEqual(sorted(b["arm"]["D"] for b in boots), [44, 64])
+        for b in boots:
+            self.assertIs(b["arm"]["sticky"], False)
+            self.assertEqual(sorted(r["seed"] for r in b["runs"]), [201, 202])
+            self.assertTrue(all(r["rate"] == 7.29491 and r["n_requests"] == 4377 for r in b["runs"]))
+        self.assertEqual(RU.instr_violation(RU.boot_env(boots[0]["arm"], Path("/tmp/b"), base={"PDMUX_PHASE_EVENTS": "1"})), [])
+
+    def test_window_table_groups_by_arrival_and_is_descriptive(self):
+        import ph_sustain as S
+        wt = S.window_table(self._reqs(120, span=120.0, bad_after=60.0))
+        self.assertEqual([w["window"] for w in wt], [0, 1])
+        self.assertEqual([w["n"] for w in wt], [60, 60])
+        self.assertEqual((wt[0]["attainment"], wt[1]["attainment"]), (1.0, 0.0))
+        self.assertEqual(wt[0]["ttft_p50_ms"], 500.0)
+        self.assertEqual(wt[1]["ttft_p95_ms"], 9000.0)
+
+    def test_throttle_fraction_per_window_ignores_gpu_idle_bit(self):
+        import ph_sustain as S
+        t0 = S._parse_clk_ts("2026/10/28 06:00:00.000")
+        rows = ["timestamp, clocks.sm, power.draw, temperature.gpu, clocks_throttle_reasons.active, index",
+                "2026/10/28 06:00:10.000, 1410 MHz, 300 W, 40, 0x0000000000000004, 0",          # SW power cap in window 0
+                "2026/10/28 06:00:20.000, 1410 MHz, 300 W, 40, 0x0000000000000000, 0",
+                "2026/10/28 06:01:10.000, 1410 MHz, 300 W, 40, 0x0000000000000001, 0",          # GpuIdle only: not a throttle
+                "2026/10/28 06:01:20.000, 1410 MHz, 300 W, 40, 0x0000000000000000, 0"]
+        thr = S.throttle_by_window("\n".join(rows), t0, 2)
+        self.assertEqual(thr, [0.5, 0.0])
+
+    def test_summary_has_no_label_or_verdict(self):
+        import ph_sustain as S
+        t0 = S._parse_clk_ts("2026/10/28 06:00:00.000")
+        summ = S.summarize_run(self._reqs(180, span=180.0), "", t0)
+        blob = json.dumps(summ).lower()
+        for banned in ("label", "verdict", "pass", "unstable_label"):
+            self.assertNotIn(banned, blob)
+        self.assertTrue(summ["descriptive_only"])
+        self.assertEqual(len(summ["windows"]), 3)
+
+    def test_sustain_runs_cannot_be_mixed_into_a_capacity_table(self):
+        sus = Cap1RerunTests._run("SUSTAIN", 44, 7.29491)
+        cap = Cap1RerunTests._run("CAP2", 44, 0.3)
+        with self.assertRaises(RuntimeError):
+            A.cap_addendum([cap, sus], "W1")                                    # the block can never change a CAP2 verdict silently
+
+    def test_cap2_wrapper_contract(self):
+        src = (PH / "ph_cap2_sustain.sh").read_text()
+        self.assertIn('--out "${summary}/sustain"', src)                         # its own directory, not CAP2's raw tree
+        self.assertIn("exit \"${rc1}\"", src)                                    # Job rc = CAP2's rc
+        e = {k: v for k, v in os.environ.items() if not k.startswith("PDMUX_")}
+        e["PDMUX_POLICY_JOB"] = "CAP1"
+        with tempfile.TemporaryDirectory() as td:
+            e["PDMUX_POLICY_SUMMARY"] = td
+            r = subprocess.run(["bash", str(PH / "ph_cap2_sustain.sh")], env=e, capture_output=True, text=True, timeout=60)
+        self.assertEqual(r.returncode, 16)
+        self.assertIn("must be CAP2", r.stderr)
+        self.assertEqual(P.HARD_CAP_MIN["CAP2"], 342)
+
+
 class RawExportTests(unittest.TestCase):
     """Decision 54: the raw tree must also live under ${summary} (a results/ path that job_entry exports and fetch.sh merges)."""
 

@@ -1,0 +1,1 @@
+{"cap_ladder": {"W3": {"rmin": 0.1}}, "lambda_star": {"W1": 7.29491}, "NOTE": "CAP2 addendum (PREREG 20): W3 ladder per 15-2 (rmin 0.1 x1.5, 6 points). lambda_star.W1 = 7.29491 is the CAP1-R input value (job pdmux-policy-cap1r-4bef3cf-20261029003539, D44/D64 tie), read by ph_sustain only"}

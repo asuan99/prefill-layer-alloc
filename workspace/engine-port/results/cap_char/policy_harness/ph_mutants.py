@@ -92,6 +92,15 @@ MUTANTS = [
     ("M75 mixed CAP Jobs accepted in one capacity table", "ph_analyze.py", "    if len(jobs) != 1:", "    if False:"),
     ("M76 rerun never marked exhausted", "ph_analyze.py", 'exhausted = jobs == {"CAP1R"} and', 'exhausted = False and'),
     ("M77 CAP1R job name rejected by the job target", "ph_job.sh", "  CAP1R) cap_min=151 ;; CAP1) cap_min=196 ;;", "  CAP1) cap_min=196 ;;"),
+    ("M78 sustain request count not rate x 600", "ph_sustain.py", "return int(round(rate * duration_s))", "return int(round(rate * duration_s)) + 1"),
+    ("M79 sustain window 60 s -> 30 s", "ph_sustain.py", "WINDOW_S = 60.0", "WINDOW_S = 30.0"),
+    ("M80 sustain arms D44/D64 -> D44/D34", "ph_sustain.py", "SUSTAIN_D = (44, 64)", "SUSTAIN_D = (44, 34)"),
+    ("M81 sustain rate not the CAP1-R lambda*", "ph_sustain.py", "LAMBDA_STAR_W1 = 7.29491 ", "LAMBDA_STAR_W1 = 6.29491 "),
+    ("M82 throttle counts the GpuIdle bit", "ph_sustain.py", "(int(p[4], 16) & ~0x1) != 0", "int(p[4], 16) != 0"),
+    ("M83 sustain windows grouped by completion-like shift", "ph_sustain.py", 'int(r["scheduled_arrival_s"] // window_s)', 'int((r["scheduled_arrival_s"] + 30.0) // window_s)'),
+    ("M84 sustain writes into CAP2's raw tree", "ph_cap2_sustain.sh", '--out "${summary}/sustain"', '--out "${summary}/raw/sustain"'),
+    ("M85 Job rc taken from the sustain stage", "ph_cap2_sustain.sh", 'exit "${rc1}"', 'exit "${rc2}"'),
+    ("M86 sustain wrapper runs for any job", "ph_cap2_sustain.sh", '[[ "${PDMUX_POLICY_JOB:-}" == CAP2 ]] ||', 'true ||'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

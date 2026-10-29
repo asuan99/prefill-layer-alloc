@@ -68,7 +68,7 @@ ENGINE_DIGEST_PENDING = "PENDING_FINAL_TREE"
 # registered x1.35 relocation; disclosed before the rerun data).  No further rerun: a second bracket failure goes to the user.
 CAP1R_FACTOR, CAP1R_N = 1.15, 10
 
-HARD_CAP_MIN = {"CAP1R": 151, "CAP1": 196, "CAP2": 272, "TUNE": 278, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
+HARD_CAP_MIN = {"CAP1R": 151, "CAP1": 196, "CAP2": 342, "TUNE": 278, "EVAL-a": 252, "EVAL-b": 252, **{f"HD-{i}": 312 for i in range(1, 9)}}
 
 
 def stable(obj) -> str:

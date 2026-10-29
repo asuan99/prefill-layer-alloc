@@ -26,7 +26,7 @@ def sha(p):
 
 
 def covered():
-    own = [p for p in sorted(HERE.glob("ph_*.py")) if p.name != "ph_mutants.py"] + [HERE / "ph_job.sh", HERE / "ph_gate_smoke.sh", HERE / "ph_cap1_control.sh", HERE / "addendum_cap1.json", HERE / "addendum_cap1r.json", HERE / "ENGINE_DIGEST.txt"]
+    own = [p for p in sorted(HERE.glob("ph_*.py")) if p.name != "ph_mutants.py"] + [HERE / "ph_job.sh", HERE / "ph_gate_smoke.sh", HERE / "ph_cap1_control.sh", HERE / "ph_cap2_sustain.sh", HERE / "addendum_cap1.json", HERE / "addendum_cap1r.json", HERE / "addendum_cap2.json", HERE / "ENGINE_DIGEST.txt"]
     ct = [CT / n for n in ("ct_spec.py", "ct_runner.py", "ct_client.py", "ct_extract.py", "ct_fit.py",
                            "pdmux_costterms_D64_candidate.yml")]
     ext = [ENG / "benchmarks/pdmux_eval/trace_loadgen.py", ENG / "benchmarks/pdmux_eval/analyze.py", ENG / "benchmarks/pdmux_eval/abs_mono_loadgen.py",

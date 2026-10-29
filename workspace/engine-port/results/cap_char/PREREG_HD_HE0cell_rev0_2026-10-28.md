@@ -1,4 +1,4 @@
-# 사전등록 rev1.4 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.5 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -383,3 +383,35 @@ boot 200 s + warm-up 60 s = **4.3 min/boot**, 셀 오버헤드 15 s. 용량 셀:
 
 ### 19-3. 상태
 시험 `Cap1RerunTests`, 변이 M73–M77, 재봉인 후 dry-run만. 제출은 사용자 승인 몫.
+
+
+## 20. addendum rev1.5 — CAP1-R 결과의 입력 확정, CAP2, λ\* 지속성 블록 (결정 56)
+
+### 20-1. CAP1-R 결과를 addendum 입력값으로 확정
+- Job `pdmux-policy-cap1r-4bef3cf-20261029003539`: **λ\*\_W1(best static) = 7.29491 req/s**, D44·D64 동률, `CAPACITY_BRACKETED`(결과 감사 r1 `results/policy_cap1r/AUDIT_cap1r_result_r1_2026-10-29.md`: 재계산 일치, CAP2·HE0·H-D 진행 GO-with-caveats). 이 값은 `policy_harness/addendum_cap2.json`의 `lambda_star.W1`로 기록되며 **입력값**이다(크기·관절 인용 아님). HE0·H-D rate의 입력은 이 값에서 §4-2·§3-1 규칙으로 계산한다.
+- **동률 규칙은 미등록이다(공시)**: D44·D64 동률의 argmax는 run 파일명 순서의 구현 결과이며 등록된 규칙이 아니다. 뒤집으면 best\_D = 64가 되지만 **λ\*는 불변**(7.29491)이다.
+
+### 20-2. 승계 caveat (감사 r1, 문자 그대로)
+1. "λ*_W1=7.29491은 120요청(약 16 s) 셀의 버스트 용량이며 지속 용량이 아니다. 용량 셀은 두 seed 모두 S1 UNSTABLE(15.9, 30.7)이고, 이 크기의 셀에서 S1은 attainment 1.0인 셀에도 발화한다."
+2. "H-D의 q=1.0 W1 phase(120/600 s)는 용량을 측정한 셀 길이의 7–36배이며, 그 길이에서 λ*가 지속 가능한지는 측정되지 않았다."
+3. "CAP1-R의 throttle(SW power cap)은 boot별 8.6–17.7%로 CAP1(2.4–4.4%)보다 높다. λ*의 크기는 이 Job의 기판 상태에 묶이며, 후속 Job에서 HI/λ*의 실효 배율은 같다고 보장되지 않는다."
+4. "D44·D64 동률의 argmax=44는 구현 순서의 결과이며 등록된 동률 규칙이 아니다(λ* 불변)."
+5. "LO=2.74는 CAP1 기준 D16 용량(1.66)보다 높아 KISTI LO처럼 분할 무관 구간이 아니다(Job 간 기술값)."
+금지 문안(감사): "Nano W1 용량은 7.3 req/s다"·"D44≈D64가 용량 포화점이다" 류 크기·관절 인용 · "throttle이 높은 D의 용량을 깎았다/깎지 않았다" 인과 서술 · CAP1과 CAP1-R 용량 차를 기판 변화·사다리 효과로 해석 · caveat 6의 9%/33%를 CAP2 전에 인용(§15-4 caveat 6은 CAP2 뒤 실측 λ 비로 재계산).
+
+### 20-3. CAP2 (W3 용량)
+사다리는 **§15-2 그대로**(W3 rmin 0.1 × 1.5, 6점 → 0.1, 0.15, 0.225, 0.3375, 0.50625, 0.759375 req/s), 셀당 48 요청, CAP seed {201, 202}, 5 D(비sticky), W3 = arXiv-Sum 16k 자연 출력(결정 47), SLO TTFT = 3 × floor(같은 Job 첫 boot의 단일 요청 TTFT 중앙값)·ITL 60 ms, 규칙은 CAP1과 동일. **bracket 실패 시 등록된 재실행 1회**(`rmin\' = rmin × 1.5^5`, caveat 2, 새 job name); 2회째 실패는 사용자 결정. 위험(감사): W1 λ\*가 §7 가정의 2.4배라 W3도 비슷하면 용량이 최상단 0.76에 근접해 bracket 실패가 날 수 있다 — 위 재실행 규칙이 처리한다.
+
+### 20-4. λ\* 지속성 확인 블록 (결정 56; 판정 없는 기술값, CAP2 판정 무영향; 데이터 전 등록)
+- **무엇**: CAP2 뒤에 같은 Job·같은 노드에서(`ph_cap2_sustain.sh` 2단계, `ph_sustain.py`) W1, static **D44·D64**(비sticky), **rate 7.29491 req/s 고정**, **요청 수 = round(7.29491 × 600) = 4,377개 고정**(도착 약 600 s), **seed {201, 202}**. boot는 D마다 1개(두 seed 순차). 계측 OFF의 통상 측정 boot다.
+- **출력(기술값뿐)**: run별·**60 s 도착 창**별 — 도착 요청 수, attainment(양호/도착), TTFT p50·p95, **같은 창의 SW power cap throttle 비율**(Job의 `clk.csv`, GpuIdle 비트 제외); run별 요청 수준 S1(마지막 1/3 대 처음 1/3 TTFT 중앙값 비)·S2. **라벨·판정·임계 없음**(`descriptive_only`). 결과는 `${summary}/sustain/`에만 쓰이며 CAP2의 raw 트리·판정·Job rc에 들어가지 않는다(`cap_addendum`은 서로 다른 Job의 run이 섞이면 `ABORT_MIXED_CAP_JOBS`; run id `SUSTAIN_…`).
+- **쓰임**: caveat 1–2의 "지속 가능한지 미측정"에 대한 기술 자료일 뿐이며, λ\* 값을 바꾸지 않는다.
+- 시험 `SustainBlockTests`, 변이 M78–M86(요청 수·창·D·rate·throttle 정의·창 귀속·출력 위치·Job rc·Job 이름).
+
+### 20-5. 시간·하드캡 [유도, 모형 U = §7-1: 셀 = 요청 수/rate + 45 s, boot 4.3 min]
+- **CAP2**: (D, seed)당 Σ 48/rate = 480 + 320 + 213 + 142 + 95 + 63 = 1,313 s + 6 × 45 s = 1,583 s; D당 2 seed 52.8 min + boot 4.3 = 57.1 min; 5 D = **285.5 min = 4.76 h**(셀 264 min, 사용률 약 92%). 정정 공시: §7의 CAP2 예상 3.78 h는 셀 평균 3.4 min 가정이었고 실제 사다리의 낮은 rate 셀이 길어 4.76 h다. 하드캡 **342 min**(= 1.2 × 285.5, `HARD_CAP_MIN["CAP2"]` 272 → 342).
+- **지속성 블록**: run당 도착 600 s + drain 약 120 s + 오버헤드 45 s ≈ 12.75 min × 2 seed = 25.5 min + boot 4.3 = 29.8 min; 2 boot = **59.6 min ≈ 0.99 h**(사용률 약 86%), `timeout` 70 min.
+- **합계(한 Job)**: 기대 345 min = **5.75 h**(셀 시간 약 315 min, 사용률 약 91%), 하드캡 합 342 + 70 = 412 min = **6.87 h**. **Job당 ≤ 6 h 원칙: 기대값은 만족하나 하드캡 합이 6 h를 넘는다.** 대안(사용자 결정): 지속성 블록을 별도 Job으로 분리(0.99 h, 하드캡 1.2 h) — 이 경우 CAP2 단독 4.76 h(하드캡 5.7 h). `ph_job.sh`로 CAP2만 제출하는 것도 가능하다.
+
+### 20-6. 수리 위치
+`ph_sustain.py`·`ph_cap2_sustain.sh`·`addendum_cap2.json`(신규), `ph_spec.HARD_CAP_MIN`·`ph_job.sh`(CAP2 캡 342), `ph_digest.py`(신규 파일 포함). raw 반출(§18)은 `ph_job.sh`가 CAP2에도 그대로 적용한다.
