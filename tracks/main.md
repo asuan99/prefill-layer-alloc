@@ -44,9 +44,10 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **impl-defects GPU 정확성 gate** / PREREG rev0(미봉인)·driver·CPU 테스트 46·dry-run rc=0 완료(브랜치 `ba5a94ab`·`d6ab832c`, 1 Job 26+2 boot, 약 118 min [유도], digest `fad4f110…` 재현) / §11 5건 확정(결정 59) → 하네스 감사 1회 → 봉인·dry-run 재실행 → 제출(진행 중)
+- **impl-defects GPU 정확성 gate** / PREREG rev0(미봉인)·driver·CPU 테스트 46·dry-run rc=0 완료(브랜치 `ba5a94ab`·`d6ab832c`, 1 Job 26+2 boot, 약 118 min [유도], digest `fad4f110…` 재현) / 제출 완료(job-zwl9f7e8lrc0) — 회수·채점 대기
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
+- `pdmux-impl-defects-gate-c03d622-20261029060951`(job-zwl9f7e8lrc0, 2026-10-29 06:10Z, 브랜치 impl-defects-e123 봉인 `c03d6222`, digest `0a5d9c3c…`, A100×1, 하드캡 180 min): E1–E3 정확성 gate G0–G4(G5·fused 보고 전용). 하네스 감사 r1 GO-with-caveats B1–B6 반영. 회수 `scripts/vessl/fetch.sh impl_defects_gate <job name>`(implfix worktree) → `impl_gate.py score`
 - `pdmux-policy-cap2-e90e233-20261029023336`(job-sg0dtebc3a0i, 2026-10-29 제출, commit e90e2339 봉인 S5, A100×1, 기대 5.75 h·하드캡 합 6.87 h — 사용자 승인으로 한 Job): CAP2(W3 용량, 0.1×1.5 6점) + λ* 지속성 블록(W1 D44·D64 × 7.29 × 600 s × seed 2, 기술값). 회수 `scripts/vessl/fetch.sh policy_cap2 <job name>`
 - 회수 완료: gate+smoke · CAP1(NOT_BRACKETED) · CAP1-R(job-lrd99x21e2yi, λ*_W1 7.29491, 감사 r1 GO-with-caveats)
 
