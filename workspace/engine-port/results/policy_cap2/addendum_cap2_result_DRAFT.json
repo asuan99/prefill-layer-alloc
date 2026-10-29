@@ -1,8 +1,7 @@
 {
  "NOTE": "CAP2 addendum DRAFT, UNSEALED, NOT SUBMITTED. Descriptive.",
  "W3_floor_ms": 938.2792670512572,
- "W3_only_effect_needed_for_3pct_margin": 0.6784364444444444,
- "W3_share_of_H": 0.04421932259928384,
+ "W3_share_of_H": "single-digit percent (audit r1: do not cite 4.4%/68%)",
  "W3_ttft_slo_ms": 2814.8378011537716,
  "best_D_W3": 16,
  "capacity_W3_by_D": {
@@ -28,8 +27,8 @@
   }
  },
  "caveats": [
-  "W1 lambda* is a burst capacity (see sustain block: attainment ~0 after first 60s at 7.29491)",
-  "W3 lambda* 0.3375 passes at attainment 0.906 (threshold 0.90): margin 6 of 96 requests",
+  "W1 lambda* 7.29491 is a burst capacity; sustained completion throughput ~3.0 req/s (2.97-3.12), 5.1-5.4 was first-token rate",
+  "W3 lambda* 0.3375 pass margin 1 request (87/96, threshold 86.4; s201 40/48, s202 47/48)",
   "W3 best D (16) differs from W1 best D (44/64)"
  ],
  "hd_rates": {
