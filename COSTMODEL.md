@@ -18,7 +18,7 @@
 | CM-1 | decode step 시간 `T_dec(SM, bs, ctx)` | 형태 확인(Nano-9B-v2, 고정 배치·저부하; **T1 F1은 비분할 P=108만 채택**, sticky-D는 F2/F3) / **hybrid 고유 항 미입증**(연결 근거 부재, 반증 아님) | hold-out 서빙(고비용)·opchar(특성화) · 전력 상태는 T1만 확인 |
 | CM-2 | prefill span 시간 `T_span(L, SM)` | 형태 확인(마이크로벤치·격리 커널) / **서빙 floor 계수 확정(범위 한정: Nano-9B-v2 무경합)** / **T2(P=108) 전부 채택, q 1.088–1.097 `PREFILL_NEAR_LINEAR_SCOPED`(Nano, 라벨)** · 장문 98k·124k `LONG_SERVED`(서빙 사실, 함수 형태 연장 아님) / chunk -1 장문 상한 ≈94.8k = Triton conv int32 오프셋(성능 항 아님) | T2 전력 상태·T2′ 전력 상태 NOT-YET-SUPPORTED(원자료 필요) · A1 span-SM, opchar 후속 |
 | CM-3 | 전환·경계 비용 | **계수 확정(범위 한정)** — 무시 가능 | 컨트롤러 구동 경로만 미측정 |
-| CM-4 | 동거 간섭 `δ(p,d)` | **존재 확인(N2 Job-EA)** / **T3: 동거 창 SW power cap 노출 96–100% 대 단독 0–4%, ρ 1.13–1.19는 총효과로만(CONFIRMED)** / 크기·D 순서는 NOT-YET-SUPPORTED / J1: cap 노출 순서가 shape 의존이라 "PD-mux가 클럭을 낮춘다" 일반 가정 불가 / **lockstep 정지 진단(VESSL·Nano·flashinfer·65536·8k/32k·PHASE ON 범위): 동거 간격은 span 시간에 거의 반응 안 함(기울기 0.0015, CI [0.0005, 0.0027]), 별도 정지 항 ≤1 ms 해상도 안 미관측(감사 r1 PLAUSIBLE 조건부)** | N2 후속 F-1…F-4(사용자 결정) · 동적 arm 전환 drain 대기 미측정 · N3 Job 3 첫-chunk 차단 원인 미해결 |
+| CM-4 | 동거 간섭 `δ(p,d)` | **존재 확인(N2 Job-EA)** / **T3: 동거 창 SW power cap 노출 96–100% 대 단독 0–4%, ρ 1.13–1.19는 총효과로만(CONFIRMED)** / 크기·D 순서는 NOT-YET-SUPPORTED / J1: cap 노출 순서가 shape 의존이라 "PD-mux가 클럭을 낮춘다" 일반 가정 불가 / **lockstep 정지 진단(VESSL·Nano·flashinfer·65536·8k/32k·PHASE ON 범위): 동거 간격은 span 시간에 거의 반응 안 함(기울기 0.0015, CI [0.0005, 0.0027]), 별도 정지 항 ≤1 ms 해상도 안 미관측(감사 r1 PLAUSIBLE 조건부)** (★2026-10-29 범위 정정, 감사 r1 #11: 이 run들은 적체 영역[span > 동거 decode step, prefill 미동기 발행]이었고 이 영역의 무반응은 루프 구조상 예상값이며 박자 영역은 측정되지 않았다) | N2 후속 F-1…F-4(사용자 결정) · 동적 arm 전환 drain 대기 미측정 · N3 Job 3 첫-chunk 차단 원인 미해결 |
 | CM-5 | 메모리·admission 예산 | **형태 확정(코드 사실)** · **s·k 부팅 로그 사실 CONFIRMED**(Nano: k 16,382 B/토큰, s 143.5 MB/요청; L\*≈8.8k [유도]) / **T4 산식 B 재현은 NOT-YET-SUPPORTED**(cap 비구속 점 2개: HELD 1·MISS 1) / 두 구간 특성화 미완 | T4 MISS 원인 = 클러스터 볼륨 원자료 필요 |
 | CM-6 | 대기열·TTFT | 구조 확인(entanglement 사슬) / 분해 규약 확정 / J1 B에서 처리율↔SLO 역순은 **미확립**(G0 몫) | N3 용량 · G0 LO·중간 rung |
 | CM-7 | prefix cache (radix ON) | 가설 | 보류(radix OFF 우선, 2026-09-24 결정) |
@@ -36,7 +36,7 @@
 - 연산자 단위(opchar, 특성화 전용·격리 커널, `AUDIT_opchar_2026-10-13.md` Safe wording 범위): decode에서 SSM state update 비중 B 32→128에서 36%→64%(ctx 2048); 메모리 바운드 연산자는 44 SM에서 108 SM 속도의 ≥86%; GEMM 계단 = wave quantization(104→108 점프).
 
 ### CM-2 prefill span 시간
-- **확정(마이크로벤치, 서빙 아님)**: attn/SSM SM 민감도 비 Diff B는 L≤512에서 열리고 L≥1024에서 ≈1.0(§1-3 WIDE 스윕). 런타임 per-type 분할은 granularity 비용이 압도(TPOT 42→124 ms, §1-3/§1-15) ⇒ 층 종류 차이는 **존재하나 레버가 아니다**. 연산자 단위(opchar, 격리 연산자 시간 합): Mamba 층 ~66–71%(L=1k–32k), "모델 시간의 %"로 인용 금지.
+- **확정(마이크로벤치, 서빙 아님)**: attn/SSM SM 민감도 비 Diff B는 L≤512에서 열리고 L≥1024에서 ≈1.0(§1-3 WIDE 스윕). 런타임 per-type 분할은 granularity 비용이 압도(TPOT 42→124 ms, §1-3/§1-15) ⇒ 층 종류 차이는 **존재하나 층 경계 SM 재분할 레버가 아니다**(이 구현, Diff B≈1, Zamba2·triton·no-cudagraph micro; 층 종류별 비용 차 Diff A를 span 시간 예산에 쓰는 레버는 미시험 — 아래 열린 질문; 2026-10-29 범위 정정, 감사 r1 #14). 연산자 단위(opchar, 격리 연산자 시간 합): Mamba 층 ~66–71%(L=1k–32k), "모델 시간의 %"로 인용 금지.
 - **서빙 floor 계수(J1 N=1 감사 CONFIRMED·범위 한정, 2026-10-19)**: "무경합 TTFT floor ≈ 9 ms + 0.111 ms/토큰 × L (L 1k–16k, 기울기 기준 ≈ 9.0k tok/s; Nano-9B-v2, 108 SM, chunked-prefill −1, VESSL A100, Job 4개·boot 8개에서 16k 산포 ±0.6%)." 이 기울기와 비용 항 T2의 대비는 "mem 0.82 결과, 기술값"이며 "mem 0.6에서 J1 재현"·"실효 47% 피크"는 금지.
 - **T2(P=108만, `cap_char/RESULT_costterms_2026-10-26.md` rev1 §17 · 감사 `AUDIT_costterms_result_r1_2026-10-27.md`)**: Nano q 1.088–1.097 `PREFILL_NEAR_LINEAR_SCOPED`(**CONFIRMED 라벨**, 등록 규칙 적용 결과이며 계수 일반화 아님); Llama·attention 증가 변형은 `_SUPERLINEAR_SCOPED`. T2·T2′의 전력 상태(`CLOCK_SENSITIVE`)는 원자료(클러스터 볼륨) 없이 **NOT-YET-SUPPORTED**.
 - **장문(사실, 성능 항 아님; scoped)**: Nano 98,304·126,976 토큰 장문 점이 서빙됐고(`LONG_SERVED`), TP2 PD-mux는 `108u`(D44 아님) 한정 124k다. "124k까지 함수 형태 연장"은 금지. chunk -1 상한은 Triton `causal_conv1d` int32 오프셋 약 94.8k(T ≥ 94,793)이고 PD-mux 고유 아님; int64 패치는 gate G-β로 정확성만 확인(감사 `cap_char/probe_128k/AUDIT_probe_128k_2026-10-20.md` 기전 PLAUSIBLE). "PD-mux는 64k를 넘을 수 없다"·"OOM 때문" 금지.
@@ -47,11 +47,11 @@
 - 미측정: 컨트롤러 구동 전환 경로, PAUSE 진입/해제, SSM chunk 경계 state 이월.
 
 ### CM-4 동거 간섭
-- **구조 확인**: ITL 꼬리는 decode step time이 아니라 un-chunked prefill이 decode를 멈춘 시간이 지배하며 D(decode SM)에 단조 증가 — conjunctive goodput의 ITL 항이 decode-SM 레버와 반대 부호 항을 내장(§1-24). PD-mux는 chunked prefill과 비양립(엔진 assert).
+- **KISTI·Zamba2-2.7B·triton의 이 루프에서 관측**(구 "구조 확인"; 2026-10-29 범위 정정, 감사 r1 #10, 정지 기전 미확정·VESSL/Nano 미관측): ITL 꼬리는 decode step time이 아니라 최장 프롬프트 prefill과 시간상 겹치는 정지가 지배하며 D(decode SM)에 단조 증가 — conjunctive goodput의 ITL 항이 decode-SM 레버와 반대 부호 항을 내장(§1-24). PD-mux는 chunked prefill과 비양립(엔진 assert).
 - **존재 확인(N2 Job-EA `7e09cc3`, 라벨 8/8 `COLOC_SLOWER_GE3` CONFIRMED(scoped))**: "창별 실측 클럭 하락을 전부 빼도 64/64 짝의 ln ρ는 ln 1.03을 넘었다 … `COLOC_SLOWER_GE3`의 존재는 클럭 성분만으로 설명되지 않는다. 이 문장은 크기 진술이 아니다."
-- **크기는 미분리**: ρ는 동거 + 전력 한도 클럭 하락의 합성값 — "간섭 크기" 인용 금지(N2C-102), "D·b·c 무관" NOT-YET-SUPPORTED. 분리 경로 = F-1·F-3(사용자 결정 대기).
+- **크기는 미분리**: ρ는 동거 + 전력 한도 클럭 하락의 합성값 — "간섭 크기" 인용 금지(N2C-102), "D·b·c 무관" NOT-YET-SUPPORTED. 분리 경로 = F-1·F-3(사용자 결정 대기). ρ는 적체 영역 측정(8k 프롬프트·예산 65536의 8층 혼합 span; 2026-10-29 범위 정정, 감사 r1 #12).
 - **J1 허용 문안 3·5(감사 2026-10-19)**: "J1에서 SW power cap 노출률의 arm 간 순서는 shape에 따라 달랐고(B에서는 PD-mux가 낮고 X에서는 높음) 부하·전력이 매개한다. 'PD-mux가 클럭을 낮춘다'는 일반 가정으로 쓸 수 없다." / "J1 GPU0 SW power cap(0x4) 노출 60.6%, 셀별 노출은 A 0–6%·B 47–93%·X 80–99%(HI 셀), 400 W 한도. 등록 throttle 공변량은 이것을 잡지 못한다. B·X의 arm 비는 400 W 한도 아래 클럭 하락을 포함한 총효과로만 보고하며, 매개와 교란은 분리하지 않는다."
-- **lockstep 정지 진단(감사 r1 PLAUSIBLE 조건부, 2026-10-27; `anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md` P1, 기술값·범위 한정)**: "VESSL A100-SXM4 · Nemotron-Nano-9B-v2-Base · flashinfer · cudagraph ON · split 예산 65536 · 프롬프트 8k(T3는 32k 포함) · PHASE_EVENTS ON 조건의 N3(Job 2개)·N2-EA·T3 run에서, 동거 decode 간격은 span 시간(W/n_chunks)에 거의 반응하지 않았고(기울기 0.0015, 95% CI [0.0005, 0.0027]) 풀링 토큰 ITL p99 꼬리는 동거 decode step 수준이었다. 이 범위에서 CM-4의 별도 정지 항은 해상도(≤1 ms) 안에서 관측되지 않았다. ρ_on 1.156–1.193은 동거·전력 한도 클럭 하락·관측자 비용의 합성값이다. 한 Job(N3 3회차)에서 0.66–1.34 s 첫-chunk host 차단이 드물게 관측됐고 원인은 미해결이다." 위 "구조 확인"(§1-24)은 KISTI 기판 서술이며 이 진단과 기전 동일성은 미확인. 금지 문장 목록은 판정서 P1 링크.
+- **lockstep 정지 진단(감사 r1 PLAUSIBLE 조건부, 2026-10-27; `anchor_audit/VERDICT_lockstep_diag_claims_r1_2026-10-27.md` P1, 기술값·범위 한정)**: "VESSL A100-SXM4 · Nemotron-Nano-9B-v2-Base · flashinfer · cudagraph ON · split 예산 65536 · 프롬프트 8k(T3는 32k 포함) · PHASE_EVENTS ON 조건의 N3(Job 2개)·N2-EA·T3 run에서, 동거 decode 간격은 span 시간(W/n_chunks)에 거의 반응하지 않았고(기울기 0.0015, 95% CI [0.0005, 0.0027]) 풀링 토큰 ITL p99 꼬리는 동거 decode step 수준이었다. 이 범위에서 CM-4의 별도 정지 항은 해상도(≤1 ms) 안에서 관측되지 않았다. ρ_on 1.156–1.193은 동거·전력 한도 클럭 하락·관측자 비용의 합성값이다. 한 Job(N3 3회차)에서 0.66–1.34 s 첫-chunk host 차단이 드물게 관측됐고 원인은 미해결이다." ★범위 정정(2026-10-29 범위 정정, 감사 r1 #11): 위 문안 뒤에 "이 run들은 적체 영역(span > 동거 decode step, prefill 미동기 발행)이었고, 이 영역에서 무반응은 루프 구조상 예상되는 값이다. 박자 영역에서는 측정되지 않았다."를 붙여 쓴다. 위 "구조 확인"(§1-24)은 KISTI 기판 서술이며 이 진단과 기전 동일성은 미확인. 금지 문장 목록은 판정서 P1 링크.
 - **T3 비용 항 측정(Nano, `cap_char/RESULT_costterms_2026-10-26.md` rev1 §17 · 감사 `AUDIT_costterms_result_r1_2026-10-27.md`)**: "동거 창 SW power cap 노출 96–100% 대 단독 창 0–4%이며 ρ(1.13–1.19)는 총효과로만 읽는다." 합성 성분 = 동거 + 400 W 한도 클럭 하락 + 부하 의존 관측자 비용(TEL ON, 미분리). 간섭 크기·D 순서는 **NOT-YET-SUPPORTED**("ρ D24 > D44"는 rep 2·차 < 3%·D24 동거 클럭이 더 낮아 분리 불가 — 금지).
 
 ### CM-5 메모리·admission 예산
@@ -70,7 +70,7 @@
 ### CM-7 prefix cache — 가설 (radix ON 확장 때만)
 
 ### (E) 결정 비용
-- **계수 확정**: 컨트롤러 CPU 오버헤드 mean 32–36 µs/call — decode step 대비 무시 가능(§1-12). ⇒ 동적 제어 실패는 비용이 아니라 positioning(§1-17, HE0).
+- **계수 확정**: 컨트롤러 CPU 오버헤드 mean 32–36 µs/call — decode step 대비 무시 가능(§1-12). ⇒ 동적 제어 실패는 비용이 아니라 positioning(§1-17, HE0). ★2026-10-29 범위 정정, 감사 r1 #6: 무시 가능한 것은 컨트롤러 CPU·agnostic 경로 전환 비용이고, 컨트롤러 전환의 진행 중 drain은 미측정(bind+GATE 상한 ≤0.72%, slo arm 배제 불가).
 
 ### (확장) 조성 · TP2 · N-GPU
 - **조성 스윕(J-H1 한 Job, dummy 가중치 a4·a13·a22·a31, `cap_char/RESULT_costterms_2026-10-26.md` rev1 §17 · 감사 `AUDIT_costterms_result_r1_2026-10-27.md`)**: "P1·P2·P4 HELD/MONOTONE(CONFIRMED, J-H1 한 Job 범위)", P3(ctx 기울기 단조)는 조건부(모형 없는 ctx 차분은 ±25% 안). J-H2 조성별 SM 민감도 단조는 promote 금지. 조성 효과는 층당 파라미터·가중치 바이트 교락 공시.
@@ -79,11 +79,11 @@
 
 ## cost model이 이미 답한 것 (논문 서술로 이어지는 문장)
 
-1. 단일 GPU PD-mux의 결정 비용(CM-3·E)은 무시 가능하다 → 정책의 성패는 **예측 정확도(CM-1·CM-6)**에 달려 있다.
-2. hybrid의 층 종류 차이는 연산자 비용에는 보이지만(CM-1·CM-2, 격리 커널) 런타임 분할 레버로는 쓸 수 없고(CM-2 실행시 비용),
+1. 단일 GPU PD-mux의 agnostic 경로 전환 연산과 결정 계산(CM-3·E)은 무시 가능하다 → 정책의 성패는 **예측 정확도(CM-1·CM-6)**와 실행 루프 구조(발행·입장·전환 drain)에 달려 있고, 후자는 공개 루프 하나에서만 측정됐다. 진행 중 전환 drain(조작 비용)은 미측정(2026-10-29 범위 정정, 감사 r1 #13).
+2. hybrid의 층 종류 차이는 연산자 비용에는 보이지만(CM-1·CM-2, 격리 커널) 층 경계 SM 재분할 레버로는 쓸 수 없고(이 구현·CM-2 실행시 비용; 층 종류별 비용 차 Diff A를 span 시간 예산에 쓰는 레버는 미시험, CM-2 열린 질문; 2026-10-29 범위 정정, 감사 r1 #14),
    그 차이가 SM 스케일링 곡선의 차이(=예측기를 틀리게 만드는 항)로 이어진다는 증거는 아직 없다.
 3. hybrid의 요청당 메모리는 길이 무관 고정 state s를 가져 짧은 ctx에서는 s가, 긴 ctx에서는 (작은) KV가 지배한다(CM-5, 구간 경계는 유도값). SGLang 정적 풀에서는 cap≡슬롯이 admission·decode bs·state 예약을 함께 정한다 — 할당기 종속이라 "선행 모델이 놓치는 변수"로는 쓰지 않는다(허수아비 점검, 결정 8′).
-4. ITL 꼬리는 동거 간섭(CM-4)이 지배하며 decode-SM 레버와 반대 부호다. 분할 후에도 동거 감속은 남고(Job-EA), 그 일부는 전력
+4. ITL 꼬리는 동거 간섭(CM-4)이 지배하며 decode-SM 레버와 반대 부호다(KISTI 정지 기전 미확정, VESSL·Nano 별도 정지 항 미관측 — CM-4; 2026-10-29 범위 정정, 감사 r1 #10). 분할 후에도 동거 감속은 남고(Job-EA), 그 일부는 전력
    한도를 거친다 — 단일 GPU 비용 모형에 **전력 항**이 필요할 수 있다(크기 미분리).
 
 ## 아직 답하지 못한 것 (= 다음 실험이 채울 칸)

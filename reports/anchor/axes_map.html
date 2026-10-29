@@ -194,7 +194,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h1>서빙 축 지도</h1>
   <p class="lede">Hybrid LLM(attention+SSM)을 SGLang PD-mux + green-context SM 분할로 서빙할 때 문제를 나누는 축 11개, 각 축이 혼자서 어떤 세계인지, 축이 맞물릴 때 무엇이 생기는지, 그리고 지금 어느 파일이 최신 근거인지를 한 장에 모았습니다. 새 판정은 0건이고 모든 수치와 문장은 정본에서 전사했습니다. 충돌하면 정본이 이깁니다.</p>
   <div class="meta">
-    <span>기준일 <b>2026-10-27</b></span>
+    <span>기준일 <b>2026-10-29</b></span>
     <span>측정 기판 <b>A100 80GB 1장, 108 SM</b></span>
     <span>운영점 <b>cudagraph-ON</b></span>
     <span>주 모델 <b>Nemotron-Nano-9B-v2</b> (F2)</span>
@@ -209,7 +209,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h2>지금 어디를 보나 <span class="sec">§0</span></h2>
   <p class="lede">이 프로젝트를 볼 때 여는 곳은 아래 몇 군데입니다.</p>
   <div class="tbl"><table id="now-tbl"><thead><tr><th>알고 싶은 것</th><th>읽을 곳</th></tr></thead><tbody></tbody></table></div>
-  <p class="note"><b>2026-10-27 현재.</b> 사용자 결정(2026-10-19): headline은 Claim G 중심, shape C는 G0의 두 번째 표준 셀, M3는 G0 뒤로 미룹니다. Claim E는 열린 질문이고 §6 등급(미검증 핵심 가설)은 그대로입니다(감사 2026-10-19: 첫 화살표는 반증이 아니라 연결 근거 부재). 주 목적은 Nano-9B-v2 서빙 비용 모델이며, 2026-10-26 비용 항 6 Job이 회수됐고 결과 감사 r1(2026-10-27, PLAUSIBLE 조건부)을 반영해 CONFIRMED 후보만 COSTMODEL에 올렸습니다: T1 F1은 비분할만 채택, T2 q 라벨, T3 동거 창 power cap 노출 96–100%(ρ는 총효과), 조성 P1·P2·P4, TP2 F1·F2·F5. T4 산식 B 재현·T2/T2′/T4 전력 상태·TP2 F3/F4는 아직 입증되지 않았습니다. roofline 감사 r1(2026-10-25)은 &quot;균일 η≈0.47–0.49&quot; 해석을 철회했습니다. 2026-10-26 사용자 결정 38: 측정 우선, 새 설계 동결. telemetry 비대칭은 M3 J1뿐이 아니라 J2·J4·J8도 해당하며(2026-10-27 정정), M3 J2·J4·J8 정지는 원인 미확인입니다. 2026-10-27 밤 6차 promote: 사용자 결정 39–42(부정 결론은 &quot;KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증&quot; 범위 재진술만, 다음 GPU는 진단 Job과 정책 Job 두 PREREG로 분리, HyMux 원고 보류, 실 trace 재생 R-1은 V-O 회수 뒤 결정), lockstep 진단 감사 r1(VESSL·Nano 범위에서 별도 정지 항이 해상도 ≤1 ms 안에서 관측되지 않음, KISTI·HE0로는 판단 불가이며 동적 arm 전환 drain 대기는 미측정), 변화 trace 대표성 감사 r1(HE0 부호·등급 불변, 범위 단서 한 문장), C 미주장 감사 r1(C는 &quot;미검증·시험 가능&quot;, 기각 아님)을 정본에 반영했습니다. 구조 검증 보고서와 학회 검토의 정정 후보는 감사 전이라 반영하지 않았습니다. 이번 갱신으로 &sect;6 claim 등급 변경은 0건입니다. 근거는 <code>tracks/main.md</code>와 <code>PROJECT_STATUS.md</code> 최상단 6차·5차 promote 블록입니다.</p>
+  <p class="note"><b>2026-10-29 현재.</b> 2026-10-29 범위 정정: 정본 serving 결론은 전부 SGLang 공개 PD-mux 루프(고정 토큰 예산 65536, 진행 중 prefill drain 후 전환, 선점 없음) 하나에서 나왔으므로 그 범위로 좁혔습니다. "layer-type 全형태 死"는 층 경계 SM 전환 계열 死로, 층 종류 시간 맞춤 span·박자 영역·handoff·preemption은 미시험입니다(부호 뒤집힘 0, §6 등급 변경 0). 사용자 결정(2026-10-19): headline은 Claim G 중심, shape C는 G0의 두 번째 표준 셀, M3는 G0 뒤로 미룹니다. Claim E는 열린 질문이고 §6 등급(미검증 핵심 가설)은 그대로입니다(감사 2026-10-19: 첫 화살표는 반증이 아니라 연결 근거 부재). 주 목적은 Nano-9B-v2 서빙 비용 모델이며, 2026-10-26 비용 항 6 Job이 회수됐고 결과 감사 r1(2026-10-27, PLAUSIBLE 조건부)을 반영해 CONFIRMED 후보만 COSTMODEL에 올렸습니다: T1 F1은 비분할만 채택, T2 q 라벨, T3 동거 창 power cap 노출 96–100%(ρ는 총효과), 조성 P1·P2·P4, TP2 F1·F2·F5. T4 산식 B 재현·T2/T2′/T4 전력 상태·TP2 F3/F4는 아직 입증되지 않았습니다. roofline 감사 r1(2026-10-25)은 &quot;균일 η≈0.47–0.49&quot; 해석을 철회했습니다. 2026-10-26 사용자 결정 38: 측정 우선, 새 설계 동결. telemetry 비대칭은 M3 J1뿐이 아니라 J2·J4·J8도 해당하며(2026-10-27 정정), M3 J2·J4·J8 정지는 원인 미확인입니다. 2026-10-27 밤 6차 promote: 사용자 결정 39–42(부정 결론은 &quot;KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증&quot; 범위 재진술만, 다음 GPU는 진단 Job과 정책 Job 두 PREREG로 분리, HyMux 원고 보류, 실 trace 재생 R-1은 V-O 회수 뒤 결정), lockstep 진단 감사 r1(VESSL·Nano 범위에서 별도 정지 항이 해상도 ≤1 ms 안에서 관측되지 않음, KISTI·HE0로는 판단 불가이며 동적 arm 전환 drain 대기는 미측정), 변화 trace 대표성 감사 r1(HE0 부호·등급 불변, 범위 단서 한 문장), C 미주장 감사 r1(C는 &quot;미검증·시험 가능&quot;, 기각 아님)을 정본에 반영했습니다. 구조 검증 보고서와 학회 검토의 정정 후보는 감사 전이라 반영하지 않았습니다. 이번 갱신으로 &sect;6 claim 등급 변경은 0건입니다. 근거는 <code>tracks/main.md</code>와 <code>PROJECT_STATUS.md</code> 최상단 6차·5차 promote 블록입니다.</p>
 </section>
 
 <section id="coord">
@@ -323,7 +323,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <article class="stage"><h3><span class="n">3</span>PD-mux iteration</h3><ul>
       <li class="hot"><div class="row"><span class="kchip kA">A</span><b>분할 선택</b></div>decode+prefill → bs로 표 조회 · decode만 → (0,108) · decode 없음 → (108,0)<span class="sp">multiplexing_mixin.py:1151</span></li>
       <li><div class="row"><span class="kchip kA">A</span>prefill span</div>span당 층 수 = 65,536 ÷ prefill 토큰, split prefill은 한 번에 1개<span class="sp">multiplexing_mixin.py:1218, :1408-1485</span></li>
-      <li><div class="row"><span class="kchip kC">C</span>정책 hook</div>SLO controller·bind·GATE(HE0에서 짐) · R2 fixed/generic/hybrid(미검증) · sticky(측정 도구) · layer-type(死)<span class="sp">multiplexing_mixin.py:1313-1357</span></li>
+      <li><div class="row"><span class="kchip kC">C</span>정책 hook</div>SLO controller·bind·GATE(HE0에서 짐) · R2 fixed/generic/hybrid(미검증) · sticky(측정 도구) · layer-type(층 경계 SM 전환형 死, 시간 맞춤 span 미시험)<span class="sp">multiplexing_mixin.py:1313-1357</span></li>
       <li><div class="row"><span class="kchip kD">D</span>telemetry·phase events</div>prefill_span_start/end, decode_iteration, PD-mux 경로만 방출<span class="sp">multiplexing_mixin.py:2162-2301, telemetry.py</span></li>
     </ul></article>
     <article class="stage"><h3><span class="n">4</span>forward</h3><ul>
@@ -354,7 +354,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <div class="eyebrow" style="margin-bottom:6px">엔진 밖 하네스 경로 <span class="kchip kE">E</span></div>
     <div class="harness"><span class="h">launch.sh</span><span class="a">→</span><span class="h">job_entry.sh</span><span class="a">→</span><span class="h">install_runtime.sh · ENGINE_DIGEST</span><span class="a">→</span><span class="h">캠페인 entry · trace_loadgen.py</span><span class="a">→</span><span class="h">fetch.sh (DONE + sha256)</span><span class="a">→</span><span class="h">analyze.py · 캠페인 라벨러</span><span class="a">→</span><span class="h">VERDICT → promote</span></div>
   </div>
-  <p class="note"><b>이 연구의 위치.</b> 동작을 바꾸는 항상 적용 패치(B)는 hybrid에서 PD-mux가 돌게 하는 수리이고, env 정책(C)은 best-static에 지거나(SLO 계열) 죽었거나(layer-type) 미검증(R2 hybrid 예측기)입니다. 현재 기여는 업스트림 그대로의 동작(A)이 만드는 비용 구조를 계측(D)과 하네스(E)로 재는 특성화이며, 제안은 설정 수준(decode-heavy static, cap = C<sub>mem</sub>)과 조성 스윕의 hybrid 고유 항입니다. 메커니즘 제안(F)은 아직 구현되지 않았습니다.</p>
+  <p class="note"><b>이 연구의 위치.</b> 동작을 바꾸는 항상 적용 패치(B)는 hybrid에서 PD-mux가 돌게 하는 수리이고, env 정책(C)은 best-static에 지거나(SLO 계열) 죽었거나(층 경계 SM 전환형 layer-type; 시간 맞춤 span은 미시험) 미검증(R2 hybrid 예측기)입니다. 현재 기여는 업스트림 그대로의 동작(A)이 만드는 비용 구조를 계측(D)과 하네스(E)로 재는 특성화이며, 제안은 설정 수준(decode-heavy static, cap = C<sub>mem</sub>)과 조성 스윕의 hybrid 고유 항입니다. 메커니즘 제안(F)은 아직 구현되지 않았습니다.</p>
 </section>
 
 <!-- ANALYTIC:BEGIN -->
@@ -730,7 +730,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
      "s": "reports/CONSENSUS.md:3722"
     },
     {
-     "t": "실패 원인은 switch overhead가 아니라 positioning + entanglement. 컨트롤러 CPU 32–36 µs/call",
+     "t": "실패 원인은 컨트롤러 CPU·agnostic 경로 전환 비용이 아니라 positioning + entanglement(공개 PD-mux 루프). 컨트롤러 CPU 32–36 µs/call. 진행 중 전환 drain은 미측정(bind+GATE 상한 ≤0.72%, slo arm 배제 불가; 2026-10-29 범위 정정)",
      "g": "serving",
      "c": "'달성된' 동적 제어가 열위라는 것만 확정. 달성 가능한 천장은 별개 명제",
      "s": "reports/CONSENSUS.md:3717, 3691"
@@ -1279,7 +1279,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
    "vocab": "Nemotron-Nano-9B-v2(주), Zamba2-2.7B, Granite-4.0-h-micro, Falcon-H1, pure Mamba2(음성대조), Qwen2.5(양성대조)",
    "facts": [
     {
-     "t": "layer-type 런타임 정책은 全형태 死. coordinated per-type 구현에서 TPOT 42→124 ms",
+     "t": "layer-type 런타임 정책 중 층 경계 SM 전환 계열은 死(KISTI·Zamba2-2.7B·triton·no-cudagraph·공개 PD-mux 루프). coordinated per-type 구현에서 TPOT 42→124 ms. 층 종류 시간 맞춤 span·박자 영역·handoff·preemption은 미시험(2026-10-29 범위 정정, 구 라벨 全형태 死)",
      "g": "serving",
      "c": "시뮬레이터의 per-layer 이득은 실엔진으로 전이되지 않음",
      "s": "reports/CONSENSUS.md:3682"
@@ -2221,7 +2221,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   {
    "id": "layer-type",
    "t": "layer-type 런타임 정책이 이득을 낸다",
-   "st": "全형태 死",
+   "st": "층 경계 SM 전환 계열 死(이 구현) · 시간 맞춤 span 미시험",
    "g": "refuted",
    "ax": [
     "M7",
@@ -2241,7 +2241,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     "E5",
     "S10"
    ],
-   "st": "2026-10-27 밤(6차 promote): 결정 39–42(39 범위 재진술만 · 40 다음 GPU = 진단 Job·정책 Job PREREG 분리 · 41 HyMux 원고 보류 · 42 R-1은 V-O 뒤). lockstep 진단 감사 r1 PLAUSIBLE(조건부, VESSL·Nano 범위 별도 정지 항 미관측, 동적 arm drain 미측정) · 변화 trace 감사 r1 HE0 불변 · C 감사 r1 미검증·시험 가능. 구조 검증·학회 정정 후보는 감사 필요. 비용 항(2026-10-27 5차): 6 Job(J-A1·J-A2·J-H1·J-H2·J-B2·J-C) 회수, 결과 감사 r1 PLAUSIBLE(조건부) 반영 → CONFIRMED 후보만 COSTMODEL 반영(T4 산식 B·전력 상태·TP2 F3/F4는 NOT-YET-SUPPORTED, AJ-2 J-H1 인용 금지). 결정 24–38(38 = 측정 우선, 새 설계 동결). roofline r1: 균일 η 해석 철회. 엔진 묶음 병합·gate α·β PASS. 성능 주장 0.",
+   "st": "2026-10-29(7차 promote, 부분): 루프 구조 의존 범위 정정(감사 r1 OVERBROAD 8·NEEDS SCOPE 7, 부호 뒤집힘 0, r2 GO-with-edits) · 결정 57·58 · 엔진 수정 E1–E3·E5 브랜치 impl-defects-e123(기본 OFF, CPU만, GPU 0). 2026-10-27 밤(6차 promote): 결정 39–42(39 범위 재진술만 · 40 다음 GPU = 진단 Job·정책 Job PREREG 분리 · 41 HyMux 원고 보류 · 42 R-1은 V-O 뒤). lockstep 진단 감사 r1 PLAUSIBLE(조건부, VESSL·Nano 범위 별도 정지 항 미관측, 동적 arm drain 미측정) · 변화 trace 감사 r1 HE0 불변 · C 감사 r1 미검증·시험 가능. 구조 검증·학회 정정 후보는 감사 필요. 비용 항(2026-10-27 5차): 6 Job(J-A1·J-A2·J-H1·J-H2·J-B2·J-C) 회수, 결과 감사 r1 PLAUSIBLE(조건부) 반영 → CONFIRMED 후보만 COSTMODEL 반영(T4 산식 B·전력 상태·TP2 F3/F4는 NOT-YET-SUPPORTED, AJ-2 J-H1 인용 금지). 결정 24–38(38 = 측정 우선, 새 설계 동결). roofline r1: 균일 η 해석 철회. 엔진 묶음 병합·gate α·β PASS. 성능 주장 0.",
    "dec": [
     "HyMux 원고(보류 중, 구조 검증 대조표가 인용 차단 근거) · 논문 방향(② + C 사다리 권고)",
     "multi-GPU의 논문 내 위치((A) 단일 GPU 메인 + TP 이식성 절 / (B) multi-GPU 메인)",
