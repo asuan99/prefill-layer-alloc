@@ -23,7 +23,7 @@
 python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file reports/anchor/axes_map.html
 ```
 
-5. §6b 동작 시나리오(2026-10-29)는 데이터 블록 밖의 별도 inline script(`SC`·`CHG` 배열)에 있다. 개념도이며 측정값이 아니다. 구현 변경(E1–E4, 예산, 동적, sticky)의 직접·부가 영향 표기는 `impl_defects/` 문서와 감사 r1을 따른다. 코드가 바뀌면 그 배열의 줄 번호·영향 목록을 함께 고친다.
+5. §6b 시스템 동작(2026-10-29, 같은 날 요청 흐름 중심 → 시스템 관점으로 개편)은 데이터 블록 밖의 별도 inline script(`CHG`·`COMP`·`EDGE`·`SC` 배열: 구현 변경, 구성 요소 지도, 시간축 상황)에 있다. 개념도이며 측정값이 아니다. 구현 변경(E1–E4, 예산, 동적, sticky)의 직접·부가 영향 표기는 `impl_defects/` 문서와 감사 r1을 따른다. 코드가 바뀌면 그 배열의 줄 번호·영향 목록을 함께 고친다.
 
 ## 검토 이력
 
