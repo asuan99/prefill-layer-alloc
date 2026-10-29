@@ -36,7 +36,7 @@
 - #11 :54는 "허용 문안" 인용 블록을 건드리지 않으려고 **인용 뒤에** 붙여 쓸 문장을 지시하는 형태로 넣었다.
 - #12 CM-4 :51(존재 확인 인용 줄)에는 넣지 않고 :52(크기 미분리 줄)에 넣었다.
 - #14 CM-2 :39 "아래 열린 질문"은 :43을 가리킨다(줄 번호를 박지 않아 이동에 강함).
-- #8 CLAUDE.md :44는 원 bullet 뒤에 이어 붙였다. :6 "MuxWise upstream 공개 코드(PR #10692) 대조는 미대조" 원칙(제안서 §0-3)은 본문에 넣지 않았다 — 새 줄이 필요해서. 필요하면 promote가 CONSENSUS §0 근처에 별도 한 줄로 추가.
+- #8 CLAUDE.md :44는 원 bullet 뒤에 이어 붙였다. "MuxWise upstream 공개 코드(PR #10692)와 이 루프의 대응은 미대조" 원칙(제안서 §0-3)은 본문에 넣지 않았다 — 새 줄이 필요해서. 필요하면 promote가 CONSENSUS §0 근처에 별도 한 줄로 추가.
 - 못 둔 것: tracked CLAUDE.md 사본 — `tools/claude/CLAUDE.md`는 **없다**(추적되는 것은 agents/skills뿐). 작업 루트 CLAUDE.md만 패치. 그래서 `sync_claude_tools.sh --import`는 이 패치에 필요 없다. COSTMODEL.md가 CLAUDE.md "현재 결론"을 인용하는 곳은 없다.
 - PROJECT_STATUS.md는 이 작업 대상이 아니다(지시). 제안서 §0 원칙의 원장 최상단 5줄 항목은 promote가 쓴다.
 
