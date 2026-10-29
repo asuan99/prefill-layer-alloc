@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-10-29T02:33:52Z	pdmux-policy-cap2-e90e233-20261029023336	e90e2339c44bd4cf4107515d06308cc5db9715fc	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d	workspace/engine-port/results/cap_char/policy_harness/ph_cap2_sustain.sh		no

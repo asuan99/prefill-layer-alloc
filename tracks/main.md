@@ -43,8 +43,8 @@
 - **구현 결함 Phase 1(진단 addendum)** / 진단 PREREG는 rev1 봉인됨 / 봉인본 뒤 새 rev로 M1 셀·B1 측정 구성 추가(권고) · 보류
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- `pdmux-policy-cap1r-4bef3cf-20261029003539`(job-lrd99x21e2yi, 2026-10-29 제출, commit 4bef3cf9 봉인 S4, A100×1, 하드캡 2.5 h): CAP1-R(W1 용량 재측정, 5 D, 5.516×1.15^k). 회수 `scripts/vessl/fetch.sh policy_cap1r <job name>`, raw는 rev1.3부터 회수 경로로 반출
-- 회수 완료: gate+smoke(job-0duhieqx2go8) gate PASS·smoke v2 PASS · CAP1(job-d8gi0770ezms) NOT_BRACKETED·switch control PASS
+- `pdmux-policy-cap2-e90e233-20261029023336`(job-sg0dtebc3a0i, 2026-10-29 제출, commit e90e2339 봉인 S5, A100×1, 기대 5.75 h·하드캡 합 6.87 h — 사용자 승인으로 한 Job): CAP2(W3 용량, 0.1×1.5 6점) + λ* 지속성 블록(W1 D44·D64 × 7.29 × 600 s × seed 2, 기술값). 회수 `scripts/vessl/fetch.sh policy_cap2 <job name>`
+- 회수 완료: gate+smoke · CAP1(NOT_BRACKETED) · CAP1-R(job-lrd99x21e2yi, λ*_W1 7.29491, 감사 r1 GO-with-caveats)
 
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
