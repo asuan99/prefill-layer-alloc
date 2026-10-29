@@ -48,9 +48,8 @@
 - **impl-defects GPU 정확성 gate** / PREREG rev0(미봉인)·driver·CPU 테스트 46·dry-run rc=0 완료(브랜치 `ba5a94ab`·`d6ab832c`, 1 Job 26+2 boot, 약 118 min [유도], digest `fad4f110…` 재현) / 제출 완료(job-zwl9f7e8lrc0) — 회수·채점 대기
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- `pdmux-impl-defects-gate-c03d622-20261029060951`(job-zwl9f7e8lrc0, 2026-10-29 06:10Z, 브랜치 impl-defects-e123 봉인 `c03d6222`, digest `0a5d9c3c…`, A100×1, 하드캡 180 min): E1–E3 정확성 gate G0–G4(G5·fused 보고 전용). 하네스 감사 r1 GO-with-caveats B1–B6 반영. 회수 `scripts/vessl/fetch.sh impl_defects_gate <job name>`(implfix worktree) → `impl_gate.py score`
-- `pdmux-policy-cap2-e90e233-20261029023336`(job-sg0dtebc3a0i, 2026-10-29 제출, commit e90e2339 봉인 S5, A100×1, 기대 5.75 h·하드캡 합 6.87 h — 사용자 승인으로 한 Job): CAP2(W3 용량, 0.1×1.5 6점) + λ* 지속성 블록(W1 D44·D64 × 7.29 × 600 s × seed 2, 기술값). 회수 `scripts/vessl/fetch.sh policy_cap2 <job name>`
-- 회수 완료: gate+smoke · CAP1(NOT_BRACKETED) · CAP1-R(job-lrd99x21e2yi, λ*_W1 7.29491, 감사 r1 GO-with-caveats)
+- `pdmux-policy-tune-074ffc3-20261029140207`(job-9t469viisz2i, 2026-10-29 제출, commit 074ffc37 봉인 S6, A100×1, 예상 3.3 h·하드캡 ≈4.4 h): TUNE(bind+GATE 구성 6 × 튜닝 seed 101·102, 12 boot) + 공변량·기준 셀. 회수 `scripts/vessl/fetch.sh policy_tune <job name>`
+- 회수 완료: gate+smoke · CAP1 · CAP1-R(λ*_W1 7.29491) · CAP2+지속성(λ*_W3 0.3375 취약, W1 7.29 비지속) — 각 감사 r1 GO-with-caveats
 
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
