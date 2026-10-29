@@ -1,0 +1,552 @@
+{
+ "boots": [
+  {
+   "arm": {
+    "D": 24,
+    "kind": "static",
+    "name": "s24",
+    "sticky": false
+   },
+   "boot_id": "CAP2_b00_s24",
+   "floor": true,
+   "runs": [
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D24_r0.759375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D24_r0.225_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D24_r0.1_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D24_r0.3375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D24_r0.50625_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D24_r0.1_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D24_r0.3375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D24_r0.225_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D24_r0.15_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D24_r0.50625_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D24_r0.15_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D24_r0.759375_s202",
+     "seed": 202,
+     "workload": "W3"
+    }
+   ]
+  },
+  {
+   "arm": {
+    "D": 16,
+    "kind": "static",
+    "name": "s16",
+    "sticky": false
+   },
+   "boot_id": "CAP2_b01_s16",
+   "runs": [
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D16_r0.50625_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D16_r0.15_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D16_r0.225_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D16_r0.3375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D16_r0.225_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D16_r0.15_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D16_r0.1_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D16_r0.3375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D16_r0.50625_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D16_r0.759375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D16_r0.759375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D16_r0.1_s201",
+     "seed": 201,
+     "workload": "W3"
+    }
+   ]
+  },
+  {
+   "arm": {
+    "D": 64,
+    "kind": "static",
+    "name": "s64",
+    "sticky": false
+   },
+   "boot_id": "CAP2_b02_s64",
+   "runs": [
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D64_r0.50625_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D64_r0.225_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D64_r0.1_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D64_r0.50625_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D64_r0.15_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D64_r0.1_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D64_r0.759375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D64_r0.759375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D64_r0.15_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D64_r0.225_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D64_r0.3375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D64_r0.3375_s202",
+     "seed": 202,
+     "workload": "W3"
+    }
+   ]
+  },
+  {
+   "arm": {
+    "D": 44,
+    "kind": "static",
+    "name": "s44",
+    "sticky": false
+   },
+   "boot_id": "CAP2_b03_s44",
+   "runs": [
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D44_r0.15_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D44_r0.1_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D44_r0.3375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D44_r0.225_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D44_r0.759375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D44_r0.50625_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D44_r0.3375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D44_r0.15_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D44_r0.50625_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D44_r0.1_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D44_r0.759375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D44_r0.225_s201",
+     "seed": 201,
+     "workload": "W3"
+    }
+   ]
+  },
+  {
+   "arm": {
+    "D": 34,
+    "kind": "static",
+    "name": "s34",
+    "sticky": false
+   },
+   "boot_id": "CAP2_b04_s34",
+   "runs": [
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D34_r0.3375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D34_r0.1_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D34_r0.759375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D34_r0.50625_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D34_r0.225_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D34_r0.15_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.3375,
+     "run_id": "CAP2_D34_r0.3375_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.15,
+     "run_id": "CAP2_D34_r0.15_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.759375,
+     "run_id": "CAP2_D34_r0.759375_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.225,
+     "run_id": "CAP2_D34_r0.225_s201",
+     "seed": 201,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.50625,
+     "run_id": "CAP2_D34_r0.50625_s202",
+     "seed": 202,
+     "workload": "W3"
+    },
+    {
+     "kind": "cap",
+     "n_requests": 48,
+     "rate": 0.1,
+     "run_id": "CAP2_D34_r0.1_s202",
+     "seed": 202,
+     "workload": "W3"
+    }
+   ]
+  }
+ ],
+ "job": "CAP2",
+ "kind": "CAP",
+ "needs_w3_floor": true,
+ "rates": [
+  0.1,
+  0.15,
+  0.225,
+  0.3375,
+  0.50625,
+  0.759375
+ ],
+ "workload": "W3"
+}

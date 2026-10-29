@@ -1,0 +1,57 @@
+{
+ "NOTE": "CAP2 addendum DRAFT, UNSEALED, NOT SUBMITTED. Descriptive.",
+ "W3_floor_ms": 938.2792670512572,
+ "W3_only_effect_needed_for_3pct_margin": 0.6784364444444444,
+ "W3_share_of_H": 0.04421932259928384,
+ "W3_ttft_slo_ms": 2814.8378011537716,
+ "best_D_W3": 16,
+ "capacity_W3_by_D": {
+  "16": {
+   "first_fail": 0.50625,
+   "last_pass": 0.3375
+  },
+  "24": {
+   "first_fail": 0.3375,
+   "last_pass": 0.225
+  },
+  "34": {
+   "first_fail": 0.3375,
+   "last_pass": 0.225
+  },
+  "44": {
+   "first_fail": 0.225,
+   "last_pass": 0.15
+  },
+  "64": {
+   "first_fail": 0.1,
+   "last_pass": null
+  }
+ },
+ "caveats": [
+  "W1 lambda* is a burst capacity (see sustain block: attainment ~0 after first 60s at 7.29491)",
+  "W3 lambda* 0.3375 passes at attainment 0.906 (threshold 0.90): margin 6 of 96 requests",
+  "W3 best D (16) differs from W1 best D (44/64)"
+ ],
+ "hd_rates": {
+  "q": 1.0,
+  "rate_w1": 7.29491,
+  "rate_w3": 0.3375
+ },
+ "he0_rates": {
+  "h": 1.5,
+  "hi": 10.942364999999999,
+  "lo": 2.7355912499999997,
+  "ratio": 4.0
+ },
+ "job": "pdmux-policy-cap2-e90e233-20261029023336",
+ "lambda_ratio_W1_over_W3": 21.614548148148145,
+ "lambda_star": {
+  "W1": 7.29491,
+  "W3": 0.3375
+ },
+ "stationarity_at_capacity_W3": {
+  "201": "STATIONARY",
+  "202": "STATIONARY"
+ },
+ "status": "CAPACITY_BRACKETED"
+}

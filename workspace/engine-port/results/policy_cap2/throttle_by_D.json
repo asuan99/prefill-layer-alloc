@@ -1,0 +1,72 @@
+{
+ "D16": {
+  "boot": "CAP2_b01_s16",
+  "last_boot_end_estimated": false,
+  "reason_bits": {
+   "0x4": 5432
+  },
+  "samples": 30360,
+  "sm_clk_median_MHz": 1410.0,
+  "throttle_frac": 0.17891963109354414,
+  "window": [
+   "2026-10-29T04:32:04.109000",
+   "2026-10-29T05:22:45.380000"
+  ]
+ },
+ "D24": {
+  "boot": "CAP2_b00_s24",
+  "last_boot_end_estimated": false,
+  "reason_bits": {
+   "0x4": 5962
+  },
+  "samples": 31264,
+  "sm_clk_median_MHz": 1410.0,
+  "throttle_frac": 0.1906985670419652,
+  "window": [
+   "2026-10-29T03:39:52.501000",
+   "2026-10-29T04:32:04.009000"
+  ]
+ },
+ "D34": {
+  "boot": "CAP2_b04_s34",
+  "last_boot_end_estimated": true,
+  "reason_bits": {
+   "0x4": 6542
+  },
+  "samples": 30453,
+  "sm_clk_median_MHz": 1410.0,
+  "throttle_frac": 0.21482284175614882,
+  "window": [
+   "2026-10-29T07:05:41.544000",
+   "2026-10-29T07:56:32.011000"
+  ]
+ },
+ "D44": {
+  "boot": "CAP2_b03_s44",
+  "last_boot_end_estimated": false,
+  "reason_bits": {
+   "0x4": 7343
+  },
+  "samples": 30520,
+  "sm_clk_median_MHz": 1410.0,
+  "throttle_frac": 0.24059633027522936,
+  "window": [
+   "2026-10-29T06:14:44.436000",
+   "2026-10-29T07:05:41.444000"
+  ]
+ },
+ "D64": {
+  "boot": "CAP2_b02_s64",
+  "last_boot_end_estimated": false,
+  "reason_bits": {
+   "0x4": 4742
+  },
+  "samples": 31136,
+  "sm_clk_median_MHz": 1410.0,
+  "throttle_frac": 0.1522995889003083,
+  "window": [
+   "2026-10-29T05:22:45.481000",
+   "2026-10-29T06:14:44.336000"
+  ]
+ }
+}

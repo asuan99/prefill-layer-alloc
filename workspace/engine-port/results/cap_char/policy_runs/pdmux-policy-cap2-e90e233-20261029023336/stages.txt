@@ -1,0 +1,2 @@
+stage1 CAP2 rc=0
+stage2 ph_sustain rc=0 (descriptive; does not affect CAP2)
