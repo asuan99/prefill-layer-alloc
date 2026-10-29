@@ -40,8 +40,8 @@
 - **구현 결함 Phase 1–2 진행** / Phase 0 결과(B1 미측정, B2 TTFT만, E2>E3) / Phase 1(진단 addendum, 봉인된 rev1에 붙는 형태 확인 필요)+Phase 2(E1–E3 기본 OFF, E2 우선) 진행(권고) · Phase 0 감사 먼저 · 중단
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- `pdmux-policy-cap1-1217d68-20261028075615`(job-d8gi0770ezms, 2026-10-28 제출, commit 1217d684 봉인 S2, A100×1, 하드캡 4.3 h): CAP1(W1 용량, static D 5 동일 trace) + 양성 대조 smoke(dyn switch 로그 관측성). 회수 `scripts/vessl/fetch.sh policy_cap1 <job name>`
-- 회수 완료: gate+smoke(job-0duhieqx2go8) — gate D0–D9 PASS, smoke v2 재채점 SMOKE_PASS
+- `pdmux-policy-cap1r-4bef3cf-20261029003539`(job-lrd99x21e2yi, 2026-10-29 제출, commit 4bef3cf9 봉인 S4, A100×1, 하드캡 2.5 h): CAP1-R(W1 용량 재측정, 5 D, 5.516×1.15^k). 회수 `scripts/vessl/fetch.sh policy_cap1r <job name>`, raw는 rev1.3부터 회수 경로로 반출
+- 회수 완료: gate+smoke(job-0duhieqx2go8) gate PASS·smoke v2 PASS · CAP1(job-d8gi0770ezms) NOT_BRACKETED·switch control PASS
 
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
