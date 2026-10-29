@@ -186,6 +186,76 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 .harness span.h{background:var(--S-t);color:var(--S);border-radius:6px;padding:4px 9px;font-weight:500}
 .harness span.a{color:var(--muted)}
 
+
+/* §6b 동작 시나리오 — 시간축 막대 + 구현 변경 영향 표시(직접 = 실선 --bad, 부가 = 점선 --warn) */
+.sc-ctl{display:flex;flex-direction:column;gap:10px}
+.sc-row{display:flex;flex-direction:column;gap:6px}
+.sc-chips,.sc-tabs{display:flex;flex-wrap:wrap;gap:6px}
+.sc-chips button,.sc-tabs button{font:inherit;font-size:.8rem;padding:4px 11px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.sc-chips button{border-radius:999px}
+.sc-tabs button{border-radius:6px}
+.sc-chips button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.sc-tabs button[aria-selected="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.sc-chips button:focus-visible,.sc-tabs button:focus-visible,#sc-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.sc-impact{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:10px}
+.sc-ih{display:flex;flex-wrap:wrap;gap:8px;align-items:baseline}
+.sc-icols{display:grid;grid-template-columns:1fr 1fr;gap:14px}
+@media (max-width:760px){.sc-icols{grid-template-columns:1fr}}
+.sc-icols > div{min-width:0}
+.sc-icols ul,.sc-ul{margin:4px 0 0;padding-left:1.05rem;display:flex;flex-direction:column;gap:4px;font-size:.84rem}
+.sc-key{display:inline-block;font-family:var(--f-mono);font-size:.7rem;font-weight:500;padding:1px 7px;border-radius:4px;background:var(--surface)}
+.sc-key-d{border:2px solid var(--bad);color:var(--bad)}
+.sc-key-i{border:2px dashed var(--warn);color:var(--warn)}
+.sc-none{font-size:.82rem;color:var(--muted)}
+.sc-flag{font-family:var(--f-mono);font-size:.7rem;color:var(--muted);word-break:break-all}
+.sc-head{display:flex;gap:14px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap}
+.sc-headtext{min-width:0;flex:1 1 320px;display:flex;flex-direction:column;gap:3px}
+.sc-headtext p{font-size:.88rem;color:var(--muted)}
+.sc-tag{font-family:var(--f-mono);font-size:.72rem;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+#sc-play[disabled]{opacity:.6;cursor:default}
+@media (prefers-reduced-motion:reduce){#sc-play{display:none}}
+.sc-grid{display:flex;flex-direction:column;gap:12px}
+.sc-panel{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:10px 12px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.sc-ph{display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;align-items:baseline}
+.sc-ph h4{margin:0;font-size:.92rem}
+.sc-met{display:flex;flex-wrap:wrap;gap:4px 14px;margin:0;padding:0;list-style:none;font-size:.78rem;color:var(--muted)}
+.sc-met strong{font-family:var(--f-mono);font-weight:500;color:var(--fg);margin-left:4px;font-variant-numeric:tabular-nums}
+.sc-met .good strong{color:var(--ok)} .sc-met .bad strong{color:var(--bad)}
+.sc-tlw{overflow-x:auto}
+.sc-tl{display:block;width:100%;min-width:600px;height:auto}
+.sc-tl .sc-ax{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.sc-tl .sc-grid{stroke:var(--line);stroke-width:1}
+.sc-tl .sc-lane{fill:var(--fg);font-family:var(--f-body);font-size:11.5px}
+.sc-tl .sc-bt{fill:var(--bg);font-family:var(--f-body);font-size:10.5px;pointer-events:none}
+.sc-tl .sc-bt.dk{fill:var(--fg)}
+.sc-tl .sc-mk{fill:var(--fg)}
+.sc-tl .sc-cur{stroke:var(--fg);stroke-width:1.5}
+.sc-tl .k-h{fill:var(--H)}
+.sc-tl .k-hw{fill:var(--bad-t);stroke:var(--bad);stroke-width:1}
+.sc-tl .k-d{fill:var(--U)}
+.sc-tl .k-p{fill:var(--E)}
+.sc-tl .k-q{fill:var(--sunk);stroke:var(--muted);stroke-width:.8}
+.sc-tl .k-st{fill:var(--bad-t);stroke:var(--bad);stroke-width:1}
+.sc-tl .k-idle{fill:none;stroke:var(--warn);stroke-width:1.2;stroke-dasharray:3 3}
+.sc-tl .k-ov{fill:var(--warn-t);stroke:var(--warn);stroke-width:1}
+.sc-tl .k-w{fill:var(--sunk);stroke:var(--muted);stroke-width:1;stroke-dasharray:2 2}
+.sc-tl .k-ev{fill:var(--H-t);stroke:var(--H);stroke-width:1;stroke-dasharray:4 2}
+.sc-tl g.fx-d rect{stroke:var(--bad);stroke-width:2.6;stroke-dasharray:none}
+.sc-tl g.fx-i rect{stroke:var(--warn);stroke-width:2;stroke-dasharray:4 2}
+.sc-tl g.fx-n{opacity:.25}
+.sc-tl g.sc-dim{opacity:.08}
+.sc-read{font-size:.88rem;max-width:80ch}
+.sc-legend{display:flex;flex-wrap:wrap;gap:6px 16px;font-size:.78rem;color:var(--muted)}
+.sc-legend span{display:inline-flex;align-items:center;gap:6px}
+.sc-legend .sw{width:18px;height:11px;border-radius:2px;display:inline-block;box-sizing:border-box}
+.sw-h{background:var(--H)} .sw-d{background:var(--U)} .sw-p{background:var(--E)}
+.sw-hw,.sw-st{background:var(--bad-t);border:1px solid var(--bad)}
+.sw-q{background:var(--sunk);border:1px solid var(--muted)}
+.sw-idle{border:1.2px dashed var(--warn)}
+.sw-ov{background:var(--warn-t);border:1px solid var(--warn)}
+.sw-w{background:var(--sunk);border:1px dashed var(--muted)}
+.sw-ev{background:var(--H-t);border:1px dashed var(--H)}
+@media (prefers-reduced-motion:no-preference){.sc-tl g.sc-b{transition:opacity .15s}}
 </style>
 
 <div class="wrap">
@@ -201,7 +271,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <span>저장소 사본 <code>reports/anchor/axes_map.html</code></span>
   </div>
   <nav class="toc" aria-label="목차">
-    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#code">코드 흐름</a><a href="#formulas">비용 수식</a><a href="#docs">문서 지도</a>
+    <a href="#now">지금 어디를 보나</a><a href="#coord">좌표계</a><a href="#axes">축 11개</a><a href="#couple">축의 결합</a><a href="#claims">claim ↔ 축</a><a href="#tracks">트랙</a><a href="#code">코드 흐름</a><a href="#scen">동작 시나리오</a><a href="#formulas">비용 수식</a><a href="#docs">문서 지도</a>
   </nav>
 </header>
 
@@ -356,6 +426,244 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   </div>
   <p class="note"><b>이 연구의 위치.</b> 동작을 바꾸는 항상 적용 패치(B)는 hybrid에서 PD-mux가 돌게 하는 수리이고, env 정책(C)은 best-static에 지거나(SLO 계열) 죽었거나(층 경계 SM 전환형 layer-type; 시간 맞춤 span은 미시험) 미검증(R2 hybrid 예측기)입니다. 현재 기여는 업스트림 그대로의 동작(A)이 만드는 비용 구조를 계측(D)과 하네스(E)로 재는 특성화이며, 제안은 설정 수준(decode-heavy static, cap = C<sub>mem</sub>)과 조성 스윕의 hybrid 고유 항입니다. 메커니즘 제안(F)은 아직 구현되지 않았습니다.</p>
 </section>
+
+<section id="scen">
+  <h2>동작 시나리오 — 루프가 시간축에서 하는 일 <span class="sec">§6b · 개념도, 측정 아님</span></h2>
+  <p class="lede">§6의 PD-mux iteration을 시간축에 펼쳤습니다. 가로 한 칸은 동거 중 decode step 1개입니다. 길이는 코드 구조와 정본 수식 비율을 따른 개념도이고 측정값이 아닙니다. 위에서 <b>구현 변경</b>을 고르면, 그 변경이 바로 바꾸는 막대는 <span class="sc-key sc-key-d">직접</span>, 결과로 달라지는 막대는 <span class="sc-key sc-key-i">부가</span>로 표시되고 나머지는 흐려집니다. 코드 위치는 main <code>multiplexing_mixin.py</code> @3858f129 기준이며, 변경 E1–E3는 브랜치 <code>impl-defects-e123</code>에 기본 OFF로만 있습니다(GPU 0).</p>
+
+  <div class="sc-ctl">
+    <div class="sc-row"><span class="eyebrow">구현 변경</span><div class="sc-chips" id="sc-chg" role="group" aria-label="구현 변경 선택"></div></div>
+    <div class="sc-row"><span class="eyebrow">시나리오</span><div class="sc-tabs" id="sc-tabs" role="tablist" aria-label="시나리오 선택"></div></div>
+  </div>
+
+  <div class="sc-impact" id="sc-impact" aria-live="polite"></div>
+
+  <div class="sc-head">
+    <div class="sc-headtext"><div class="sc-tag" id="sc-tag"></div><h3 id="sc-name"></h3><p id="sc-setup"></p></div>
+    <button type="button" class="btn" id="sc-play">시간 흐름 재생</button>
+  </div>
+  <div class="sc-grid" id="sc-grid"></div>
+  <p class="sc-read" id="sc-read"></p>
+
+  <div class="sc-legend" aria-label="범례">
+    <span><i class="sw sw-h"></i>host 루프 작업(span 발행·결정)</span>
+    <span><i class="sw sw-hw"></i>host 대기(synchronize)</span>
+    <span><i class="sw sw-d"></i>decode step</span>
+    <span><i class="sw sw-p"></i>prefill span(GPU 실행)</span>
+    <span><i class="sw sw-q"></i>발행됐지만 대기 중인 span 수</span>
+    <span><i class="sw sw-st"></i>decode 멈춤</span>
+    <span><i class="sw sw-idle"></i>SM 유휴</span>
+    <span><i class="sw sw-ov"></i>과도기 SM 중첩·간섭</span>
+    <span><i class="sw sw-w"></i>요청 대기</span>
+    <span><i class="sw sw-ev"></i>GPU 쪽 event 대기</span>
+    <span>▼ 요청 도착 · ◆ 결정·전환 시점</span>
+  </div>
+
+  <h3 style="margin-top:8px">구현 변경별 영향 범위</h3>
+  <div class="tbl"><table id="sc-tbl"><thead><tr><th>변경</th><th>상태</th><th>직접 영향 (바뀌는 코드·동작)</th><th>부가 영향 (결과로 달라지는 것)</th></tr></thead><tbody></tbody></table></div>
+  <p class="lede" style="font-size:.84rem">근거: 결함 정의·크기 <code>workspace/engine-port/results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md</code>, 범위 감사 <code>…/AUDIT_scope_loop_dependence_r1_2026-10-29.md</code>, 구현 <code>impl-defects-e123:reports/hymux_review/IMPL_FIX_E1_E3_2026-10-29.md</code>, MuxWise §3.2.3·§3.4.2, Bullet §3.3. 층 종류 비율(32k에서 attention 층 ≈ Mamba 층의 1.47배, 8k 0.64배, 2k 0.43배)은 <code>analytic_terms.py</code> FLOPs 비 [유도]이며 시간 비가 아닙니다.</p>
+</section>
+
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  var CHG=[
+    {k:'none',n:'현재 구현',st:'main',stc:'g-code',flag:'—',
+     d:['고정 토큰 예산 span: forward_count = max(1, 65536 // extend 토큰) (:1416–1424)','매 반복 decode stream만 동기화(:1494), prefill은 마지막 span만 query(:1518)','분할 전환·decode-empty 때 drain(:1344–1345, :1361–1362)'],
+     i:['span이 decode step보다 길면 prefill stream에 쌓임(N3 98%·N2-EA 94% 적체 [측정])','HE0(ShareGPT)는 배치 94–95%가 span 1개 [측정]','박자 영역(span < decode step)은 측정 0']},
+    {k:'E2',n:'E2 발행 깊이 제한',st:'브랜치·OFF·CPU만',stc:'g-scoped',flag:'PDMUX_SPAN_MAX_INFLIGHT=k',
+     d:['span마다 prefill stream event 기록, 미완료 수(Event.query) ≥ k면 이번 반복은 span을 발행하지 않음','prefill stream에 쌓이는 span 수의 상한'],
+     i:['decode가 비는 순간(B2) 기다릴 span이 적어져 남은 층이 더 빨리 108 SM으로 감 → D SM 유휴·TTFT 단축','prefill GPU 총시간은 그대로(발행 시점만 늦춤)','decode가 빈 동안 host가 query만 돌며 대기(spin)','CM-4 "무반응" 관측 영역이 바뀜(적체 → 박자)']},
+    {k:'E1',n:'E1 시간 기준 span',st:'브랜치·OFF·CPU만',stc:'g-scoped',flag:'PDMUX_SPAN_POLICY=time',
+     d:['forward_count를 "예측 span 시간 ≤ decode step EWMA × factor"인 최대 층 수로','prefill SM 수 P = sm_counts[stream_idx][0] 반영(현재 미사용 인자)'],
+     i:['span 수·반복 수 증가 → host 시간(B5) 노출 증가','컨트롤러 평가 기회 증가 → 동적 arm 전환(B1) 빈도 변화','8k 이상에서 거의 1층/반복 → prefill이 decode 박자에 묶여 TTFT 증가 가능','η 0.45(비동거 측정)라 동거 중 과소예측 시 다시 조금씩 쌓임']},
+    {k:'E1T',n:'E1 층 종류 반영',st:'브랜치·OFF·CPU만',stc:'g-scoped',flag:'PDMUX_SPAN_POLICY=time_typed',
+     d:['층마다 비용을 hybrid_override_pattern(M/*/-)과 층 종류별 FLOPs·η로 따로 셈(span_policy.py)','span 경계가 attention 층 위치에 따라 달라짐'],
+     i:['attention 포함 span의 초과 시간 제거(32k) — 8k·2k에서는 attention이 더 싸서 반대 방향','η_X 가정(기본 전부 0.45)에 의존','정본이 "미시험"으로 둔 층 종류 시간 맞춤 span의 직접 시험 대상']},
+    {k:'E3',n:'E3 handoff',st:'브랜치·OFF·CPU만',stc:'g-scoped',flag:'PDMUX_SWITCH_MODE=handoff',
+     d:['진행 중 prefill이 있을 때 drain(:1344–1345 SLO 전환, :1361–1362 decode-empty)을 host synchronize 대신 GPU 쪽 wait_event로','남은 층을 새 stream group에서 발행, 옛 stream 텐서에 record_stream'],
+     i:['동적 전환 때 decode 멈춤 제거 → 동적 arm ITL','과도기에 옛 P SM과 새 D SM이 겹쳐 간섭(미측정)','이미 발행된 span은 옛 green context에 묶여 못 옮김 → B2에는 효과 거의 없음','true dual worker와 함께 켜면 거부(ValueError)','drain 계측 필드(diag v2) 변경']},
+    {k:'B512',n:'예산 512 (M1 셀)',st:'설정값·미측정',stc:'g-open',flag:'split_forward_token_budget=512',
+     d:['2k 프롬프트에서 forward_count = 1 → 반복마다 1층'],
+     i:['박자 영역 진입(r ≈ 0.32 [유도])','prefill 완료가 decode step 수(56층 ≈ 56 step)에 묶여 TTFT 증가','P SM이 매 step 대부분 놂','config가 512를 받는지 미확인(gate smoke 필요)']},
+    {k:'DYN',n:'동적 컨트롤러',st:'기존 코드',stc:'g-code',flag:'PDMUX_SLO_SCHED / PDMUX_R2_POLICY',
+     d:['prefill 진행 중 매 반복 목표 분할 평가, 바뀌면 drain 후 전환(:1317–1356)'],
+     i:['진행 중 drain 동안 decode 발행이 막혀 decode 멈춤(B1, 크기 미측정)','drain 스파이크를 TPOT EMA가 이상치로 걸러 신호가 왜곡됨(v4 band)','HE0는 span 1개가 대부분이라 전환 기회 자체가 적음']},
+    {k:'STK',n:'sticky 분할',st:'기존 플래그',stc:'g-code',flag:'PDMUX_STICKY_PARTITION',
+     d:['prefill이 없어도 decode가 분할을 유지(adjust_stream_groups :1167–1199)'],
+     i:['decode-only 구간에도 D 과다공급 비용이 생김','"decode-heavy static 기본값" 편향을 시험하는 손잡이(감사 r1 실험 3)']},
+    {k:'E4',n:'E4 층 경계 선점',st:'설계 메모만',stc:'g-open',flag:'(미구현)',
+     d:['update_split_prefill_batch의 단일 배치 제약(:1218) 해제, KV·mamba 슬롯 두 벌 유지'],
+     i:['짧은 요청 TTFT 단축, 긴 요청 TTFT 증가','admission 경로·재귀 선점 금지 규칙 필요(MuxWise §3.4.2)']}
+  ];
+  function b(l,s,e,k,t,fx){return {l:l,s:s,e:e,k:k,t:t||'',fx:fx||''};}
+  function rep(l,s,n,w,k,lab,fx,lab0){var a=[];for(var i=0;i<n;i++)a.push(b(l,s+i*w,s+(i+1)*w,k,lab?(lab0||lab)+(i+1):'',fx));return a;}
+  function cat(){return [].concat.apply([],arguments);}
+  function dec(l,s,n,w,fx){return rep(l,s,n,w||1,'d','','DYN:i'+(fx?','+fx:''));}
+  function q(l,depths,fx){var a=[];depths.forEach(function(v,i){if(v>0)a.push(b(l,i,i+1,'q',String(v),fx));});return a;}
+  function depth(issue,done,T){var r=[];for(var t=0;t<T;t++){var x=t+.5,n=0,c=0;issue.forEach(function(v){if(v<=x)n++;});done.forEach(function(v){if(v<=x)c++;});r.push(n-c);}return r;}
+  var F_SPAN='E1:d,E1T:d,B512:d',F_ISS='E2:d,E1:d,E1T:i';
+
+  var SC=[
+   {id:'pile',tag:'B4 고정 예산 · 적체',name:'8k 프롬프트가 쌓이는 방식',
+    setup:'D44(prefill 64 SM). 8k 프롬프트 1건, budget 65536 → span 하나 = 8층, 56층이라 span 7개. span 하나의 GPU 시간은 decode step 3칸으로 둡니다(N3에서 span당 chunk 시간이 decode 간격의 약 10배 [측정]보다 작게 단순화).',
+    read:'현재 루프는 decode를 기다린 뒤 매 반복 span을 하나씩 무조건 발행하므로, GPU가 3칸 걸리는 span이 1칸마다 쌓입니다. 마지막 span을 발행한 뒤 host는 query만 하며 기다립니다(N3에서 span당 중앙 49회). E2(k=1)는 발행 시점만 늦추고 GPU 총시간은 같아 TTFT는 그대로입니다. 쌓인 양이 줄어든 효과는 다음 시나리오(decode가 빌 때)에서 드러납니다. E1은 span을 decode step에 맞춰 잘게 자르지만, 예측이 실제보다 10% 짧으면 다시 조금씩 쌓입니다.',
+    T:23,panels:(function(){
+      var iss1=[0,1,2,3,4,5,6],done1=[3,6,9,12,15,18,21];
+      var iss2=[0,3,6,9,12,15,18];
+      var n3=19,w3=1.1,iss3=[],done3=[];for(var i=0;i<n3;i++){iss3.push(i);done3.push((i+1)*w3);}
+      return [
+       {title:'현재: budget 65536',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','쌓인 span 수'],
+        blocks:cat(iss1.map(function(t,i){return b(0,t,t+.35,'h','',F_ISS);}),[b(0,7,21,'hw','마지막 발행 뒤 query만','E2:i,E1:i')],dec(1,0,22,1,'E1:i'),rep(2,0,7,3,'p','s',F_SPAN),q(3,depth(iss1,done1,22),'E2:d,E1:d')),
+        m:[['TTFT','약 21칸',''],['최대 쌓인 span','5','bad'],['decode 멈춤','0','good']]},
+       {title:'E2 k=1: 끝나야 다음 발행',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','쌓인 span 수'],
+        blocks:cat(iss2.map(function(t){return b(0,t,t+.35,'h','','E2:d');}),dec(1,0,22,1),rep(2,0,7,3,'p','s','E2:i'),q(3,depth(iss2,done1,22),'E2:d')),
+        m:[['TTFT','약 21칸 (같음)',''],['최대 쌓인 span','1','good']]},
+       {title:'E1 time: span ≈ decode step',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','쌓인 span 수'],
+        blocks:cat(iss3.map(function(t){return b(0,t,t+.35,'h','','E1:d');}),dec(1,0,22,1,'E1:i'),rep(2,0,n3,w3,'p','','E1:d'),q(3,depth(iss3,done3,22),'E1:i')),
+        m:[['TTFT','약 21칸 + 발행 오버헤드',''],['최대 쌓인 span','2 (예측 10% 과소 가정)','']]}
+      ];})()},
+
+   {id:'empty',tag:'B2 decode-empty drain',name:'prefill 도중 decode가 비는 순간',
+    setup:'같은 8k prefill(P 64 SM에서 span당 3칸). t=4에 decode 배치의 마지막 요청이 끝납니다. 분할이 idx 0(108 SM 전부 prefill)으로 바뀌면 span 하나가 3 × 64/108 ≈ 1.8칸이 됩니다 [유도, span 시간 ∝ 1/P].',
+    read:'현재 루프는 decode가 빈 반복에서 drain합니다. 이미 발행된 span 4개가 P 64 SM에서 끝날 때까지 host가 기다리고, 그동안 D 44 SM은 놉니다. 남은 3개만 108 SM으로 갑니다(N3 span의 약 45%에서 발생, 98%는 전부 발행된 뒤 [측정]). E2는 쌓인 양을 줄여 남은 층이 일찍 108 SM으로 가므로 유휴와 TTFT가 줄어듭니다. E3 handoff는 host 대기만 없앱니다. 이미 발행된 span은 옛 green context에 묶여 있어 D SM 유휴와 TTFT는 그대로입니다. 이 경우 비용은 ITL이 아니라 TTFT에만 있습니다(decode가 비어 ITL 표본이 없음).',
+    T:19,panels:[
+     {title:'현재: drain',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','prefill · 108 SM'],mk:[[1,4]],
+      blocks:cat([0,1,2,3].map(function(t){return b(0,t,t+.35,'h','','E2:i');}),[b(0,4,12,'hw','drain: prefill_stream.synchronize()','E3:d,E2:i')],[12,13.8,15.6].map(function(t){return b(0,t,t+.35,'h','','');}),dec(1,0,4,1),[b(1,4,12,'idle','D SM 유휴','E2:i,E3:i')],rep(2,0,4,3,'p','s','E2:i'),rep(3,12,3,1.8,'p','','E2:i')),
+      m:[['TTFT','약 17.4칸','bad'],['D SM 유휴','8칸','bad'],['host 대기','8칸','bad']]},
+     {title:'E2 k=1',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','prefill · 108 SM'],mk:[[1,4]],
+      blocks:cat([0,3].map(function(t){return b(0,t,t+.35,'h','','E2:d');}),[b(0,4,6,'hw','drain','E2:i')],[6,7.8,9.6,11.4,13.2].map(function(t){return b(0,t,t+.35,'h','','E2:i');}),dec(1,0,4,1),[b(1,4,6,'idle','','E2:i')],rep(2,0,2,3,'p','s','E2:i'),rep(3,6,5,1.8,'p','','E2:i')),
+      m:[['TTFT','약 15칸','good'],['D SM 유휴','2칸','good'],['host 대기','2칸','good']]},
+     {title:'E3 handoff만',lanes:['host 루프','decode · D 44 SM','prefill · P 64 SM','prefill · 108 SM'],mk:[[1,4]],
+      blocks:cat([0,1,2,3].map(function(t){return b(0,t,t+.35,'h','','');}),[b(0,4,4.4,'h','','E3:d')],[4.5,4.9,5.3].map(function(t){return b(0,t,t+.3,'h','','E3:d');}),dec(1,0,4,1),[b(1,4,12,'idle','D SM 유휴 (그대로)','E3:i')],rep(2,0,4,3,'p','s','E3:i'),[b(3,4.6,12,'ev','wait_event (GPU 쪽)','E3:d')],rep(3,12,3,1.8,'p','','E3:i')),
+      m:[['TTFT','약 17.4칸 (같음)',''],['D SM 유휴','8칸 (같음)','bad'],['host 대기','0','good']]}
+    ]},
+
+   {id:'switch',tag:'B1 전환 drain · 동적 arm만',name:'동적 컨트롤러가 prefill 도중 분할을 바꿀 때',
+    setup:'D24(P 84 SM)에서 8k prefill이 진행 중이고 span당 2.3칸이 걸립니다. t=3에 컨트롤러가 D44로 바꾸기로 결정합니다. D44에서 decode step은 0.8칸, span은 3칸으로 둡니다.',
+    read:'현재 루프는 전환 결정 즉시 prefill stream과 decode stream을 모두 동기화합니다. 쌓인 span이 끝날 때까지 host가 막혀 decode를 발행하지 못하므로, 그 시간이 통째로 decode 멈춤(ITL 급등)이 됩니다. 이 비용은 동적 arm에만 걸려 HE0 비교를 동적에 불리하게 기울입니다(크기 미측정, bind+GATE 상한 ≤0.72%). handoff는 decode를 새 분할에서 바로 이어가고, 새 prefill은 GPU 쪽에서 옛 span 완료 event를 기다립니다. 대신 과도기에 옛 P 84 SM과 새 D 44 SM이 겹쳐(합 128 > 108) 간섭이 생기며, 이 크기는 측정된 적이 없습니다.',
+    T:15,panels:[
+     {title:'현재: drain 후 전환',lanes:['host 루프','decode stream','prefill · 옛 P 84 SM','prefill · 새 P 64 SM'],dm:[[0,3]],
+      blocks:cat([0,1,2].map(function(t){return b(0,t,t+.35,'h','','E1:i');}),[b(0,3,6.9,'hw','drain: 두 stream synchronize','DYN:d,E3:d')],dec(1,0,3,1),[b(1,3,6.9,'st','decode 멈춤','DYN:d,E3:d')],rep(1,6.9,10,.8,'d','','DYN:i'),rep(2,0,3,2.3,'p','s','DYN:i'),rep(3,6.9,2,3,'p','','DYN:i')),
+      m:[['decode 멈춤','약 3.9칸','bad'],['전환 지연','3.9칸','bad']]},
+     {title:'E3 handoff',lanes:['host 루프','decode stream','prefill · 옛 P 84 SM','prefill · 새 P 64 SM'],dm:[[0,3]],
+      blocks:cat([0,1,2].map(function(t){return b(0,t,t+.35,'h','','');}),[b(0,3,3.35,'h','','E3:d')],dec(1,0,3,1),rep(1,3,5,.8,'ov','','E3:d'),rep(1,7,10,.8,'d','','E3:i'),rep(2,0,3,2.3,'p','s','E3:i'),[b(3,3.4,6.9,'ev','wait_event','E3:d')],rep(3,6.9,2,3,'p','','E3:i')),
+      m:[['decode 멈춤','0','good'],['과도기 중첩','약 3.9칸 (간섭 미측정)','']]}
+    ]},
+
+   {id:'hol',tag:'B3 단일 prefill 배치 · 선점 없음',name:'긴 prefill 뒤에 짧은 요청이 올 때',
+    setup:'32k 프롬프트 L의 prefill이 t=0부터 12칸 걸립니다. t=2에 짧은 요청 S가 도착하고, S의 prefill은 0.5칸입니다.',
+    read:'현재 루프는 split_prefill_batch가 있으면 새 prefill을 입장시키지 않으므로 S는 L이 끝날 때까지 기다립니다(head-of-line). MuxWise는 층 경계에서 짧은 요청이 긴 요청을 선점하고 재귀 선점은 막습니다. 이 프로젝트에서 층 경계 선점(E4)은 설계 메모만 있고 구현·측정은 없습니다.',
+    T:14,panels:[
+     {title:'현재: 입장 불가',lanes:['decode stream','prefill stream','S 요청'],arr:[[2,2]],
+      blocks:cat(dec(0,0,14,1),rep(1,0,4,3,'p','L',''),[b(2,2,12,'w','대기: split_prefill_batch 점유','E4:d'),b(2,12,12.5,'p','','E4:i')]),
+      m:[['S TTFT','10.5칸','bad'],['L TTFT','12칸','good']]},
+     {title:'E4 층 경계 선점 (미구현 · 설계만)',lanes:['decode stream','prefill stream','S 요청'],arr:[[2,2]],
+      blocks:cat(dec(0,0,14,1),[b(1,0,3,'p','L1','E4:i'),b(1,3.5,6.5,'p','L2','E4:i'),b(1,6.5,9.5,'p','L3','E4:i'),b(1,9.5,12.5,'p','L4','E4:i')],[b(2,2,3,'w','','E4:d'),b(2,3,3.5,'p','','E4:d')]),
+      m:[['S TTFT','1.5칸','good'],['L TTFT','12.5칸','bad']]}
+    ]},
+
+   {id:'regime',tag:'실행 영역 3가지',name:'span 1개 · 적체 · 박자',
+    setup:'같은 D44에서 프롬프트 길이와 예산만 바꿉니다. 정본 serving 결과는 전부 앞의 두 영역에서 나왔고, 박자 영역은 측정된 적이 없습니다.',
+    read:'짧은 ShareGPT 프롬프트(HE0)는 span 하나로 끝나 층 단위 분할이 없지만, prefill과 decode는 서로 다른 SM에서 동시에 돕니다. 8k·65536(N3·T3·P1-opint)은 span이 쌓이는 영역입니다. 2k·512(M1 셀 제안)는 span 하나가 decode step보다 짧아(r ≈ 0.32 [유도]) 매 step 대부분 P SM이 놀고, prefill 완료가 decode step 수(56층 ≈ 56칸)에 묶입니다. MuxWise의 N_PL은 이 사이, 즉 span 시간 ≈ decode step을 목표로 합니다.',
+    T:14,panels:[
+     {title:'span 1개 — HE0 (ShareGPT, 배치 94–95%)',lanes:['decode · D 44 SM','prefill · P 64 SM'],arr:[[1,2]],
+      blocks:cat(dec(0,0,14,1),[b(1,0,2,'idle','',''),b(1,2,2.5,'p','','E1:i'),b(1,2.5,14,'idle','다음 요청까지 유휴','')]),
+      m:[['span 수','1',''],['층 단위 분할','없음',''],['공간 동시 실행','있음','good']]},
+     {title:'적체 — 8k · 65536 (N3 98%, N2-EA 94%)',lanes:['decode · D 44 SM','prefill · P 64 SM'],
+      blocks:cat(dec(0,0,14,1),rep(1,0,4,3,'p','s','E1:d,E2:i')),
+      m:[['r = span / step','≈ 3 (측정 범위 3–59)','bad'],['쌓인 span','계속 증가','bad']]},
+     {title:'박자 — 2k · 512 (M1, 미측정)',lanes:['decode · D 44 SM','prefill · P 64 SM'],
+      blocks:cat(dec(0,0,14,1),(function(){var a=[];for(var i=0;i<14;i++){a.push(b(1,i,i+.32,'p','','B512:d'));a.push(b(1,i+.32,i+1,'idle','','B512:i'));}return a;})()),
+      m:[['r','≈ 0.32 [유도]',''],['TTFT','≈ 56칸 (층 수)','bad'],['P SM 유휴','매 step 약 68%','bad']]}
+    ]},
+
+   {id:'ltype',tag:'층 종류 · E1 time vs time_typed',name:'attention 층이 섞인 span의 시간',
+    setup:'32k 프롬프트, P 64 SM. 층당 FLOPs는 MLP를 1로 둘 때 Mamba 1.08, attention 1.59입니다 [유도, analytic_terms]. time 정책은 층 비용을 평균값으로 보고 2층씩 자르고, time_typed는 층 종류별 비용으로 자릅니다. η는 층 종류와 무관하게 같다고 가정합니다.',
+    read:'층 종류를 무시하면 attention 층이 들어간 span만 decode step을 넘어 그때마다 조금씩 쌓입니다. 층 종류를 반영하면 그 span을 한 층 짧게 잘라 모든 span이 step 안에 들어옵니다. 8k와 2k에서는 attention 층이 Mamba보다 싸서(0.64배, 0.43배) 방향이 반대가 됩니다. 이 차이가 실제 goodput을 바꾸는지는 정본이 "미시험"으로 둔 질문이고, 감사 r1이 제시한 확정 실험({budget, time, time_typed} × 박자 영역 셀, n≥4)이 답할 대상입니다.',
+    T:11,panels:[
+     {title:'E1 time (층 종류 무시, 2층씩)',lanes:['decode · D 44 SM','prefill · P 64 SM','쌓인 span 수'],
+      blocks:(function(){var w=[.96,.96,1.24,.96,.96,.96,1.24,.96,.96,.96],labs=['M-','M-','M*','-M','M-','M-','M*','-M','M-','M-'],a=dec(0,0,11,1),t=0,iss=[],dn=[];
+        w.forEach(function(x,i){a.push(b(1,t,t+x,'p',labs[i],x>1?'E1T:d':'E1:i'));iss.push(i);t+=x;dn.push(t);});
+        return a.concat(q(2,depth(iss,dn,11),'E1T:i'));})(),
+      m:[['step 초과 span','2개','bad'],['쌓인 span','최대 1','']]},
+     {title:'E1 time_typed (층 종류 반영)',lanes:['decode · D 44 SM','prefill · P 64 SM','쌓인 span 수'],
+      blocks:(function(){var w=[.96,.96,.5,.74,.96,.96,.96,.5,.74,.96],labs=['M-','M-','M','*','-M','M-','M-','M','*','-M'],a=dec(0,0,11,1),t=0,iss=[],dn=[];
+        w.forEach(function(x,i){a.push(b(1,i,i+x,'p',labs[i],(labs[i]==='M'||labs[i]==='*')?'E1T:d':'E1T:i'));iss.push(i);dn.push(i+x);});
+        return a.concat(q(2,depth(iss,dn,11),'E1T:i'));})(),
+      m:[['step 초과 span','0','good'],['span 수','+2 (반복 수 증가)','']]}
+    ]}
+  ];
+
+  var W=760,PADL=150,TOP=24,LH=30,BH=18,cur='none',idx=0,raf=null;
+  var grid=document.getElementById('sc-grid'),tabs=document.getElementById('sc-tabs'),chips=document.getElementById('sc-chg'),play=document.getElementById('sc-play');
+  function el(n,a,txt){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e;}
+  function tw(s){var w=0;for(var i=0;i<s.length;i++)w+=s.charCodeAt(i)>255?10.5:6.2;return w;}
+  function fxOf(q){var m={};q.fx.split(',').forEach(function(p){var kv=p.split(':');if(kv[0])m[kv[0]]=kv[1];});return m;}
+  function panel(p,T){
+    var H=TOP+p.lanes.length*LH+6,sx=(W-PADL-14)/T;function X(t){return PADL+t*sx;}
+    var svg=el('svg',{viewBox:'0 0 '+W+' '+H,'class':'sc-tl',role:'img','aria-label':p.title+' 시간축'});svg.dataset.sx=sx;
+    for(var t=0;t<=T;t++){svg.appendChild(el('line',{x1:X(t),x2:X(t),y1:TOP-4,y2:H-4,'class':'sc-grid'}));if(t%2===0)svg.appendChild(el('text',{x:X(t),y:14,'text-anchor':'middle','class':'sc-ax'},'t='+t));}
+    p.lanes.forEach(function(l,i){svg.appendChild(el('text',{x:PADL-10,y:TOP+i*LH+LH/2+4,'text-anchor':'end','class':'sc-lane'},l));});
+    p.blocks.forEach(function(q){
+      var y=TOP+q.l*LH+(LH-BH)/2,ins=(q.k==='d'||q.k==='ov'||q.k==='q')?1.1:.5,w=(q.e-q.s)*sx-2*ins;
+      var g=el('g',{'class':'sc-b'});g.dataset.s=q.s;g.dataset.fx=q.fx;
+      g.appendChild(el('rect',{x:X(q.s)+ins,y:y,width:Math.max(w,1.5),height:BH,rx:2,'class':'k-'+q.k}));
+      if(q.t&&w>tw(q.t)+6){var c=(q.k==='idle'||q.k==='st'||q.k==='w'||q.k==='ev'||q.k==='hw'||q.k==='q')?' dk':'';g.appendChild(el('text',{x:X(q.s)+ins+w/2,y:y+BH/2+3.8,'text-anchor':'middle','class':'sc-bt'+c},q.t));}
+      svg.appendChild(g);
+    });
+    (p.arr||[]).forEach(function(a){var x=X(a[1]),y=TOP+a[0]*LH+(LH-BH)/2-1;svg.appendChild(el('path',{d:'M'+(x-4)+' '+(y-6)+' L'+(x+4)+' '+(y-6)+' L'+x+' '+y+' Z','class':'sc-mk'}));});
+    (p.mk||[]).concat(p.dm||[]).forEach(function(a){var x=X(a[1]),y=TOP+a[0]*LH+2;svg.appendChild(el('path',{d:'M'+x+' '+(y-5)+' L'+(x+5)+' '+y+' L'+x+' '+(y+5)+' L'+(x-5)+' '+y+' Z','class':'sc-mk'}));});
+    svg.appendChild(el('line',{x1:PADL,x2:PADL,y1:TOP-6,y2:H-2,'class':'sc-cur',visibility:'hidden'}));
+    return svg;
+  }
+  function paint(){
+    grid.querySelectorAll('g.sc-b').forEach(function(g){
+      var f=fxOf({fx:g.dataset.fx||''})[cur];g.classList.toggle('fx-d',cur!=='none'&&f==='d');g.classList.toggle('fx-i',cur!=='none'&&f==='i');g.classList.toggle('fx-n',cur!=='none'&&!f);
+    });
+    var c=CHG.filter(function(x){return x.k===cur;})[0],box=document.getElementById('sc-impact');
+    box.textContent='';
+    var h=document.createElement('div');h.className='sc-ih';
+    var s1=document.createElement('b');s1.textContent=c.n;h.appendChild(s1);
+    var s2=document.createElement('span');s2.className='chip '+c.stc;s2.textContent=c.st;h.appendChild(s2);
+    var s3=document.createElement('code');s3.textContent=c.flag;h.appendChild(s3);box.appendChild(h);
+    var two=document.createElement('div');two.className='sc-icols';
+    [['직접 영향','d',c.d],['부가 영향','i',c.i]].forEach(function(z){var d=document.createElement('div');var t=document.createElement('div');t.className='sc-key sc-key-'+z[1];t.textContent=z[0];d.appendChild(t);var ul=document.createElement('ul');z[2].forEach(function(x){var li=document.createElement('li');li.textContent=x;ul.appendChild(li);});d.appendChild(ul);two.appendChild(d);});
+    box.appendChild(two);
+    var n=0;grid.querySelectorAll('g.fx-d,g.fx-i').forEach(function(){n++;});
+    if(cur!=='none'&&n===0){var p=document.createElement('p');p.className='sc-none';p.textContent='이 시나리오에는 이 변경이 바꾸는 막대가 없습니다. 다른 시나리오를 골라 보세요.';box.appendChild(p);}
+  }
+  function show(i){
+    stop();idx=i;var s=SC[i];
+    tabs.querySelectorAll('button').forEach(function(bt,j){bt.setAttribute('aria-selected',String(j===i));});
+    document.getElementById('sc-tag').textContent=s.tag;document.getElementById('sc-name').textContent=s.name;
+    document.getElementById('sc-setup').textContent=s.setup;document.getElementById('sc-read').textContent=s.read;
+    grid.textContent='';
+    s.panels.forEach(function(p){
+      var d=document.createElement('div');d.className='sc-panel';
+      var ph=document.createElement('div');ph.className='sc-ph';var h=document.createElement('h4');h.textContent=p.title;ph.appendChild(h);
+      var ul=document.createElement('ul');ul.className='sc-met';
+      p.m.forEach(function(m){var li=document.createElement('li');if(m[2])li.className=m[2];li.textContent=m[0];var st=document.createElement('strong');st.textContent=m[1];li.appendChild(st);ul.appendChild(li);});
+      ph.appendChild(ul);d.appendChild(ph);var wr=document.createElement('div');wr.className='sc-tlw';wr.appendChild(panel(p,s.T));d.appendChild(wr);grid.appendChild(d);
+    });
+    paint();try{localStorage.setItem('axes-scen',s.id);}catch(e){}
+  }
+  function setChg(k){cur=k;chips.querySelectorAll('button').forEach(function(bt){bt.setAttribute('aria-pressed',String(bt.dataset.k===k));});paint();try{localStorage.setItem('axes-chg',k);}catch(e){}}
+  function frame(t){grid.querySelectorAll('svg.sc-tl').forEach(function(svg){var sx=+svg.dataset.sx,c=svg.querySelector('.sc-cur');svg.querySelectorAll('g.sc-b').forEach(function(n){n.classList.toggle('sc-dim',+n.dataset.s>=t);});var x=PADL+t*sx;c.setAttribute('x1',x);c.setAttribute('x2',x);c.setAttribute('visibility','visible');});}
+  function stop(){if(raf)cancelAnimationFrame(raf);raf=null;play.disabled=false;play.textContent='시간 흐름 재생';grid.querySelectorAll('.sc-dim').forEach(function(n){n.classList.remove('sc-dim');});grid.querySelectorAll('.sc-cur').forEach(function(c){c.setAttribute('visibility','hidden');});}
+  play.addEventListener('click',function(){var T=SC[idx].T,dur=T*380,t0=performance.now();play.disabled=true;play.textContent='재생 중…';function st(now){var t=(now-t0)/dur*T;if(t>=T){stop();return;}frame(t);raf=requestAnimationFrame(st);}raf=requestAnimationFrame(st);});
+  CHG.forEach(function(c){var bt=document.createElement('button');bt.type='button';bt.id='sc-chg-'+c.k;bt.dataset.k=c.k;bt.textContent=c.n;bt.addEventListener('click',function(){setChg(c.k);});chips.appendChild(bt);});
+  SC.forEach(function(s,i){var bt=document.createElement('button');bt.type='button';bt.id='sc-tab-'+s.id;bt.setAttribute('role','tab');bt.textContent=s.name;bt.addEventListener('click',function(){show(i);});tabs.appendChild(bt);});
+  var tb=document.querySelector('#sc-tbl tbody');
+  CHG.forEach(function(c){if(c.k==='none')return;var tr=document.createElement('tr');
+    var a=document.createElement('td');a.innerHTML='';var bb=document.createElement('b');bb.textContent=c.n;a.appendChild(bb);var cd=document.createElement('div');cd.className='sc-flag';cd.textContent=c.flag;a.appendChild(cd);tr.appendChild(a);
+    var s=document.createElement('td');var sp=document.createElement('span');sp.className='chip '+c.stc;sp.textContent=c.st;s.appendChild(sp);tr.appendChild(s);
+    [c.d,c.i].forEach(function(L){var td=document.createElement('td');var ul=document.createElement('ul');ul.className='sc-ul';L.forEach(function(x){var li=document.createElement('li');li.textContent=x;ul.appendChild(li);});td.appendChild(ul);tr.appendChild(td);});
+    tb.appendChild(tr);});
+  var si=0,sk='none';try{var a=localStorage.getItem('axes-scen');SC.forEach(function(s,i){if(s.id===a)si=i;});var c=localStorage.getItem('axes-chg');CHG.forEach(function(x){if(x.k===c)sk=c;});}catch(e){}
+  show(si);setChg(sk);
+})();
+</script>
 
 <!-- ANALYTIC:BEGIN -->
 <section id="formulas">
