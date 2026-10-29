@@ -1,0 +1,250 @@
+{
+ "boots": [
+  {
+   "arm": {
+    "anchor_idx": 2,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a2_w6"
+   },
+   "boot_id": "TUNE_b00_dyn_a2_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a2_w6_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 3,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a3_w6"
+   },
+   "boot_id": "TUNE_b01_dyn_a3_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a3_w6_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 2,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a2_w3"
+   },
+   "boot_id": "TUNE_b02_dyn_a2_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a2_w3_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 4,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a4_w3"
+   },
+   "boot_id": "TUNE_b03_dyn_a4_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a4_w3_s102",
+     "seed": 102
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 3,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a3_w3"
+   },
+   "boot_id": "TUNE_b04_dyn_a3_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a3_w3_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 2,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a2_w3"
+   },
+   "boot_id": "TUNE_b05_dyn_a2_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a2_w3_s102",
+     "seed": 102
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 4,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a4_w6"
+   },
+   "boot_id": "TUNE_b06_dyn_a4_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a4_w6_s102",
+     "seed": 102
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 4,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a4_w6"
+   },
+   "boot_id": "TUNE_b07_dyn_a4_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a4_w6_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 3,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a3_w6"
+   },
+   "boot_id": "TUNE_b08_dyn_a3_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a3_w6_s102",
+     "seed": 102
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 2,
+    "dwell": 6,
+    "kind": "dynamic",
+    "name": "dyn_a2_w6"
+   },
+   "boot_id": "TUNE_b09_dyn_a2_w6",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a2_w6_s102",
+     "seed": 102
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 4,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a4_w3"
+   },
+   "boot_id": "TUNE_b10_dyn_a4_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a4_w3_s101",
+     "seed": 101
+    }
+   ]
+  },
+  {
+   "arm": {
+    "anchor_idx": 3,
+    "dwell": 3,
+    "kind": "dynamic",
+    "name": "dyn_a3_w3"
+   },
+   "boot_id": "TUNE_b11_dyn_a3_w3",
+   "runs": [
+    {
+     "kind": "he0",
+     "np": 200,
+     "rate_hi": 10.942364999999999,
+     "rate_lo": 2.7355912499999997,
+     "rounds": 3,
+     "run_id": "TUNE_dyn_a3_w3_s102",
+     "seed": 102
+    }
+   ]
+  }
+ ],
+ "job": "TUNE",
+ "kind": "TUNE",
+ "rates": {
+  "hi": 10.942364999999999,
+  "lo": 2.7355912499999997
+ }
+}

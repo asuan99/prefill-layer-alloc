@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-policy-tune-074ffc3-20261029140207
+Slug:                 job-9t469viisz2i
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/074ffc3741b86c39d8387a32b27e46100eb52938/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-29T14:02:21Z
+Started At:           2026-10-29T14:02:24Z
+Completed At:         2026-10-29T19:44:00Z
+Duration:             5h41m36s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=074ffc3741b86c39d8387a32b27e46100eb52938, PDMUX_JOB_NAME=pdmux-policy-tune-074ffc3-20261029140207, PDMUX_CAMPAIGN=policy_tune, PDMUX_TARGET=workspace/engine-port/results/cap_char/policy_harness/ph_cov_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_POLICY_JOB=TUNE, PDMUX_POLICY_SEALED=1, PDMUX_POLICY_ADDENDUM=workspace/engine-port/results/cap_char/policy_harness/addendum_tune.json
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

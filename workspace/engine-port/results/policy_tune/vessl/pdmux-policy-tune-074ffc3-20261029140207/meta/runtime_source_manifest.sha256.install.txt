@@ -1,0 +1,4 @@
+commit=074ffc3741b86c39d8387a32b27e46100eb52938
+runtime=/opt/pdmux/sglang_engine_dev/python
+manual_edits_patch=applied sha256=a4ec4d637ea1f65a50af49afecccac1fe60e05aa0047040e88f61a12ca848a00
+sync_manifest_sha256=4f71a70491e5d7a7908f3c370c3f102982b3162ee921b7977277a71ea75840cb

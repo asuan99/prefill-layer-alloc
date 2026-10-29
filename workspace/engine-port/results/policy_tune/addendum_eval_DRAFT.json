@@ -1,0 +1,39 @@
+{
+ "NOTE": "EVAL addendum DRAFT, UNSEALED, NOT SUBMITTED. Descriptive. Selected by registered rule PREREG 4-3.",
+ "he0_rates": {
+  "hi": 10.942364999999999,
+  "lo": 2.7355912499999997
+ },
+ "job": "pdmux-policy-tune-074ffc3-20261029140207",
+ "observation": "anchor_idx 4 (D44) runs show switch_count 0 and 100% dwell at D44 in all four runs: the selected dynamic arm did not move in TUNE (behaves as static D44 on these traces)",
+ "selection": {
+  "mean_goodput": {
+   "dyn_a2_w3": 2.0556136040501336,
+   "dyn_a2_w6": 2.0157798054248377,
+   "dyn_a3_w3": 2.145846816555385,
+   "dyn_a3_w6": 2.1407525165934187,
+   "dyn_a4_w3": 2.1697895274265697,
+   "dyn_a4_w6": 2.1803528181049328
+  },
+  "note": "dyn_a4_w6 has the highest mean goodput; dyn_a4_w3 is within 1% (0.49% below) so the tie rule applies; equal mean switch_count 0 -> name order picks dyn_a4_w3",
+  "tie_rule_fired": true,
+  "tie_set_switch_means": {
+   "dyn_a4_w3": 0.0,
+   "dyn_a4_w6": 0.0
+  }
+ },
+ "slo": {
+  "itl_p95_ms": 60,
+  "ttft_ms": 3000
+ },
+ "tuned_config": {
+  "anchor_idx": 4,
+  "dwell": 3,
+  "kind": "dynamic",
+  "name": "dyn_a4_w3"
+ },
+ "tuning_seeds": [
+  101,
+  102
+ ]
+}

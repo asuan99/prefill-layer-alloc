@@ -1,0 +1,24 @@
+{
+ "D": 44,
+ "NOTE": "REFCELL_DESCRIPTIVE: no label, no verdict",
+ "attainment": 0.9833333333333333,
+ "duration_s": 32.012983402004465,
+ "n": 120,
+ "rate": 7.29491,
+ "seed": 201,
+ "status": "done",
+ "substrate_window": {
+  "n_samples": 319,
+  "power_w_median": 325.32,
+  "power_w_p95": 387.73400000000004,
+  "sm_mhz_median": 1410.0,
+  "temp_c_median": 54.0,
+  "throttle_frac": 0.06896551724137931
+ },
+ "tag": "start",
+ "ttft_p50_ms": 400.2017719903961,
+ "ttft_p95_ms": 2819.1108256403822,
+ "wall_end_epoch": 1793296719.9671018,
+ "wall_start_epoch": 1793296687.908384,
+ "warmup_correct": true
+}

@@ -1,0 +1,4 @@
+stage0 refcell start rc=0
+stage1 TUNE rc=0
+stage2 refcell end rc=0
+stage3 ph_covariates rc=0 (descriptive; does not affect the measurement)
