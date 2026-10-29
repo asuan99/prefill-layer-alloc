@@ -1,0 +1,50 @@
+{
+ "NOTE": "CAP1-R addendum DRAFT, UNSEALED, NOT SUBMITTED. Descriptive; lambda* from job pdmux-policy-cap1r-4bef3cf-20261029003539 only.",
+ "best_D": 44,
+ "best_D_note": "D44 and D64 tie at 7.29491; code takes the first (44)",
+ "cap2_ladder": {
+  "W3": {
+   "rmin": 0.1
+  }
+ },
+ "cap2_note": "PREREG 15-2 W3 rmin 0.1 x1.5 6 pts (coverage range); no registered rule derives it from the W1 lambda*",
+ "capacity_by_D": {
+  "16": {
+   "first_fail": 5.516,
+   "last_pass": null
+  },
+  "24": {
+   "first_fail": 5.516,
+   "last_pass": null
+  },
+  "34": {
+   "first_fail": 7.29491,
+   "last_pass": 6.3434
+  },
+  "44": {
+   "first_fail": 8.389146,
+   "last_pass": 7.29491
+  },
+  "64": {
+   "first_fail": 8.389146,
+   "last_pass": 7.29491
+  }
+ },
+ "capacity_cell_UNSTABLE": true,
+ "caveat_3": "UNSTABLE capacity cell: results at rates derived from this lambda* must not cite magnitudes (PREREG caveat 3)",
+ "he0_note": "rate_HI = 1.5*lambda* = 10.9424 exceeds the first-fail rate of every D (8.389); registered draft h O-P3",
+ "he0_rates": {
+  "h": 1.5,
+  "hi": 10.942364999999999,
+  "lo": 2.7355912499999997,
+  "ratio": 4.0
+ },
+ "lambda_star": {
+  "W1": 7.29491
+ },
+ "stationarity_at_capacity": {
+  "201": "UNSTABLE",
+  "202": "UNSTABLE"
+ },
+ "status": "CAPACITY_BRACKETED"
+}

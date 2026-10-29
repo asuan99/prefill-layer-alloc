@@ -5,8 +5,9 @@ d = json.load(open(sys.argv[1])); out = sys.argv[2]
 per = d["addendum"]["per_D"]; Ds = sorted(per, key=int)
 fig, ax = plt.subplots(1, 2, figsize=(11, 4))
 for i, D in enumerate(Ds):
-    v = per[D]; cap = v["capacity"]; ff = v["first_fail"]
+    v = per[D]; cap = v["capacity"] or 0.0; ff = v["first_fail"]
     hi = (ff - cap) if ff else 0
+    if not v["capacity"]: ax[0].annotate("no passing rung\n(fails at "+str(ff)+")", (i, 0), ha="center", va="bottom", fontsize=7)
     ax[0].bar(i, cap, yerr=[[0], [hi]], capsize=4, color="#4c78a8")
     if ff is None: ax[0].annotate("not bracketed\n(top rung passes)", (i, cap), ha="center", va="bottom", fontsize=7)
 ax[0].set_xticks(range(len(Ds))); ax[0].set_xticklabels([f"D{D}" for D in Ds])

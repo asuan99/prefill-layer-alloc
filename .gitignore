@@ -169,3 +169,4 @@ workspace/engine-port/results/policy_*/**/meta/energy.csv
 # raw cluster-volume exports (2026-10-28, decision 54): keep only manifest in git
 workspace/engine-port/results/raw_export_20261028/*
 !workspace/engine-port/results/raw_export_20261028/MANIFEST.sha256
+workspace/engine-port/results/cap_char/policy_runs/*/raw/
