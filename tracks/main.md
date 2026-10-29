@@ -23,6 +23,7 @@
 - **결정 54(2026-10-28, 사용자)**: CAP1 원자료(클러스터 볼륨 `/data/runs` 전용) 회수 = **pdmux-build CPU Workspace 기동 → CAP1 raw + m12 미회수 원자료(비용 항 T3·engine_gate_decomp TEL/I46 등)를 tar+sha256으로 object 볼륨 반출 → 로컬 download → Workspace standby** + `ph_job.sh`가 raw를 object 볼륨으로 반출하도록 수리(재봉인). m12 결정 대기 닫힘 — promote 필요: 예 (결정)
 - **결정 55(2026-10-28, 사용자)**: CAP1 결과 `CAPACITY_NOT_BRACKETED`(D44·D64가 최상단 7.447 req/s 통과; D16 1.661→2.242, D24 4.086→5.516, D34 5.516→7.447, `policy_cap1/RESULT_cap1_2026-10-28.md`, 기술값) → CAP1 재실행(최대 1회, 새 job name) 사다리 = **5 D 전부, rmin 5.516 × 1.15^k, k=0..9(≈5.516→19.4)** — 등록 재배치(×1.35)에서 간격만 바꾼 데이터 전 변경으로 공시. λ*는 재실행 Job 하나로만 — promote 필요: 예 (결정)
 - **구현 결함 Phase 0(CPU, 2026-10-28, 미감사)** `results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md`: 입장·merge drain ≤0.15 ms(빈 stream), B1(동적 전환 drain)은 VESSL 기회 0·HE0 상한만(bind+GATE ≤0.72% HI, slo 배제 불가), B2(decode-empty)는 N3 span 45%·ITL 영향≈0·TTFT 상한만, E3 handoff는 B2 못 고침→E2 우선. 영역: HE0 94–95% 미발화, P1-opint·N3·N2·T3 적체, 박자 영역 측정 0
+- **결정 54(2026-10-29, 사용자)**: 구현 결함 후속 3건 진행 — ① 정본 §1·§6 claim × 루프 구조(B1–B4) 의존 범위 감사(claims-auditor 1회) ② "layer-type 全형태 死" 등 범위 정정 제안 문서(반영은 promote) ③ Phase 2 엔진 수정(기본 OFF, 별도 브랜치 `impl-defects-e123`): E2 발행 깊이·E1 span 정책 budget|time|time_typed(층 종류별 FLOPs·η_X)·E3 handoff·E5 계측 + CPU 테스트, GPU는 별도 승인 — promote 필요: 예 (결정)
 - **방향 재정리(제안, 미결정, 감사 반영)**: 부정 결론은 "KISTI·Zamba2-2.7B·triton·변화 trace 범위, VESSL·Nano 전이 미검증"으로 범위만 재진술(정지 기판 귀속 금지, layer-type 死 제외) · 승계 기본값(D=44·cap 48·budget 65536)은 Nano에서 재결정 · HyMux 원고는 구현 구조로 낮추고 R1–R3를 단일 처치 ablation 가설로(R3·R1 > R2) · 비동기 기판 arm은 후순위 · 구조 검증 T1–T5 완료(`7a7a2c08`, 원고 대조는 Revision Letter R3 기준, 본문 직접 대조 미실시)
 - 동결 설계: V-O·H-D `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 · DP 라우팅(감사 r2). 사소한 결함: `ct_harness_digest.py check --dir` 상대 경로
 ## 다음 행동
@@ -37,7 +38,7 @@
 - **로컬 엔진 트리 재동기화** / 2026-10-27 확인: `sglang_engine_dev`는 VESSL 10-20 서빙 manifest(`6015796d…`, 27항목)와 sha256 전부 일치, 차이는 기본 OFF probe 파일·훅뿐. 저장소 untracked `results/runtime_source_manifest.sha256`이 구판(5건 FAILED) / 구판 manifest 갱신·로컬 테스트 실패 원인 재확인(권고) · 유지
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
-- **구현 결함 Phase 1–2 진행** / Phase 0 결과(B1 미측정, B2 TTFT만, E2>E3) / Phase 1(진단 addendum, 봉인된 rev1에 붙는 형태 확인 필요)+Phase 2(E1–E3 기본 OFF, E2 우선) 진행(권고) · Phase 0 감사 먼저 · 중단
+- **구현 결함 Phase 1(진단 addendum)** / 진단 PREREG는 rev1 봉인됨 / 봉인본 뒤 새 rev로 M1 셀·B1 측정 구성 추가(권고) · 보류
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - `pdmux-policy-cap1r-4bef3cf-20261029003539`(job-lrd99x21e2yi, 2026-10-29 제출, commit 4bef3cf9 봉인 S4, A100×1, 하드캡 2.5 h): CAP1-R(W1 용량 재측정, 5 D, 5.516×1.15^k). 회수 `scripts/vessl/fetch.sh policy_cap1r <job name>`, raw는 rev1.3부터 회수 경로로 반출
