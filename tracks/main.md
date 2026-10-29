@@ -43,7 +43,7 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **impl-defects GPU 정확성 gate** / E1–E3 CPU만 통과, 엔진 digest 변경(봉인 PREREG와 별개 트리) / G-0…G-5 PREREG 작성·dry-run(권고) · 보류 / costterms harness 재봉인 여부 포함
+- **impl-defects GPU 정확성 gate** / PREREG rev0(미봉인)·driver·CPU 테스트 46·dry-run rc=0 완료(브랜치 `ba5a94ab`·`d6ab832c`, 1 Job 26+2 boot, 약 118 min [유도], digest `fad4f110…` 재현) / §11 질문 5건(하드캡 180 min·G5 보고 전용·결정론 pair 유지·fused 비교 보고 전용·양성 대조 문턱) 확정 → 하네스 감사 1회 → 봉인·dry-run 재실행 → 제출 승인(권고) · 보류
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - `pdmux-policy-cap2-e90e233-20261029023336`(job-sg0dtebc3a0i, 2026-10-29 제출, commit e90e2339 봉인 S5, A100×1, 기대 5.75 h·하드캡 합 6.87 h — 사용자 승인으로 한 Job): CAP2(W3 용량, 0.1×1.5 6점) + λ* 지속성 블록(W1 D44·D64 × 7.29 × 600 s × seed 2, 기술값). 회수 `scripts/vessl/fetch.sh policy_cap2 <job name>`
