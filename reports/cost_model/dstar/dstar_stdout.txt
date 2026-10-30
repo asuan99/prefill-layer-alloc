@@ -1,0 +1,21 @@
+dstar-model proposal r0 (2026-10-30)
+a0 (derived) = 8.140 ms; u(D) knee D_k=30.1 beta=0.0135/SM gamma/beta=0.21 (27.6 GB/s per SM below knee)
+  D= 16  a=36.79 ms  u=0.221  u/SM=0.0138
+  D= 24  a=25.32 ms  u=0.321  u/SM=0.0134
+  D= 34  a=20.85 ms  u=0.390  u/SM=0.0115
+  D= 44  a=17.10 ms  u=0.476  u/SM=0.0108
+  D= 64  a=16.03 ms  u=0.508  u/SM=0.0079
+  D=108  a=13.06 ms  u=0.623  u/SM=0.0058
+  kappa: {16: 1.021, 24: 1.021, 34: 1.016, 44: 1.011, 64: 1.017}
+W1: E[R]=286 ctx=373 D*=64
+  D16  lam_cap(rho 1.13/1.16/1.19) = 2.055 / 1.920 / 1.780  binding=['ITL']  E[S]=45 ms  S_q90=103 ms
+  D24  lam_cap(rho 1.13/1.16/1.19) = 3.680 / 3.575 / 3.470  binding=['ITL']  E[S]=49 ms  S_q90=113 ms
+  D34  lam_cap(rho 1.13/1.16/1.19) = 4.905 / 4.860 / 4.815  binding=['SLOT']  E[S]=56 ms  S_q90=128 ms
+  D44  lam_cap(rho 1.13/1.16/1.19) = 5.080 / 5.030 / 4.980  binding=['SLOT']  E[S]=64 ms  S_q90=147 ms
+  D64  lam_cap(rho 1.13/1.16/1.19) = 5.365 / 5.295 / 5.230  binding=['SLOT']  E[S]=94 ms  S_q90=215 ms
+W3: E[R]=1007 ctx=7609 D*=24
+  D16  lam_cap(rho 1.13/1.16/1.19) = 0.345 / 0.320 / 0.300  binding=['ITL']  E[S]=939 ms  S_q90=1646 ms
+  D24  lam_cap(rho 1.13/1.16/1.19) = 0.590 / 0.590 / 0.570  binding=['ITL', 'TTFT']  E[S]=1029 ms  S_q90=1804 ms
+  D34  lam_cap(rho 1.13/1.16/1.19) = 0.440 / 0.440 / 0.440  binding=['TTFT']  E[S]=1162 ms  S_q90=2037 ms
+  D44  lam_cap(rho 1.13/1.16/1.19) = 0.265 / 0.265 / 0.265  binding=['TTFT']  E[S]=1337 ms  S_q90=2345 ms
+  D64  lam_cap(rho 1.13/1.16/1.19) = 0.000 / 0.000 / 0.000  binding=['TTFT']  E[S]=1957 ms  S_q90=3431 ms
