@@ -198,6 +198,7 @@ def run_boot(boot, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None
             rec["physical_stream_transitions"] = None                                # not observed (PHASE_EVENTS OFF, Q-5)
             if arm["kind"] == "dynamic":
                 rec["switch_count"], rec["split_dwell"] = parse_switches(sl, idx_after(before, arm["anchor_idx"]), t0, t1)
+                rec["slo_feas_refused"] = sl.count("SLO-FEAS refused")           # decision 58 (iii): gate refusals in this run's log slice
             else:
                 # non-sticky static (decision 49): D is the TARGET while co-resident, not a realized allocation
                 rec["switch_count"], rec["split_dwell"] = 0, {str(arm["D"]): sum(s["duration_s"] for s in rec["segments"])}

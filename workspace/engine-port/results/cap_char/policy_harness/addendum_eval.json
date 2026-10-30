@@ -1,0 +1,1 @@
+{"lambda_star": {"W1": 7.29491}, "tuned_config": {"anchor_idx": 4, "dwell": 3}, "NOTE": "EVAL addendum (PREREG 22, decision 58): HE0 cell rates LO 2.7356 / HI 10.9424 from lambda*_W1 = 7.29491; tuned_config = dyn_a4_w3 (TUNE job pdmux-policy-tune-074ffc3-20261029140207, selected by the registered tie rule, not the highest-goodput configuration). No HE0 label is produced."}

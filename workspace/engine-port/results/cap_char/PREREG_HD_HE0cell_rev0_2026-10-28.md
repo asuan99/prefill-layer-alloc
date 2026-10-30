@@ -1,4 +1,4 @@
-# 사전등록 rev1.6 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
+# 사전등록 rev1.7 (POLICY-1, 봉인본 + §16 smoke v2 + §17 양성 대조·switch\_count 정의, 결정 51–53) — H-D(phase 경계 여지) + Nano HE0 핵심 셀, 정책 Job 1차, 2026-10-28
 
 > **봉인 상태: 미봉인 초안 rev0.** 문서 작업(CPU)만 했다. 측정 0, GPU 0, `launch.sh` 실행 0(dry-run 포함), 판정 0. 하네스 코드는 쓰지 않았다(감사 뒤).
 > 지위: 정책 Job 1차(결정 40·43). 두 실험을 한 PREREG에 두되 **판정·라벨·CI는 서로 섞지 않는다**: (A) H-D = static arm만의 phase-oracle 여지 · (B) Nano HE0 핵심 셀 = static 격자 대 reactive bind+GATE.
@@ -449,3 +449,37 @@ CAP1-R λ\*\_W1 = 7.29491(입력값, §20-1)에서 §4-2 규칙: `rate_HI = 1.5 
 
 ### 21-7. 수리·구현 위치
 `ph_covariates.py`·`ph_refcell.py`·`ph_cov_job.sh`·`addendum_tune.json`(신규), `ph_runner.replay_segment`(wall 창), `ph_analyze.job_blocks/eval_labels`, `ph_spec.HARD_CAP_MIN`·`ph_job.sh`, `ph_digest.py`; 시험 `CovariateTests`, 변이 M87–M97.
+
+
+## 22. addendum rev1.7 — EVAL을 HE0 라벨 없이 범위 축소 실행 (결정 58)
+
+### 22-1. 경위와 결정
+TUNE(Job `pdmux-policy-tune-074ffc3-20261029140207`, `results/policy_tune/RESULT_tune_2026-10-29.md`)이 §4-3 규칙으로 `dyn_a4_w3`(anchor idx 4 = D44, dwell 3)를 골랐다. 결과 감사 r1(`results/policy_tune/AUDIT_tune_result_r1_2026-10-29.md`): 선택 arm은 4/4 run에서 `SLO-FEAS refused idx=4->4`(혼잡 가드, 대표 `bs=47` ≥ 0.85 × `max_running_requests=48`)가 72–78회 전환을 막아 **전환 0회·D44 체류 100%**였다. 따라서 EVAL의 dyn 대 static 비교는 같은 분할의 두 코드 경로 비교로 퇴화하고, "dyn 대 사후 best static"은 사실상 static끼리의 비교다 — **EVAL을 HE0(동적 대 best static) 판정으로 돌리는 것은 NO-GO**(감사 N1·N3).
+
+**결정 58 (사용자, 2026-10-29/30)**: **(A) EVAL을 HE0 라벨 없이 범위 축소 실행한다.** (B 생략, C 동적 arm 변경은 선택하지 않음 — C는 사후 변경이라 새 PREREG·새 튜닝 seed·규칙층 감사가 필요하다.)
+
+### 22-2. 승계 caveat·금지·허용 (감사 r1, 문자 그대로)
+- "TUNE에서 선택된 동적 arm(anchor D44)은 4/4 run에서 FEAS 혼잡 가드에 막혀 전환 0회였으며, EVAL의 dyn 대 static 비교는 같은 분할의 코드 경로 비교이고 HE0(동적 대 best static) 판정이 아니다."
+- "이 캠페인은 HE0 셀 라벨을 산출하지 않는다."
+- "선택 `dyn_a4_w3`는 최고 goodput 구성이 아니며, 이름 순 깨기는 PREREG 본문이 아니라 봉인 코드에 있다."
+- 금지: "전환이 goodput을 낮춘다" · "최적 동적 = 비전환"(PREREG §8: 격자 6점·seed 2) · "동적은 static과 같다" · "gate가 함정을 막아 이득을 냈다".
+- 허용: "이 셀에서 앵커 4 구성은 FEAS 혼잡 가드에 의해 D44에 머물렀다."
+- 부기(감사 (4)·(5)): HI goodput ≈ 1.7 req/s는 도착률 10.94의 16%(batch 상한 48·decode 속도 지배)이고 h = 1.5가 컨트롤러 여지를 닫았다; ±5% cliff 검사는 시간축 절벽을 못 잡는다. TUNE 기준 셀 attainment 0.983 → 0.908은 1회씩이고 λ\*가 정의상 cliff 위(TTFT p95가 SLO를 횡단)라 판정에 쓰지 않는다. caveat 4(§21-2: Job 간 해석 금지) 승계.
+- 이 절은 이 캠페인에서 §5-2의 HE0 라벨표와 §8 허용 문안 틀의 "라벨" 부분을 **적용하지 않는다**(규칙 자체는 이력으로 남는다).
+
+### 22-3. EVAL 산출 재정의 (데이터 전 등록)
+EVAL-a(seed 1–2)·EVAL-b(seed 3–4) 두 Job, 등록 boot 구조 유지(static 5 boot = D마다 1 boot에 두 seed, dyn 2 boot = seed마다 재부팅, 같은 비교의 arm은 한 Job 안), arm = static D {16, 24, 34, 44, 64} + `dyn_a4_w3`(`addendum_eval.json`: `tuned_config = {anchor_idx 4, dwell 3}`), HE0 셀 rate LO 2.7356 / HI 10.9424(CAP1-R λ\*\_W1 7.29491 기반, §21-3), W1 ShareGPT, SLO 3000 ms / ITL p95 60 ms. **측정 경로는 TUNE과 동일**(plan 해시 고정: EVAL-a `e14aea09…`, EVAL-b `55cfd446…`, 시험이 고정).
+산출은 아래뿐이며 **HE0 라벨(`DYN_ABOVE_STATIC` 등)은 계산·출력하지 않는다**:
+1. **static D 5개 n = 4 기술 순위**: 평균 TRUE goodput 내림차순 + 각 D의 s44 대비·best 대비 seed 수준 paired t(n−1) 구간 — **기술값**(여유·라벨 없음, ln 1.03 판정 없음).
+2. **`dyn_a4_w3` 대 s44 같은 분할 영 비교**: paired 구간(전체·LO·HI) — 코드 경로 오버헤드 상한의 기술값. 공시: 코드 경로가 다르다(`PDMUX_SLO_SCHED` 대 `R2_POLICY=fixed`)와 부팅 구조가 다르다(dyn은 seed마다 재부팅, static은 한 boot에 2 seed) — 둘이 섞여 있다.
+3. **dyn arm이 실제로 고정됐는가**: run별 `switch_count`(컨트롤러 결정 변경, 결정 53)·`SLO-FEAS refused` 횟수(`slo_feas_refused`, run 로그 구간)·체류 분포; `dyn_fixed_check`가 "전 run D44 체류·전환 0"을 확인한다. **전환이 발생하면 그 사실을 보고하고 해석을 바꾼다**(위 두 caveat의 전제가 깨지므로 사용자 결정으로 되돌린다).
+4. 게이트 5(TTFT/ITL p50/p95/p99, switch\_count, 체류), cliff 플래그, 기판 공변량·Job 시작/끝 기준 셀(§21-5, `ph_cov_job.sh`), Job = block(seed가 Job에 중첩, EVAL n = 4 = 2 Job × 2 seed).
+
+### 22-4. 구현 (측정 경로 불변의 근거)
+- `ph_verdict.he0_compare(…, labels=False)`: 라벨 비산출 모드(출력 단계만); `ph_analyze.eval_labels`가 이 모드를 쓴다(`labels=True` 모드와 그 시험은 그대로). `ph_analyze.dyn_fixed_check` 신규. `ph_runner.run_boot`가 동적 run 기록에 `slo_feas_refused`(그 run의 로그 구간 줄 수)를 더한다 — 기록 후처리일 뿐 서버·trace·replay 경로는 불변.
+- diff 근거(`git diff 074ffc37 -- workspace/engine-port/results/cap_char/policy_harness`): 바뀐 것은 출력 단계(`ph_verdict`/`ph_analyze` 라벨 비산출·`dyn_fixed_check`), 기록 한 줄(`slo_feas_refused`), 캡(`HARD_CAP_MIN`/`ph_job.sh`), `addendum_eval.json`, `ph_digest` 목록뿐이다. `ph_spec.make_plan("EVAL-*")`의 plan 해시는 TUNE 때 쓰인 plan 코드 경로에서 바뀌지 않았다(시험이 해시를 고정). 시험 `EvalDescriptiveTests`, 변이 M98–M104.
+
+### 22-5. 시간·하드캡 [유도, TUNE 실측 반영]
+- TUNE 실측: run당 약 380–400 s(6.4–6.7 min), HI drain 약 28 s·완료율 4.2–4.4 req/s(§21-6의 보수 가정 11 min은 과대).
+- **EVAL 각 Job**(12 run + 7 boot): 보수값 run 8 min(static D16·D24는 이 셀에서 미측정이라 TUNE보다 여유) → 12 × 8 + 7 × 4.3 = 126 min(2.1 h); TUNE 실측 6.6 min이면 109 min. 기준 셀 2회·공변량 약 12 min 포함 시 약 138 min(2.3 h). 사용률(셀 시간 / 컨테이너) 약 70%. 측정 하드캡 **152 min**(= 1.2 × 126, `HARD_CAP_MIN["EVAL-a"/"EVAL-b"]` 195 → 152), 기준 셀 timeout 포함 최악 약 197 min(3.3 h) ≤ 6 h.
+- **두 Job 동시 제출 의견**: 가능하다. 비교 단위(한 seed의 6 arm)는 각 Job 안에서 완결되므로 같은 GPU가 아니어도 비교는 유효하고, Job을 block으로 처리한다(caveat 4: Job 간 해석 금지 — 이미 CAP1/CAP1-R/CAP2/TUNE이 모두 다른 GPU였다). 동시 제출은 시간 표류를 줄이는 쪽이지 같은 GPU를 보장하지 않는다(직렬 제출도 마찬가지). 주의: seed가 Job에 중첩(seed 1–2는 EVAL-a, 3–4는 EVAL-b)이라 seed 효과와 Job/GPU 효과가 교락한다 — n = 4의 구간은 이를 분리하지 못한다는 공시를 결과에 붙인다. 클러스터 볼륨 동시 쓰기는 job name 디렉터리가 달라 충돌하지 않는다(동시 GPU 한도가 있으면 직렬이 된다).

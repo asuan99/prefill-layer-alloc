@@ -21,7 +21,7 @@ w3tok="${PDMUX_POLICY_W3_TOKENS:-${data}/datasets/arxsum_x/arxsum_x_tokens_v1.bi
 w3sha="4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f"   # results/multigpu/mg_const.py X_TOKENS_SHA256
 
 case "${job}" in           # hard caps (min) = ph_spec.HARD_CAP_MIN
-  CAP1R) cap_min=151 ;; CAP1) cap_min=196 ;; CAP2) cap_min=342 ;; TUNE) cap_min=220 ;; EVAL-a|EVAL-b) cap_min=195 ;;
+  CAP1R) cap_min=151 ;; CAP1) cap_min=196 ;; CAP2) cap_min=342 ;; TUNE) cap_min=220 ;; EVAL-a|EVAL-b) cap_min=152 ;;
   HD-[1-8]) cap_min=312 ;;
   *) echo "ABORT_CONFIG: PDMUX_POLICY_JOB must be CAP1|CAP1R|CAP2|TUNE|EVAL-a|EVAL-b|HD-1..8; got '${job}'" >&2; exit 16 ;;
 esac

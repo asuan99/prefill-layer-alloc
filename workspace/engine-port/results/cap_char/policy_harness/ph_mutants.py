@@ -112,6 +112,13 @@ MUTANTS = [
     ("M95 covariate wrapper accepts any job", "ph_cov_job.sh", 'case "${PDMUX_POLICY_JOB:-}" in TUNE|EVAL-a|EVAL-b) ;; *)', 'case "${PDMUX_POLICY_JOB:-}" in TUNE|EVAL-a|EVAL-b|HD-1) ;; *)'),
     ("M96 covariate wrapper returns the last stage's rc", "ph_cov_job.sh", 'exit "${rc1}"', 'exit 0'),
     ("M97 TUNE hard cap reverted", "ph_spec.py", '"TUNE": 220,', '"TUNE": 278,'),
+    ("M98 label-free mode computes the HE0 labels again", "ph_verdict.py", "    if not labels:\n        return _he0_descriptive", "    if False:\n        return _he0_descriptive"),
+    ("M99 EVAL pipeline back to the labelled comparison", "ph_analyze.py", "P.ITL_MS, labels=False)", "P.ITL_MS, labels=True)"),
+    ("M100 dyn-fixed check ignores moves off D44", "ph_analyze.py", 'set(x["dwell_frac"]) <= {"44"}', "True"),
+    ("M101 dyn-fixed check ignores switches", "ph_analyze.py", 'x["switch_count"] == 0 and', ""),
+    ("M102 FEAS refusals not recorded", "ph_runner.py", 'rec["slo_feas_refused"] = sl.count("SLO-FEAS refused")', 'rec["slo_feas_refused"] = 0'),
+    ("M103 static ranking ascending", "ph_verdict.py", "key=lambda x: -x[1])", "key=lambda x: x[1])"),
+    ("M104 EVAL hard cap reverted", "ph_spec.py", '"EVAL-a": 152,', '"EVAL-a": 195,'),
     ("M28 non-empty raw dir allowed without --resume", "ph_runner.py", "and not resume:", "and False:"),
 ]
 

@@ -73,7 +73,8 @@ def eval_labels(runs):
     for r in runs:
         name = "dyn" if r["arm"]["kind"] == "dynamic" else f"s{r['arm']['D']}"
         by.setdefault(name, {})[r["seed"]] = r
-    out = V.he0_compare(by, P.W1_TTFT_MS, P.ITL_MS)
+    out = V.he0_compare(by, P.W1_TTFT_MS, P.ITL_MS, labels=False)      # decision 58: no HE0 label is produced
+    out["dyn_fixed_check"] = dyn_fixed_check(runs)
     out["blocks"] = {"seed_to_job": blocks, "n_jobs": len(set(blocks.values())), "note": "Job = block; seeds nest in Jobs"}
     return out
 
@@ -158,3 +159,19 @@ def job_blocks(runs):
     if bad:
         raise RuntimeError(f"ABORT_SEED_ACROSS_JOBS: arms of a seed span several Jobs {bad}")
     return {s: next(iter(j)) for s, j in sorted(by.items())}
+
+
+def dyn_fixed_check(runs):
+    """Decision 58 (iii): did the dynamic arm actually stay fixed?  Per dynamic run: switch_count (controller decision changes), the
+    SLO-FEAS refused count and the dwell fractions.  If any switch occurred, that fact is reported (it changes the reading)."""
+    rows = []
+    for r in runs:
+        if r["arm"]["kind"] != "dynamic":
+            continue
+        dw = r.get("split_dwell") or {}
+        tot = sum(dw.values()) or 1.0
+        rows.append({"run_id": r["run_id"], "seed": r["seed"], "switch_count": r.get("switch_count"),
+                     "slo_feas_refused": r.get("slo_feas_refused"), "dwell_frac": {k: v / tot for k, v in sorted(dw.items())}})
+    fixed = bool(rows) and all(x["switch_count"] == 0 and set(x["dwell_frac"]) <= {"44"} for x in rows)
+    return {"runs": rows, "stayed_at_D44_all_runs": fixed, "any_switch": any((x["switch_count"] or 0) > 0 for x in rows),
+            "note": "reading: if stayed_at_D44_all_runs the dyn-vs-s44 comparison is the same split on two code paths"}

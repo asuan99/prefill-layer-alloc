@@ -110,8 +110,10 @@ def gate5_row(runs, ttft_slo_ms):
             "itl_ms": {f"p{int(q * 100)}": percentile(il, q) for q in (.5, .95, .99)}}
 
 
-def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4):
-    """runs: {arm_name: {seed: run}} with 'dyn' and 's<D>' arms.  Returns table + label (PREREG 5-2)."""
+def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4, labels=True):
+    """runs: {arm_name: {seed: run}} with 'dyn' and 's<D>' arms.  Returns table + label (PREREG 5-2).
+    labels=False (decision 58, PREREG §22): NO HE0 label is computed or returned -- only the descriptive pieces (static ranking, static
+    pairs, the dyn-vs-s44 same-split comparison, phase pairs, gate 5, cliff flags).  The measurement path is not touched."""
     want = {"dyn", *[f"s{D}" for D in (16, 24, 34, 44, 64)]}
     if set(runs) != want:
         raise ValueError(f"he0_compare needs exactly arms {sorted(want)}; got {sorted(runs)} (a missing static arm would make "
@@ -123,6 +125,8 @@ def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4):
     best = max(statics, key=lambda a: statistics.fmean(g[a].values()))
     out = {"seeds": seeds, "n": len(seeds), "best_static": best, "ref_a": f"s{ref_static}",
            "goodput_mean": {a: statistics.fmean(g[a].values()) for a in g}}
+    if not labels:
+        return _he0_descriptive(runs, g, seeds, best, ref_static, ttft_slo_ms, itl_slo_ms, out)
     res = {}
     for key, ref in (("a", f"s{ref_static}"), ("b", best)):
         d = [math.log(g["dyn"][s] / g[ref][s]) for s in seeds]
@@ -156,6 +160,31 @@ def he0_compare(runs, ttft_slo_ms, itl_slo_ms, ref_static=44, min_n=4):
     else:
         out["label"] = "HE0CELL_UNRESOLVED"
         out["why"] = "interval straddles a margin"
+    out["gate5"] = {a: gate5_row(list(v.values()), ttft_slo_ms) for a, v in runs.items()}
+    return out
+
+
+def _ci(d, **extra):
+    return dict(zip(("mean", "lo", "hi", "n"), paired_t_ci(d)), **extra)
+
+
+def _he0_descriptive(runs, g, seeds, best, ref_static, ttft_slo_ms, itl_slo_ms, out):
+    """Decision 58 output: (i) static ranking + paired intervals (DESCRIPTIVE values, no margins, no labels), (ii) dyn vs s44 = the same
+    split on two code paths (SLO_SCHED vs R2_POLICY=fixed; also a different boot structure), (iii) gate 5 + cliff flags."""
+    statics = [a for a in runs if a != "dyn"]
+    out["labels_suppressed"] = "decision 58: this campaign produces no HE0 cell label"
+    out["static_rank"] = sorted(((a, out["goodput_mean"][a]) for a in statics), key=lambda x: -x[1])
+    out["static_pairs_vs_s44"] = {a: _ci([math.log(g[a][s] / g[f"s{ref_static}"][s]) for s in seeds], ref=f"s{ref_static}")
+                                  for a in statics if a != f"s{ref_static}"}
+    out["static_pairs_vs_best"] = {a: _ci([math.log(g[a][s] / g[best][s]) for s in seeds], ref=best) for a in statics if a != best}
+    out["same_split_comparison_dyn_vs_s44"] = _ci([math.log(g["dyn"][s] / g[f"s{ref_static}"][s]) for s in seeds], ref=f"s{ref_static}",
+                                                  note="same split, two code paths + different boot structure; not an HE0 comparison")
+    out["phase_pairs_dyn_vs_s44"] = {}
+    for ph in ("LO", "HI"):
+        gp = {a: {s: he0_goodput(runs[a][s], ttft_slo_ms, itl_slo_ms, phase=ph) for s in seeds} for a in (f"s{ref_static}", "dyn")}
+        out["phase_pairs_dyn_vs_s44"][ph] = _ci([math.log(gp["dyn"][s] / gp[f"s{ref_static}"][s]) for s in seeds
+                                                 if gp["dyn"][s] > 0 and gp[f"s{ref_static}"][s] > 0], ref=f"s{ref_static}")
+    out["cliff"] = {f"{a}:{ph}": is_cliff(arm_requests(list(v.values()), ph), ttft_slo_ms) for a, v in runs.items() for ph in ("LO", "HI")}
     out["gate5"] = {a: gate5_row(list(v.values()), ttft_slo_ms) for a, v in runs.items()}
     return out
 

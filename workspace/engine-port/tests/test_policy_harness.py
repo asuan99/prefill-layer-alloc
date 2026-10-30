@@ -427,6 +427,7 @@ class RunnerTests(unittest.TestCase):
             if first.endswith("r1LO-00000"):                           # one controller switch inside every HE0 run (round 1, LO)
                 with open(live["srv"].log, "a") as f:
                     f.write(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] SLO-BIND 3->4 dec_sm=44\n")
+                    f.write(f"[{dt.datetime.now():%Y-%m-%d %H:%M:%S}] SLO-FEAS refused idx=4->4 dec_sm=44->34\n")
             recs = [{"request_id": r["request_id"], "phase": r["phase"], "ttft_ms": 500.0, "token_itl_ms": [30.0] * 3,
                      "error": "", "error_kind": "", "scheduled_arrival_s": r["arrival_s"], "completion_s": r["arrival_s"] + 1.0,
                      "input_tokens": r["input_tokens"], "requested_output_tokens": r["output_tokens"],
@@ -970,7 +971,7 @@ class CovariateTests(unittest.TestCase):
         plan = P.make_plan("TUNE", add)
         self.assertEqual(len(plan["boots"]), 12)
         self.assertEqual((round(plan["rates"]["lo"], 4), round(plan["rates"]["hi"], 4)), (2.7356, 10.9424))
-        self.assertEqual((P.HARD_CAP_MIN["TUNE"], P.HARD_CAP_MIN["EVAL-a"]), (220, 195))
+        self.assertEqual((P.HARD_CAP_MIN["TUNE"], P.HARD_CAP_MIN["EVAL-a"]), (220, 152))
 
     def test_cov_wrapper_contract(self):
         src = (PH / "ph_cov_job.sh").read_text()
@@ -983,6 +984,77 @@ class CovariateTests(unittest.TestCase):
             r = subprocess.run(["bash", str(PH / "ph_cov_job.sh")], env=e, capture_output=True, text=True, timeout=60)
         self.assertEqual(r.returncode, 16)
         self.assertIn("TUNE|EVAL-a|EVAL-b", r.stderr)
+
+
+class EvalDescriptiveTests(unittest.TestCase):
+    """Decision 58: EVAL produces NO HE0 label; the measurement path (plans, boots, traces) is unchanged."""
+    ADD = json.loads((PH / "addendum_eval.json").read_text())
+
+    def test_label_free_mode(self):
+        r = V.he0_compare(he0_runs(81, 54), 3000, 60, labels=False)
+        for k in ("label", "why", "ci"):
+            self.assertNotIn(k, r)
+        self.assertIn("labels_suppressed", r)
+        self.assertEqual(r["static_rank"][0][0], "s44")                          # ranking by mean TRUE goodput, descending
+        self.assertEqual([a for a, _ in r["static_rank"]], sorted([a for a, _ in r["static_rank"]], key=lambda a: -r["goodput_mean"][a]))
+        self.assertEqual(set(r["static_pairs_vs_s44"]), {"s16", "s24", "s34", "s64"})
+        self.assertIn("same_split_comparison_dyn_vs_s44", r)
+        self.assertEqual(set(r["phase_pairs_dyn_vs_s44"]), {"LO", "HI"})
+        blob = json.dumps(r)
+        for banned in ("DYN_ABOVE_STATIC", "DYN_BELOW_STATIC", "DYN_EQUIV_STATIC", "HE0CELL_UNRESOLVED"):
+            self.assertNotIn(banned, blob)
+        self.assertIn("label", V.he0_compare(he0_runs(81, 54), 3000, 60))        # the labelled mode is untouched (tests of the rule survive)
+
+    def test_eval_pipeline_emits_no_label_and_checks_dyn_is_fixed(self):
+        runs_by = he0_runs(81, 54)
+        flat = []
+        for a, bys in runs_by.items():
+            for s, r in bys.items():
+                r = dict(r, run_id=f"EVAL-a_{a}_s{s}", trace_hash=f"h{s}", spec={})
+                if a == "dyn":
+                    r["switch_count"], r["split_dwell"], r["slo_feas_refused"] = 0, {"44": 100.0}, 75
+                flat.append(r)
+        out = A.eval_labels(flat)
+        self.assertNotIn("label", out)
+        self.assertNotIn("DYN_", json.dumps(out))
+        fx = out["dyn_fixed_check"]
+        self.assertTrue(fx["stayed_at_D44_all_runs"])
+        self.assertFalse(fx["any_switch"])
+        self.assertEqual({x["slo_feas_refused"] for x in fx["runs"]}, {75})
+        for r in flat:
+            if r["arm"]["kind"] == "dynamic":
+                r["switch_count"], r["split_dwell"] = 2, {"44": 60.0, "34": 40.0}
+        moved = A.eval_labels(flat)["dyn_fixed_check"]
+        self.assertFalse(moved["stayed_at_D44_all_runs"])
+        self.assertTrue(moved["any_switch"])                                     # a switch, if it happens, is reported
+        for r in flat:
+            if r["arm"]["kind"] == "dynamic":
+                r["switch_count"], r["split_dwell"] = 2, {"44": 100.0}              # moved and came back: dwell alone would not show it
+        back = A.eval_labels(flat)["dyn_fixed_check"]
+        self.assertFalse(back["stayed_at_D44_all_runs"])
+        self.assertTrue(back["any_switch"])
+        for r in flat:
+            if r["arm"]["kind"] == "dynamic":
+                r["switch_count"], r["split_dwell"] = 0, {"34": 100.0}              # no recorded switch but not at D44 (e.g. started elsewhere)
+        self.assertFalse(A.eval_labels(flat)["dyn_fixed_check"]["stayed_at_D44_all_runs"])
+
+    def test_runner_records_feas_refusals(self):
+        with tempfile.TemporaryDirectory() as td:
+            Srv, replay = RunnerTests()._fakes(td)
+            boot = {"boot_id": "b", "arm": P.dynamic_arm(4, 3), "runs": [P.he0_run("rd", 1, P.he0_rates(3.0), np_=20, rounds=1)]}
+            RU.run_boot(boot, Path(td) / "raw", Srv, replay, W1_POOL, W3_POOL)
+            r = json.loads((Path(td) / "raw/runs/rd.json").read_text())
+            self.assertEqual((r["switch_count"], r["slo_feas_refused"]), (1, 1))
+
+    def test_measurement_plans_are_unchanged_and_registered(self):
+        self.assertEqual(self.ADD["tuned_config"], {"anchor_idx": 4, "dwell": 3})
+        self.assertEqual(P.sha(P.make_plan("EVAL-a", self.ADD)), "e14aea0987ca710212c514cc7578dfd97db4ad7888f775d5ea1b84c2cd3957e6")
+        self.assertEqual(P.sha(P.make_plan("EVAL-b", self.ADD)), "55cfd446017b24ec41d64dc4da748257be1689241d3ab37a0af9c95f79791817")
+        for j in ("EVAL-a", "EVAL-b"):
+            p = P.make_plan(j, self.ADD)
+            self.assertEqual(len(p["boots"]), 7)                                 # 5 static boots (2 seeds each) + 2 dyn boots (1 seed each)
+            self.assertEqual(P.plan_problems(p), [])
+        self.assertEqual((P.HARD_CAP_MIN["EVAL-a"], P.HARD_CAP_MIN["EVAL-b"]), (152, 152))
 
 
 class RawExportTests(unittest.TestCase):
