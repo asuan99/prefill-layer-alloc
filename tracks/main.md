@@ -52,9 +52,10 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **impl-defects GPU 정확성 gate** / rev0.2 진행 중(결정 60) / 감사·봉인·제출 후 회수
+- **impl-defects GPU 정확성 gate** / rev0.2 봉인(`19c071e1`, 델타 감사 r2 GO-with-caveats R1–R4·R2(a) 권고대로) 제출 job-sa0kvbgwd3vl / 회수·채점 대기 — rev0.1 데이터는 최종 채점기로도 FAIL(CO3_B)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
+- `pdmux-impl-defects-gate-077434a-20261030070305`(job-sa0kvbgwd3vl, 2026-10-30 07:03Z, 브랜치 impl-defects-e123 봉인 rev0.2 `19c071e1`, A100×1, 하드캡 180 min): 회수 implfix에서 `fetch.sh impl_defects_gate <job name>` → `impl_gate.py score`
 - `pdmux-policy-tune-074ffc3-20261029140207`(job-9t469viisz2i, 2026-10-29 제출, commit 074ffc37 봉인 S6, A100×1, 예상 3.3 h·하드캡 ≈4.4 h): TUNE(bind+GATE 구성 6 × 튜닝 seed 101·102, 12 boot) + 공변량·기준 셀. 회수 `scripts/vessl/fetch.sh policy_tune <job name>`
 - 회수 완료: gate+smoke · CAP1 · CAP1-R(λ*_W1 7.29491) · CAP2+지속성(λ*_W3 0.3375 취약, W1 7.29 비지속) — 각 감사 r1 GO-with-caveats
 
