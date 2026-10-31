@@ -55,7 +55,7 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **통합 정책 측정 PREREG(결정 60 + 62i)** / 초안 작성 중 → 하네스 감사 1회 → 설계 선택·제출 사용자 확인
+- **통합 정책 측정 PREREG(결정 60 + 62i)** / 초안(implfix `c54244bd`) 하네스 감사 r1 **NO-GO**(P 셀 time_typed vs time 판정 쌍: factor 1에서 박자 영역 미도달·target 22–24 ms에서 두 처치 동일) + 차단 K2–K5 / (A) K1(factor 0.5·실현 dose 검사·양쪽 PC)–K5 적용 후 봉인, Job 4개로 분할(H+H2·R·P·E3)(권고) · (B) P 보류, H+H2·R·E3만 · (C) 현행(NO-GO)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - `pdmux-policy-tune-074ffc3-20261029140207`(job-9t469viisz2i, 2026-10-29 제출, commit 074ffc37 봉인 S6, A100×1, 예상 3.3 h·하드캡 ≈4.4 h): TUNE(bind+GATE 구성 6 × 튜닝 seed 101·102, 12 boot) + 공변량·기준 셀. 회수 `scripts/vessl/fetch.sh policy_tune <job name>`
