@@ -37,3 +37,4 @@ python3 workspace/engine-port/scripts/discipline/check_citation_stops.py --file 
 - 2026-10-22 v9: §8 "비용 수식 (고정본)" 신설 — 기호·층별 식·모델 전체·조성 변형 표, `scripts/costmodel/render_formula_tables.py`가 `analytic_terms.py`에서 생성(손편집 금지, <!-- ANALYTIC:BEGIN/END --> 블록). 재발행 Version 10.
 - 2026-10-27 v10: promote 5차 — §0 현재 상태·기준일, main·multigpu 트랙 카드, 축 카드 E2·E4·E5·H9·M7 사실/열린 것(비용 항 6 Job 결과 감사 r1 후보), COSTMODEL 줄 포인터 재매핑. 새 판정 0, claim 표 변경 0, 재발행은 main 세션이 한다.
 - 2026-10-27 v11: promote 6차 — §0 현재 상태, main 트랙 카드(st·결정 대기 목록), E1 lockstep 열린 항목. 새 판정 0, claim 표 변경 0. 재발행 Version 12.
+- 2026-10-31 v12: 사용자 요청으로 §8b "D* 수식 — static decode SM을 식으로"(제안, 결정 61) 신설. `scripts/costmodel/render_dstar_section.py`가 `reports/cost_model/dstar/dstar_result.json`에서 생성(손편집 금지, <!-- DSTAR:BEGIN/END --> 블록, `--check`로 드리프트 검사). 정본 아님·§8 고정본 불변, 사후 재현과 EVAL 사전 예측(봉인 113de504, 결정 60으로 보류)을 구분 표기. 목차에 링크 추가.
