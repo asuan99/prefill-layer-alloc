@@ -27,6 +27,7 @@
 - **결정 62i(2026-10-31, 사용자 "진행")**: E1–E3를 정책 측정 arm으로 허용(A) — 조건: Job 안 고정 프롬프트 출력 일치 가드(불일치 arm 무효)·기본 allocator·cudagraph-ON 한정·E3 상태 "UNRESOLVED(allocator 변형 미실행)" 원문 기록·C1–C13 승계·n≥4 paired·변화 trace·같은 Job. 결정 60(EVAL을 OFF vs E1(+E2) 짝 Job으로 흡수)과 **한 PREREG·한 Job으로 통합**(박자 영역 {budget, time, time_typed} 셀 포함) — 하네스 감사 1회 후 설계 선택·제출은 사용자 확인 — promote 필요: 예 (결정)
 - **결정 63i(2026-10-31, 사용자 "진행")**: 통합 정책 측정 PREREG 수정 — 박자 목표를 r≈1(span 시간 ≈ decode step)로 재정의, factor 1 유지(감사 권고 0.5는 과분할 방향이라 미채택), PC 박자 판정을 r≈1 중심 범위로, 실현 dose 검사(time vs time_typed 경계 차이) 추가, 층 종류 차이가 큰 길이(예 32k) 셀 검토, 감사 차단 K2–K5 반영, r≪1 셀은 '과분할 탐침'으로 명명, SM·span 결합 제어는 다음 단계 가설로만 기재. 하네스 감사 상한 사용(1회) → 이 판단은 사용자 결정으로 기록 — promote 필요: 예 (결정)
 - **결정 64i(2026-10-31, 사용자 "진행")**: 통합 정책 측정 PREREG rev1을 권고값으로 봉인·Job 4개 제출(박자 범위 하한 0.75, 실현 차이 문턱 50%, E1+E2 arm 미추가, 고부하 박자 확인 boot 추가, 박자 셀 상한 235 min, 순서 박자 셀→EVAL HE0 셀→static D 순위→handoff, 프롬프트 1.5k–2.5k, 예산 대조 arm 미추가·공시, 박자 확인 60요청) + 보고서(r 정의·수식 포함) 작성 — promote 필요: 예 (결정)
+- **결정 62(2026-11-01, 사용자 "진행") + 기본 구조 기준선 Phase A(CPU, 기술값)**: 계획 `results/stock_baseline/PLAN_stock_baseline_metrics_2026-11-01.md` §6 권고 채택(vLLM = 제출 시점 최신 stable · 조율 fused·Llama-8B는 2차 · `decode_probe` EXTEND 시간 플래그 기본 OFF 추가) · r 대응량 r_ser/r_mix로 따로 명명(r_span과 합치지 않음). 결과 `stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md`: P1-opint 16셀 원문 재현 일치 · M3 J1 fused 행(N=1) · KISTI Granite stock r_ser p50 ≈ 15(in2000, HOLB 관측자 효과 미결정) · Nano r_ser 예보(봉인 전 인용 금지) · 게이트 4 사각(out 64에서 요청당 정지 ≤3회 미검출). 감사 r1 GO-with-edits 7건 반영, result-analyst 재계산 3건 일치 — promote 필요: 예 (결정·결과·감사)
 - 방향 재정리(제안, 미결정): 승계 기본값 D=44·cap 48·budget 65536은 Nano에서 재결정 · HyMux 원고는 구현 구조로 낮추고 R1–R3 단일 처치 ablation 가설로 · 비동기 기판 arm 후순위
 - 동결 설계: V-O·H-D `cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4 · DP 라우팅(감사 r2). 사소한 결함: `ct_harness_digest.py check --dir` 상대 경로
 ## 다음 행동
@@ -44,6 +45,7 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정(결정 60·62i·63i·64i)** / rev1 봉인 `736ec49c`, Job 4개 제출(job-lqapcvtrqv3z 박자 셀·job-sr98eg83qfd8 EVAL HE0 셀·job-egzrhfbwbh21 static D 순위·job-s9fvr79gd77q drain 대 handoff), 설계 보고 `implfix:results/policy_implfix/REPORT_policy_implfix_design_2026-10-31.md` / 회수·분석 대기
+- **기준선 Phase B**(결정 62) / VESSL·Nano 한 Job: SG-stock·SG-mix·VL-stock·PM-ref(D44), W1/W3·변화 trace n≥4, 단일 클라이언트, r 계측 boot 분리 + 감사 r1 권고(stock plain L∈{512,2k,8k} 계측 ON/OFF 짝) / 선행 = EXTEND 플래그(engine-porter)·vLLM 이미지 bring-up·PREREG·하네스 감사 1회 — 착수 승인 대기
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 통합 정책 측정 4 Job(2026-10-31, implfix 봉인 `736ec49c`, 번들 `cb071cf3`): job-lqapcvtrqv3z·job-sr98eg83qfd8·job-egzrhfbwbh21·job-s9fvr79gd77q — 회수 implfix에서 `fetch.sh policy_implfix <job>`
