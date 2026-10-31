@@ -57,9 +57,10 @@
 - **임시 디렉터리 `/tmp/gate_t_*` 11개** / 테스트 잔여물 / 삭제(권고)
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
-- **통합 정책 측정 PREREG(결정 60 + 62i + 63i)** / rev1 초안(implfix `3ef13523`, dry-run `eb961ad1`): Job 4개(박자 셀 3.1 GPU-h·EVAL HE0 셀 3.8·static D 순위 3.2·handoff 2.2), 박자 셀 = 1.5k–2.5k 혼합 프롬프트, r≈1 범위·실현 dose 검사, 감사 K2–K5 반영 / 봉인 전 열린 선택 9개(§14) → 권고값으로 봉인·제출 승인 대기
+- **통합 정책 측정(결정 60·62i·63i·64i)** / rev1 봉인 `736ec49c`, Job 4개 제출(job-lqapcvtrqv3z 박자 셀·job-sr98eg83qfd8 EVAL HE0 셀·job-egzrhfbwbh21 static D 순위·job-s9fvr79gd77q drain 대 handoff), 설계 보고 `implfix:results/policy_implfix/REPORT_policy_implfix_design_2026-10-31.md` / 회수·분석 대기
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
+- 통합 정책 측정 4 Job(2026-10-31, implfix 봉인 `736ec49c`, 번들 `cb071cf3`): job-lqapcvtrqv3z·job-sr98eg83qfd8·job-egzrhfbwbh21·job-s9fvr79gd77q — 회수 implfix에서 `fetch.sh policy_implfix <job>`
 - `pdmux-policy-tune-074ffc3-20261029140207`(job-9t469viisz2i, 2026-10-29 제출, commit 074ffc37 봉인 S6, A100×1, 예상 3.3 h·하드캡 ≈4.4 h): TUNE(bind+GATE 구성 6 × 튜닝 seed 101·102, 12 boot) + 공변량·기준 셀. 회수 `scripts/vessl/fetch.sh policy_tune <job name>`
 - 회수 완료: gate+smoke · CAP1 · CAP1-R(λ*_W1 7.29491) · CAP2+지속성(λ*_W3 0.3375 취약, W1 7.29 비지속) — 각 감사 r1 GO-with-caveats
 
