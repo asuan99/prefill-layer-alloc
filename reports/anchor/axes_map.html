@@ -276,6 +276,18 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 .sc-map g.sc-e.fx-d path{stroke:var(--bad);stroke-width:3}
 .sc-map g.sc-e.fx-i path{stroke:var(--warn);stroke-dasharray:5 3}
 .sc-map g.fx-n{opacity:.3}
+
+.sc-rdef{display:flex;flex-direction:column;gap:10px;background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+.sc-eqs{display:flex;flex-direction:column;gap:8px}
+.sc-eqrow{display:grid;grid-template-columns:9.5rem minmax(0,1.3fr) minmax(0,1fr);gap:6px 14px;align-items:center;padding:6px 0;border-bottom:1px dashed var(--line)}
+.sc-eqrow:last-child{border-bottom:0}
+@media (max-width:760px){.sc-eqrow{grid-template-columns:1fr}}
+.sc-eqn{font-family:var(--f-mono);font-size:.74rem;color:var(--muted)}
+.sc-eq{font-family:var(--f-mono);font-size:.9rem;color:var(--fg);overflow-x:auto;white-space:nowrap}
+.sc-eqc{font-size:.78rem;color:var(--muted);min-width:0}
+.frac{display:inline-flex;flex-direction:column;vertical-align:middle;text-align:center;margin:0 3px}
+.frac > span:first-child{border-bottom:1px solid var(--fg);padding:0 4px 1px}
+.frac > span:last-child{padding:1px 4px 0}
 @media (prefers-reduced-motion:no-preference){.sc-tl g.sc-b{transition:opacity .15s}}
 </style>
 
@@ -461,6 +473,25 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     <div class="svgbox"><svg id="sc-map" class="sc-map" viewBox="0 0 900 340" role="img" aria-label="Scheduler 스레드, CUDA stream, green context, SM의 관계와 동기화 지점"></svg></div>
     <figcaption>실선 화살표는 일을 넣는 방향(launch·선택), 굵은 선은 host가 GPU를 멈춰 기다리는 synchronize(검은 선은 매 반복 decode, 빨간 선은 drain), 점선은 기다리지 않는 확인(Event.query)이나 비동기 기록입니다. 매 반복 host를 붙잡는 것은 decode stream 동기화 하나뿐이고, prefill stream은 drain 때만 동기화됩니다. 그래서 prefill에는 발행 속도를 늦추는 역압이 없습니다.</figcaption>
   </figure>
+
+  <div class="sc-rdef" id="r-def">
+    <h3>박자 목표 r — 정의와 수식</h3>
+    <p class="lede" style="font-size:.86rem">r은 <b>한 번에 발행한 prefill span의 GPU 시간</b>을 <b>그동안 함께 돈 decode step의 GPU 시간</b>으로 나눈 값입니다. 루프가 decode 반복마다 span을 하나씩 넣으므로, r이 span이 쌓이는지(r &gt; 1), 박자가 맞는지(r ≈ 1), SM이 노는지(r &lt; 1)를 정합니다. 수식은 엔진 <code>span_policy.py</code>(정본 수식 analytic-v1과 정수 일치)와 봉인 PREREG <code>policy_implfix/PREREG_POLICY_IMPLFIX_rev1</code> §5의 정의를 옮긴 것입니다. 측정값은 아직 없습니다.</p>
+    <div class="sc-eqs">
+      <div class="sc-eqrow"><span class="sc-eqn">(1) 층 시간 예측</span><span class="sc-eq">t̂<sub>l</sub>(L, P) = <span class="frac"><span>F<sub>l</sub>(L)</span><span>η<sub>type(l)</sub> · 312 TFLOP/s · P/108</span></span></span><span class="sc-eqc">F<sub>l</sub>: 층 l의 prefill FLOPs(attention은 L² 포함) · η 기본 0.45 [가정] · P = 108 − D</span></div>
+      <div class="sc-eqrow"><span class="sc-eqn">(2) 두 정책</span><span class="sc-eq">time: t̄ = (1/56) Σ<sub>l</sub> t̂<sub>l</sub> &nbsp;·&nbsp; time_typed: 층마다 t̂<sub>l</sub></span><span class="sc-eqc">층 종류 무시 / 반영(M · * · - 별 FLOPs)</span></div>
+      <div class="sc-eqrow"><span class="sc-eqn">(3) span 층 수</span><span class="sc-eq">k* = max { k ≥ 1 : Σ<sub>l=i</sub><sup>i+k−1</sup> t̂<sub>l</sub> ≤ f · T̂<sub>iter</sub> }</span><span class="sc-eqc">T̂<sub>iter</sub>: decode 반복 벽시계 시간의 EWMA(α = 0.2) · f = 1 · 첫 층은 항상 발행</span></div>
+      <div class="sc-eqrow"><span class="sc-eqn">(4) 기존 예산 규칙</span><span class="sc-eq">k = max(1, ⌊65536 / L⌋)</span><span class="sc-eqc">시간·SM·층 종류를 보지 않음 · 2k에서 span 2–3개, r ≈ 9 [유도]</span></div>
+      <div class="sc-eqrow"><span class="sc-eqn">(5) r 측정</span><span class="sc-eq">r<sub>b</sub> = <span class="frac"><span>max<sub>c∈b</sub> T<sub>chunk,c</sub><sup>GPU</sup></span><span>median<sub>c∈b</sub> T<sub>dec,c</sub><sup>GPU</sup></span></span></span><span class="sc-eqc">b: prefill 배치, c: 그 배치의 span · 같은 반복의 CUDA event 시간을 짝지음(<code>chunk_gpu_ms</code> / <code>decode_fwd_gpu_ms</code>) · 계측 boot에서만</span></div>
+      <div class="sc-eqrow"><span class="sc-eqn">(6) r 예보</span><span class="sc-eq">r̂ = max(span의 Σ t̂<sub>l</sub>) / T &nbsp;→&nbsp; r ≈ r̂ · γ · T / T<sub>dec</sub></span><span class="sc-eqc">γ = 실측 층 시간 ÷ 예측 층 시간(미측정) · T = 예상 decode step</span></div>
+    </div>
+    <div class="tbl"><table><thead><tr><th>r</th><th>루프에서 일어나는 일</th><th>이 프로젝트의 측정</th></tr></thead><tbody>
+      <tr><td>r &gt; 1 (쌓임)</td><td>span이 decode step보다 길어 prefill stream에 쌓이고, 쌓인 span은 다른 SM으로 옮길 수 없음 → drain 비용</td><td>지금까지 전부(r 약 3–59 [측정])</td></tr>
+      <tr><td>r ≈ 1 (박자)</td><td>span과 decode step이 함께 끝남 · 쌓이지도 놀지도 않음 · MuxWise N<sub>PL</sub>의 목표</td><td>판정 범위: r<sub>b</sub> 중앙값 ∈ [0.75, 1.25], r ≥ 1.5와 r &lt; 0.5 비율 각 &lt; 10%, span ≥ 30 · 측정 Job 제출(2026-10-31)</td></tr>
+      <tr><td>r &lt; 1 (과분할)</td><td>span이 먼저 끝나 prefill SM이 매 step 일부를 놀고, prefill 완료가 span 수 × decode step에 묶임</td><td>탐침용(2k × 예산 512, r ≈ 0.32 [유도]) · 운영점 아님</td></tr>
+    </tbody></table></div>
+    <p class="lede" style="font-size:.82rem">범위 하한이 1보다 아래로 넓은 이유: 층은 정수 개라 시간 규칙은 목표를 넘지 않는 쪽으로 자르고, 목표로 쓰는 EWMA는 host 시간이 섞인 벽시계라 GPU decode 시간보다 큽니다(예보 r: time 0.76–0.90, time_typed 0.91–0.99 [유도, γ = 1]). <b>실현 차이 검사</b>: 같은 목표에서도 두 정책이 span을 똑같이 자르는 구간이 있으므로(2k에서 T = 22–24 ms), 계측 데이터로 상대 정책의 경계를 다시 계산해 경계가 하나 이상 다른 단일 요청 prefill이 50% 이상(30개 이상)일 때만 "처치 실현"으로 봅니다. 아래 "span 1개 · 적체 · 박자" 상황이 세 영역을 시간축으로 보여 줍니다.</p>
+  </div>
 
   <div class="sc-row"><span class="eyebrow">상황</span><div class="sc-tabs" id="sc-tabs" role="tablist" aria-label="상황 선택"></div></div>
   <div class="sc-head">
