@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev1 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
   sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job (after J1 / after J1b)
   sb_analyze.py report   --j1 RAW --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]    # labels, predictions, "not measured" section
@@ -21,6 +21,9 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
     "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"; (b) not computable -> TTFT_OFFSET_UNCHECKED -> engine pairs INVALID (fail-closed)
   * tags: CELL_OUT_OF_BAND (steady-state cell R2 (W1) / R3 (W3) attainment: all arms > 0.9 or best < 0.5), SUBSTRATE_SHIFT (refcell vs the identical Job-1 cell
     differs by >= 10 %p; SUBSTRATE_UNCHECKED when Job 1 holds no identical cell), MIX_NOT_FIRED (SG-mix proxy < 50 per run)
+  * rev2 (audit r1): BOTH_SATURATED (both arms >= 0.98 attainment on all 4 seeds -> no goodput label, every cell); latency co-metrics for
+    Q5/Q8 (seed-level paired ln TPOT mean / TTFT p50 / median request-internal ITL p95, same 3 % + t(3) rule, suffix _TPOT/_TTFT/_ITL);
+    SG-mix firing from server_args; Q6 grid {512, 2k}, P-4 UNSCORABLE at n < 10, Q6 INVALID on any other-stream extend; forced Q1-Q8 rows
   * r_ser / r_mix: decode_probe.pacing_ratios on the load window ONLY (t_load_start/end mapped to the probe clock through the probe's
     boot record); PM-ref r_span = implfix pc_reduce definition + the same window filter (new function, implfix file untouched)
 """
@@ -84,7 +87,12 @@ def load_job(raw):
         b = _j(p)
         b["dir"] = str(p.parent)
         boots[b["boot_id"]] = b
+    done = {}
+    for p in sorted((raw / "boots").glob("*/DONE.json")):
+        d = _j(p)
+        done[d.get("boot_id") or p.parent.name] = d
     return {"raw": str(raw), "plan": _j(raw / "plan.json") if (raw / "plan.json").exists() else None, "runs": runs, "boots": boots,
+            "done": done,
             "floor": _j(raw / "floor.json") if (raw / "floor.json").exists() else None,
             "w3": _j(raw / "W3_LAMBDA.json") if (raw / "W3_LAMBDA.json").exists() else None}
 
@@ -138,6 +146,54 @@ def placebo_invalid(pl):
     if pl is None or pl["n"] < 4 or any(isinstance(pl[k], float) and math.isnan(pl[k]) for k in ("mean", "lo", "hi")):
         return True
     return abs(pl["mean"]) >= MARGIN or pl["lo"] > 0 or pl["hi"] < 0
+
+
+# ---- rev2: saturation and latency co-metrics (audit r1 B) -------------------------------------------------------------------
+def run_reqs(run):
+    return [q for s in run["segments"] for q in s["requests"]]
+
+
+def latency_of(run, metric):
+    """Seed-level latency statistic of one run: TPOT = mean over requests (>= 2 tokens, no error) of the mean token ITL; TTFT = p50 of the
+    run's TTFTs; ITL = median over requests of the request-internal token-ITL p95."""
+    reqs = [q for q in run_reqs(run) if not q.get("error")]
+    if metric == "TPOT":
+        xs = [statistics.fmean(q["token_itl_ms"]) for q in reqs if q.get("token_itl_ms")]
+        return statistics.fmean(xs) if xs else None
+    if metric == "TTFT":
+        xs = [q["ttft_ms"] for q in reqs if q.get("ttft_ms") is not None]
+        return V.percentile(xs, 0.5) if xs else None
+    if metric == "ITL":
+        xs = [V.percentile(q["token_itl_ms"], 0.95) for q in reqs if q.get("token_itl_ms")]
+        return statistics.median(xs) if xs else None
+    raise ValueError(metric)
+
+
+def paired_latency(runs_a, runs_b, metric):
+    seeds = sorted(set(runs_a) & set(runs_b))
+    d = []
+    for s in seeds:
+        xa, xb = latency_of(runs_a[s], metric), latency_of(runs_b[s], metric)
+        d.append(math.log(xa / xb) if xa and xb and xa > 0 and xb > 0 else math.nan)
+    ok = [x for x in d if not math.isnan(x)]
+    ci = V.paired_t_ci(ok) if ok else (math.nan, math.nan, math.nan, 0)
+    sd = statistics.stdev(ok) if len(ok) >= 2 else math.nan
+    return {"metric": metric, "seeds": seeds, "ln_ratio": d, "mean": ci[0], "lo": ci[1], "hi": ci[2], "n": ci[3], "sd": sd}
+
+
+def seed_attainments(runs, ttft_slo):
+    return {s: attainment(r, ttft_slo) for s, r in runs.items()}
+
+
+def both_saturated(runs_a, runs_b, ttft_slo):
+    """BOTH_SATURATED: both arms reach attainment >= 0.98 on every evaluation seed -> goodput = n / duration for both, the ln ratio is a
+    drain difference only (audit r1 B), so no goodput label (EQUIV forbidden)."""
+    for runs in (runs_a, runs_b):
+        if set(runs) != set(SP.EVAL_SEEDS):
+            return False
+        if any(x is None or x < SP.SATURATED_ATTAIN for x in seed_attainments(runs, ttft_slo).values()):
+            return False
+    return True
 
 
 # ---- capacity ----------------------------------------------------------------------------------------------------------
@@ -253,20 +309,23 @@ def stamp_failures(runs):
 
 # ---- definition smoke (§5-0) ---------------------------------------------------------------------------------------------
 def smoke_verdict(j1):
+    """§5-0 (a), PREREG rev2 wording: per engine, the offsets (client TTFT - server TTFT) of the sequential requests must be a small
+    constant -- their standard deviation <= 5 ms (CLIENT_DEF_TOL_MS).  The two engines' constants need NOT be equal (the server-side
+    start points differ); rev1 code required |median_SG - median_VL| <= 5 ms, which the text did not register (audit r1 D) -- removed."""
     if j1 is None:
         return {"status": "CLIENT_DEF_UNCHECKED", "why": "no Job 1"}
     med = {}
     for r in j1["runs"]:
         if r.get("kind") == "smoke":
             d = [x["client_ttft_ms"] - x["server_ttft_ms"] for x in r["rows"] if x.get("ok")]
-            med[r["engine"]] = {"median_ms": statistics.median(d) if d else None, "n_ok": len(d), "n": len(r["rows"])}
+            med[r["engine"]] = {"median_ms": statistics.median(d) if d else None, "sd_ms": statistics.pstdev(d) if len(d) >= 2 else None,
+                                "n_ok": len(d), "n": len(r["rows"])}
     if not {"sglang", "vllm"} <= set(med):
         return {"status": "CLIENT_DEF_UNCHECKED", "why": f"smoke engines present: {sorted(med)}", "per_engine": med}
-    a, b = med["sglang"]["median_ms"], med["vllm"]["median_ms"]
-    if a is None or b is None:
-        return {"status": "CLIENT_DEF_MISMATCH", "why": "no usable smoke request", "per_engine": med}
-    st = "CLIENT_DEF_OK" if abs(a - b) <= SP.CLIENT_DEF_TOL_MS else "CLIENT_DEF_MISMATCH"
-    return {"status": st, "diff_ms": a - b, "per_engine": med}
+    if any(med[e]["sd_ms"] is None for e in ("sglang", "vllm")):
+        return {"status": "CLIENT_DEF_MISMATCH", "why": "fewer than 2 usable smoke requests", "per_engine": med}
+    st = "CLIENT_DEF_OK" if all(med[e]["sd_ms"] <= SP.CLIENT_DEF_TOL_MS for e in ("sglang", "vllm")) else "CLIENT_DEF_MISMATCH"
+    return {"status": st, "diff_ms": med["sglang"]["median_ms"] - med["vllm"]["median_ms"], "per_engine": med}
 
 
 def run_ttft_offset(run):
@@ -391,6 +450,11 @@ def pair_validity(a, b, arms, job, ttft_slo, cell, smoke, placebo_bad, offset=No
     return sorted(set(why))
 
 
+def run_server_args(run, job):
+    b = (job.get("boots") or {}).get(run.get("boot_id")) or {}
+    return run.get("server_args") or b.get("server_args") or {}
+
+
 def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
     arms = cell_runs(job, cell)
     out = {"cell": cell, "arms": sorted(arms), "pairs": {}, "goodput_mean": {}}
@@ -416,12 +480,15 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
         raw = label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
         why = pair_validity(a, b, arms, job, ttft_slo, cell, smoke, pbad, offset)
         engine_pair = a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS
+        sat = both_saturated(arms[a], arms[b], ttft_slo)
         if pbad:
             final = "BOOT_NOISE"
         elif engine_pair and "TTFT_OFFSET_SHIFT" in why:
             final = "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"
         elif why:
             final = "INVALID"
+        elif sat:
+            final = "BOTH_SATURATED"
         else:
             final = raw
         tags = ["TTFT_OFFSET_SHIFT"] if engine_pair and "TTFT_OFFSET_SHIFT" in why else []
@@ -429,14 +496,28 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
             tags.append("CELL_OUT_OF_BAND")
         if sub["tag"] != "SUBSTRATE_OK":
             tags.append(sub["tag"])
+        mix_bad = False
         if a == "SG-mix":
-            fired = [r.get("mixed_forward_proxy") for r in arms[a].values()]
-            if any(x is None or x < SP.MIX_MIN_FORWARDS for x in fired):
+            fired = [RU.mix_fired_from_server_args(run_server_args(r, job)) for r in arms[a].values()]
+            if not fired or not all(fired):
+                mix_bad = True
                 tags.append("MIX_NOT_FIRED")
                 final = "MIX_NOT_FIRED" if final not in ("BOOT_NOISE", "INVALID") else final
+        lat = {}
+        if q in SP.LATENCY_PAIRS:
+            for m in SP.LATENCY_METRICS:
+                pm = paired_latency(arms[a], arms[b], m)
+                lraw = label((pm["mean"], pm["lo"], pm["hi"], pm["n"]), tok) + f"_{m}"     # ABOVE = A has the LARGER latency
+                lfin = "BOOT_NOISE" if pbad else "INVALID" if why else "MIX_NOT_FIRED" if mix_bad else lraw
+                lat[m] = dict(pm, raw_label=lraw, label=lfin)
         if (a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS) and not math.isnan(p["sd"]) and p["sd"] > SP.ENGINE_PAIR_SD_MAX:
             tags.append("RERUN_SEED8_REGISTERED")
-        out["pairs"][key] = dict(p, raw_label=raw, label=final, validity=why, tags=tags, question=q)
+        out["pairs"][key] = dict(p, raw_label=raw, label=final, validity=why, tags=tags, question=q, both_saturated=sat,
+                                 seed_attainment={a: seed_attainments(arms[a], ttft_slo), b: seed_attainments(arms[b], ttft_slo)},
+                                 latency=lat)
+    out["mixing_opportunities"] = {x: {s: r.get("mixing_opportunities") for s, r in arms[x].items()} for x in SP.MIX_OPPORTUNITY_ARMS
+                                   if x in arms}
+    out["mix_server_args"] = {x: {s: run_server_args(r, job) for s, r in arms[x].items()} for x in SP.MIX_OPPORTUNITY_ARMS if x in arms}
     out["gate5"] = {a: V.gate5_row(list(v.values()), ttft_slo) for a, v in arms.items()}
     return out
 
@@ -463,11 +544,17 @@ def r_ser_from_instr(records, run):
             if abs(g["extend_tokens"] - L) <= SP.Q6_L_BAND * L:
                 by_L.setdefault(L, []).append(g)
     single = [g for g in res["gaps"] if g.get("r_ser") is not None and g.get("extend_n_reqs") == 1]
-    q6 = "Q6_OK" if len(single) >= SP.Q6_MIN_SPANS and all(len(by_L.get(L, [])) >= SP.Q6_MIN_PER_L for L in SP.Q6_L_GRID) else "Q6_FEW_SPANS"
+    other = [g for g in res["gaps"] if (g.get("other_stream_ms") or 0.0) > 0.0]
+    if other:
+        q6 = "Q6_INVALID:OTHER_STREAM_EXTEND"          # rev2 (audit r1): a non-stock stream shape, fail-closed
+    elif len(single) >= SP.Q6_MIN_SPANS and all(len(by_L.get(L, [])) >= SP.Q6_MIN_PER_L for L in SP.Q6_L_GRID):
+        q6 = "Q6_OK"
+    else:
+        q6 = "Q6_FEW_SPANS"
     return {"window_probe_clock": win, "n_r_ser": len(res["r_ser"]), "n_r_mix": len(res["r_mix"]),
             "r_ser_p50": statistics.median(res["r_ser"]) if res["r_ser"] else None,
             "r_mix_p50": statistics.median(res["r_mix"]) if res["r_mix"] else None,
-            "n_single_request_spans": len(single), "q6_status": q6,
+            "n_single_request_spans": len(single), "q6_status": q6, "n_other_stream_gaps": len(other),
             "by_L": {L: {"n": len(v), "r_ser_p50": statistics.median(x["r_ser"] for x in v), "bs_p50": statistics.median(x["bs"] for x in v)}
                      for L, v in sorted(by_L.items()) if v},
             "excluded": {k: res[k] for k in ("n_first", "n_incomplete", "n_trailing_extend", "n_fallback")}}
@@ -549,12 +636,15 @@ def score_predictions(add, cells, instr):
     P["P-3"] = {"value": None if not r2 else r2.get("mean"), "predicted": "+", "score": sc, "label": None if not r2 else r2.get("label")}
     sgi = (instr or {}).get("SG") or {}
     b2 = (sgi.get("by_L") or {}).get(2048)
-    if b2:
+    if str(sgi.get("q6_status", "")).startswith("Q6_INVALID"):
+        P["P-4"] = {"value": None, "score": "UNSCORABLE", "why": sgi.get("q6_status")}
+    elif not b2 or b2["n"] < SP.Q6_MIN_PER_L:
+        P["P-4"] = {"value": None, "n": 0 if not b2 else b2["n"], "score": "UNSCORABLE",
+                    "why": f"single-request L~2k spans n < {SP.Q6_MIN_PER_L} (rev2: no score below n = 10)"}
+    else:
         f, bsel = forecast_r_ser(2048, b2["bs_p50"])
         P["P-4"] = {"value": b2["r_ser_p50"], "forecast": f, "forecast_cell": {"L": 2048, "bs": bsel, "ctx": 2048}, "n": b2["n"],
                     "score": None if f is None else ("HIT" if abs(b2["r_ser_p50"] - f) <= 0.30 * f else "MISS")}
-    else:
-        P["P-4"] = {"value": None, "score": None, "why": "no single-request L~2k span in the load window"}
     g = (cells.get("R2") or {}).get("gate5", {})
     if "SG-mix" in g and "SG-stock" in g:
         a, b = g["SG-mix"]["itl_ms"]["p95"], g["SG-stock"]["itl_ms"]["p95"]
@@ -569,25 +659,99 @@ PREREG_LOST = ("조율 fused", "Llama-8B", "동적 PD-mux", "best D 재결정", 
                "부하 변화(LO↔HI) 반응 — 변화 trace 미적용(고정 설정 비교, 게이트 2는 컨트롤러 비교 한정; 결정 2026-11-02)",
                "prefix caching ON", "TP>1")
 GPU_UNVERIFIED = ("EXTEND 이벤트 실측", "overlap 경로의 단일 forward stream(stream_key 상수)", "EXTEND ON boot 출력 불변", "관측자 비용",
-                  "pristine 보존(PRESERVE_STATUS) GPU 이미지", "SG-mix 발화 proxy(Prefill batch #running-req)", "vLLM 로그 백엔드/CUDAGraphMode 패턴",
+                  "pristine 보존(PRESERVE_STATUS) GPU 이미지", "SG-mix 발화 판정의 server_args 로그 패턴(enable_mixed_chunk=·chunked_prefill_size=)", "vLLM 로그 백엔드/CUDAGraphMode 패턴",
                   "server TTFT 히스토그램 이름(smoke·부하 중 오프셋)", "/opt/vllm-venv boot(CUDA graph 캡처·flashinfer JIT sm80) on A100")
 
 
-def not_measured(jobs, cells, smoke, instr, offset=None):
-    out = [f"PREREG §10: {x}" for x in PREREG_LOST]
+Q_CELL_PAIRS = {"Q2": ("R1", "R2"), "Q3": ("R1", "R2"), "Q4": ("R1", "R2"), "Q5": ("R1", "R2"), "Q8": ("R1", "R2"), "Q7": ("R3",)}
+Q7_KEYS = ("Q2:PM-ref_vs_SG-stock", "Q3:VL-stock_vs_SG-stock")     # Q7 = the signs of Q2 / Q3 on W3 (R3 cell)
+LABEL_NOT_MEASURED = ("NOT_RUN", "INVALID", "BOOT_NOISE", "MIX_NOT_FIRED", "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT")
+
+
+def question_rows(add, cells, instr):
+    """rev2 (audit r1 ⑦): one row per question Q1-Q8, ALWAYS (a question with no data is NOT_MEASURED with its reason)."""
+    rows = {}
+    lb = (add or {}).get("lambda_star_burst") or {}
+    ls = ((add or {}).get("lambda_star_sustained") or {}).get(SP.REFCELL_ARM) or {}
+    v_b, v_s = lb.get(SP.REFCELL_ARM), ls.get("lambda_star_sustained")
+    why = []
+    if v_b is None:
+        why.append("SG-stock 버스트 λ* 없음(" + str(((add or {}).get("ladder") or {}).get(SP.REFCELL_ARM, {}).get("status", "Job 1 없음")) + ")")
+    if v_s is None:
+        why.append("SG-stock 지속 λ* 없음(" + str(ls.get("status", "Job 2 없음")) + ")")
+    rows["Q1"] = {"status": "MEASURED" if not why else ("PARTIAL" if (v_b is not None or v_s is not None) else "NOT_MEASURED"),
+                  "detail": {"burst": v_b, "sustained": v_s}, "why": why}
+    for q, cs in Q_CELL_PAIRS.items():
+        got, miss = {}, []
+        for c in cs:
+            allp = (cells.get(c) or {}).get("pairs") or {}
+            ps = {k: v for k, v in allp.items() if (k in Q7_KEYS if q == "Q7" else k.startswith(q + ":"))}
+            if not ps:
+                miss.append(f"{c}: 셀 없음")
+                continue
+            for k, v in ps.items():
+                got[f"{c} {k}"] = v.get("label")
+                if v.get("label") in LABEL_NOT_MEASURED:
+                    miss.append(f"{c} {k}: {v.get('label')}")
+        ok = [k for k, v in got.items() if v not in LABEL_NOT_MEASURED]
+        rows[q] = {"status": "MEASURED" if ok and not miss else "PARTIAL" if ok else "NOT_MEASURED", "detail": got, "why": miss}
+    sg = (instr or {}).get("SG")
+    if not sg:
+        rows["Q6"] = {"status": "NOT_MEASURED", "detail": {}, "why": ["SG 계측 요약 없음"]}
+    else:
+        st = sg.get("q6_status") or sg.get("error")
+        rows["Q6"] = {"status": "MEASURED" if st == "Q6_OK" else "NOT_MEASURED", "detail": {"q6_status": st,
+                      "by_L_n": {L: v["n"] for L, v in (sg.get("by_L") or {}).items()}}, "why": [] if st == "Q6_OK" else [str(st)]}
+    return {q: rows[q] for q in SP.QUESTIONS}
+
+
+def boot_status_rows(name, j):
+    """Every planned boot whose DONE.json status is not "done" (skip / correctness failure / image refusal / R3_SKIPPED_BUDGET), and every
+    planned boot without a DONE.json at all (killed by the hard cap or never reached)."""
+    out = []
+    done = j.get("done") or {}
+    planned = [b["boot_id"] for b in ((j.get("plan") or {}).get("boots") or [])]
+    for bid in planned or sorted(set(done) | set(j["boots"])):
+        d = done.get(bid)
+        if d is None:
+            b = j["boots"].get(bid)
+            out.append(f"{name}: boot {bid} DONE.json 없음" + (f" (boot status {b.get('status')})" if b else " (시작 안 됨 / hard cap)"))
+        elif d.get("status") != "done":
+            out.append(f"{name}: boot {bid} {d.get('status')}" + (f" — {d.get('why')}" if d.get("why") else ""))
+    return out
+
+
+def ref_capacity_rows(add):
+    if add is None:
+        return ["기준 용량(λ*_ref): addendum 없음(Job 1 raw 없음)"]
+    if "lambda_star_ref" not in add:
+        return ["기준 용량(λ*_ref): 지속 Job raw 없음 → 미정"]
+    out = []
+    if add.get("lambda_star_ref") is None:
+        out.append("기준 용량(λ*_ref) None: 지속 λ* 없는 arm " + str(add.get("lambda_star_ref_why_none") or []) +
+                   (", 지속 셀 없는 arm " + str(add.get("lambda_star_ref_missing_arms")) if add.get("lambda_star_ref_missing_arms") else ""))
+    elif add.get("lambda_star_ref_missing_arms"):
+        out.append(f"기준 용량(λ*_ref) 범위 축소: {add['lambda_star_ref_missing_arms']} 지속 셀 없음 (min은 {add.get('lambda_star_ref_scope')}만)")
+    return out
+
+
+def not_measured(jobs, cells, smoke, instr, offset=None, add=None):
+    out = [f"{q} {r['status']}: " + ("; ".join(r["why"]) if r["why"] else "—") for q, r in question_rows(add, cells, instr).items()]
+    out += [f"PREREG §10: {x}" for x in PREREG_LOST]
+    out += ref_capacity_rows(add)
     for name, j in jobs.items():
         if j is None:
             out.append(f"{name}: Job raw tree absent")
             continue
         for p in (j["plan"] or {}).get("pending", []):
             out.append(f"{name}: {p} pending")
-        for b in j["boots"].values():
-            if b.get("status") != "ok":
-                out.append(f"{name}: boot {b['boot_id']} status {b.get('status')}")
+        out += boot_status_rows(name, j)
     for cname, c in cells.items():
         for k, v in c.get("pairs", {}).items():
-            if v.get("label") in ("NOT_RUN", "INVALID", "BOOT_NOISE", "MIX_NOT_FIRED", "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"):
+            if v.get("label") in LABEL_NOT_MEASURED:
                 out.append(f"{cname} {k}: {v['label']} {v.get('why') or v.get('validity') or ''}")
+            if v.get("label") == "BOTH_SATURATED":
+                out.append(f"{cname} {k}: BOTH_SATURATED (goodput 라벨 없음; 두 arm 모두 4 seed attainment >= {SP.SATURATED_ATTAIN})")
             if "CELL_OUT_OF_BAND" in v.get("tags", []):
                 out.append(f"{cname} {k}: CELL_OUT_OF_BAND (label only, magnitude not citable)")
     if smoke.get("status") != "CLIENT_DEF_OK":
@@ -633,8 +797,9 @@ def report(j1, j1b, j2, j3, add=None):
     instr = instr_summary(j2u)
     add = add or (build_addendum(j1, None, j1b) if j1 else None)
     preds = score_predictions(add, cells, instr)
-    nm = [f"{n}: REFUSED ({w})" for n, w in sorted(kp.items())] + not_measured(jobs, cells, smoke, instr, offset)
+    nm = [f"{n}: REFUSED ({w})" for n, w in sorted(kp.items())] + not_measured(jobs, cells, smoke, instr, offset, add)
     return {"smoke": smoke, "ttft_offset": offset, "kind_problems": kp, "addendum": add, "cells": cells, "instr": instr,
+            "questions": question_rows(add, cells, instr),
             "predictions": preds, "not_measured": nm, "not_measured_md": render_not_measured(nm)}
 
 

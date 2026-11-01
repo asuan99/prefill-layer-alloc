@@ -45,7 +45,6 @@ MUTANTS = [
     ("M20 request failures ignored", "sb_analyze.py", 'if any(q.get("error") for r in arms[x].values() for s in r["segments"] for q in s["requests"]):', "if False:"),
     ("M21 CELL_OUT_OF_BAND 'all > 0.9' rule removed", "sb_analyze.py", "oob = all(x > SP.OUT_OF_BAND_ALL_ABOVE for x in att.values()) or", "oob = False or"),
     ("M22 substrate shift threshold 10 %p -> 50 %p", "sb_spec.py", "SUBSTRATE_SHIFT_PP = 0.10", "SUBSTRATE_SHIFT_PP = 0.50"),
-    ("M23 MIX firing threshold 50 -> 0", "sb_spec.py", "MIX_MIN_FORWARDS = 50", "MIX_MIN_FORWARDS = 0"),
     ("M24 lambda*_ref = max over arms", "sb_analyze.py", 'add["lambda_star_ref"] = min(vals.values())', 'add["lambda_star_ref"] = max(vals.values())'),
     ("M25 ABBA round 2 not reversed", "sb_spec.py", "(2, list(reversed(order)))", "(2, list(order))"),
     ("M26 sustained 0.5 point never runs", "sb_runner.py", "                    if not any(e[\"pass\"] for e in evs):\n                        pending.append",
@@ -92,6 +91,40 @@ MUTANTS = [
     ("M60 sustain completion ratio over the NOMINAL arrivals", "sb_runner.py", '"completion_ratio": comp[w] / arr if arr else 0.0',
      '"completion_ratio": comp[w] / (rate * window_s)'),
     ("M61 Job preflight accepts any image", "sb_spec.py", 'return isinstance(image_ref, str) and image_ref.endswith("@" + IMAGE_SBASE_DIGEST)', "return True"),
+    # --- rev2 (harness audit r1, 2026-11-02: blocking fixes 1-5); M23 (proxy >= 50 firing bar) retired with the proxy rule ---
+    ("M62 sustain numerator back to rev1 'completed inside the window'", "sb_runner.py",
+     "comp = [sum(1 for r in by_arr.get(w, []) if sustain_done(r)) for w in range(nwin)]",
+     'comp = [sum(1 for r in reqs if not r.get("error") and r.get("completion_s") is not None and int(r["completion_s"] // window_s) == w) '
+     "for w in range(nwin)]"),
+    ("M63 sustain E2E <= 60 s bound dropped", "sb_runner.py", "return float(r[\"completion_s\"]) - float(t0) <= e2e_max_s", "return True"),
+    ("M64 sustain arrivals >= 600 s clamped into the last window (rev1)", "sb_runner.py",
+     '        if float(r["scheduled_arrival_s"]) >= SP.SUSTAIN_S:\n            n_late += 1\n            continue\n'
+     '        by_arr.setdefault(int(float(r["scheduled_arrival_s"]) // window_s), []).append(r)',
+     '        by_arr.setdefault(min(nwin - 1, int(float(r["scheduled_arrival_s"]) // window_s)), []).append(r)'),
+    ("M65 sustain TTFT 2x growth rule dropped", "sb_runner.py", " and growth <= SP.SUSTAIN_TTFT_GROWTH_MAX", ""),
+    ("M66 BOTH_SATURATED rule removed", "sb_analyze.py", '        elif sat:\n            final = "BOTH_SATURATED"', '        elif False:\n            final = "BOTH_SATURATED"'),
+    ("M67 saturation bar 0.98 -> 0.999", "sb_spec.py", "SATURATED_ATTAIN = 0.98 ", "SATURATED_ATTAIN = 0.999 "),
+    ("M68 latency co-metrics omitted", "sb_spec.py", 'LATENCY_PAIRS = ("Q5", "Q8")', "LATENCY_PAIRS = ()"),
+    ("M69 latency labels ignore the validity chain", "sb_analyze.py", 'lfin = "BOOT_NOISE" if pbad else "INVALID" if why else', 'lfin = "BOOT_NOISE" if pbad else'),
+    ("M70 SG-mix firing ignores server_args", "sb_analyze.py", "fired = [RU.mix_fired_from_server_args(run_server_args(r, job)) for r in arms[a].values()]",
+     "fired = [True for r in arms[a].values()]"),
+    ("M71 SG-mix firing without the chunked-prefill condition", "sb_runner.py",
+     'return f.get("enable_mixed_chunk") == "True" and cps is not None and cps > 0', 'return f.get("enable_mixed_chunk") == "True"'),
+    ("M72 mixing opportunities not computed for SG-stock (negative control)", "sb_spec.py", 'MIX_OPPORTUNITY_ARMS = ("SG-mix", "SG-stock")', 'MIX_OPPORTUNITY_ARMS = ("SG-mix",)'),
+    ("M73 Q6 grid keeps 8k", "sb_spec.py", "(512, 2048), 0.25", "(512, 2048, 8192), 0.25"),
+    ("M74 P-4 scored at n < 10", "sb_analyze.py", 'elif not b2 or b2["n"] < SP.Q6_MIN_PER_L:', "elif not b2:"),
+    ("M75 other-stream extend does not invalidate Q6", "sb_analyze.py", '    if other:\n        q6 = "Q6_INVALID', '    if False:\n        q6 = "Q6_INVALID'),
+    ("M76 smoke per-engine dispersion check removed", "sb_analyze.py",
+     'st = "CLIENT_DEF_OK" if all(med[e]["sd_ms"] <= SP.CLIENT_DEF_TOL_MS for e in ("sglang", "vllm")) else', 'st = "CLIENT_DEF_OK" if True else'),
+    ("M77 smoke cross-engine |SG - VL| <= 5 ms requirement re-added", "sb_analyze.py",
+     'st = "CLIENT_DEF_OK" if all(med[e]["sd_ms"] <= SP.CLIENT_DEF_TOL_MS for e in ("sglang", "vllm")) else',
+     'st = "CLIENT_DEF_OK" if all(med[e]["sd_ms"] <= SP.CLIENT_DEF_TOL_MS for e in ("sglang", "vllm")) and '
+     'abs(med["sglang"]["median_ms"] - med["vllm"]["median_ms"]) <= SP.CLIENT_DEF_TOL_MS else'),
+    ("M78 Q1-Q8 rows not forced", "sb_analyze.py", "return {q: rows[q] for q in SP.QUESTIONS}",
+     'return {q: r for q, r in rows.items() if r["status"] != "NOT_MEASURED"}'),
+    ("M79 DONE.json status not reported", "sb_analyze.py", "        out += boot_status_rows(name, j)", "        pass"),
+    ("M80 reference-capacity None reason not reported", "sb_analyze.py", "    out += ref_capacity_rows(add)", "    pass"),
+    ("M81 J3 R3 budget guard removed", "sb_runner.py", 'ctx["r3_budget_skip"] = ctx["r3_budget"]["skip"]', 'ctx["r3_budget_skip"] = False'),
 ]
 
 

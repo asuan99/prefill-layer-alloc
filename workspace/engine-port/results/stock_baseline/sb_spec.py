@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev1 (DRAFT, NOT SEALED).  CPU only; starts no server.
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED).  CPU only; starts no server.
 
 Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
   * ONE image for every arm (rev1, user decision 2026-11-02 option b'): PDMUX_VESSL_IMAGE_SBASE = sglang-runtime@1e0d335b (SGLang side
@@ -50,7 +50,7 @@ MARGIN = math.log(1.03)
 CAP_ATTAIN = 0.90
 PLACEBO_SD_EQUIV_MAX = 0.0186                   # n=4, t(3): EQUIV possible only if sd(ln) < this (PREREG §4)
 ENGINE_PAIR_SD_MAX = 0.02                       # SG vs VL pairs: sd above this -> registered seed-8 rerun flag
-CLIENT_DEF_TOL_MS = 5.0                         # §5-0
+CLIENT_DEF_TOL_MS = 5.0                         # §5-0 (a) rev2: per-engine sd of the smoke offsets (no cross-engine rule)
 OUT_OF_BAND_ALL_ABOVE, OUT_OF_BAND_BEST_BELOW = 0.90, 0.50   # §3 CELL_OUT_OF_BAND on the steady-state cells R2 (W1) and R3 (W3)
 SUBSTRATE_SHIFT_PP = 0.10                       # refcell attainment difference vs Job 1 (>= 10 %p)
 
@@ -174,6 +174,11 @@ CAP_SEEDS, CAP_N = P.CAP_SEEDS, 120                          # (201, 202)
 SUSTAIN_S, SUSTAIN_SEED, SUSTAIN_WINDOW_S = 600.0, 201, 120.0
 SUSTAIN_FACTORS, SUSTAIN_EXTRA = (1.0, 0.8), 0.5
 SUSTAIN_COMPLETION_MIN, SUSTAIN_TTFT_GROWTH_MAX = 0.95, 2.0
+SUSTAIN_E2E_MAX_S = 60.0                                     # rev2 (audit r1 A): per ARRIVAL window, share of arrivals (< 600 s) done with E2E <= 60 s
+SATURATED_ATTAIN = 0.98                                      # rev2 (audit r1 B): both arms >= this on all 4 seeds -> BOTH_SATURATED
+LATENCY_PAIRS = ("Q5", "Q8")                                 # rev2 (audit r1 B): latency co-metrics registered for these questions
+LATENCY_METRICS = ("TPOT", "TTFT", "ITL")                    # seed-level ln(TPOT mean), ln(TTFT p50), ln(median request-internal ITL p95)
+QUESTIONS = ("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8")
 STEADY = {"R1": 0.5, "R2": 0.8}
 STEADY_N, EVAL_SEEDS = 200, P.HE0_SEEDS                      # (1, 2, 3, 4)
 W3_LADDER = (0.1, 1.5, 6)
@@ -184,8 +189,11 @@ SMOKE_N, SMOKE_SEED, SMOKE_MAX_OUT = 20, 9, 64
 INSTR_N, INSTR_SEED = 60, 301
 METRICS_CELL, METRICS_N = "R1", 200                         # §5-0 (b): R1 load, 200 requests, seed INSTR_SEED
 MEAS_ARMS = SG_ARMS + ("VL-stock",)
-MIX_MIN_FORWARDS = 50                                        # §6
-Q6_MIN_SPANS, Q6_MIN_PER_L, Q6_L_GRID, Q6_L_BAND = 30, 10, (512, 2048, 8192), 0.25
+# §6 rev2 (audit r1 C): SG-mix firing = server_args enable_mixed_chunk=True AND chunked prefill active (chunked_prefill_size > 0) in the
+# server log of the boot; the "Prefill batch with #running-req >= 1" count is only the number of MIXING OPPORTUNITIES (printed with or
+# without --enable-mixed-chunk, v0.5.10 scheduler_metrics_mixin.py:389-394) and is reported for SG-mix AND SG-stock (negative control).
+MIX_OPPORTUNITY_ARMS = ("SG-mix", "SG-stock")
+Q6_MIN_SPANS, Q6_MIN_PER_L, Q6_L_GRID, Q6_L_BAND = 30, 10, (512, 2048), 0.25   # rev2: 8k removed (W1 has ~0 % of its requests there)
 
 # ---- pairs / labels (PREREG §0, §4) ------------------------------------------------------------------------------------
 # (question, A, B, label tokens (A, B)); label = A_ABOVE_B / EQUIV_WITHIN_3PCT / A_BELOW_B / UNRESOLVED_INTERVAL
@@ -204,6 +212,7 @@ DRAIN_MIN = 0.6                      # tail of a fixed-rate segment (W1 output ~
 W3_DRAIN_MIN = 1.2                   # 1024-token natural tail
 SMOKE_RUN_MIN, FLOOR_MIN = 2.0, 1.5
 HARD_CAP_FACTOR = 1.25
+R3_BUDGET_STATUS = "R3_SKIPPED_BUDGET"                       # rev2 (audit r1 ⑨): J3 skips ALL R3 boots if the time left < their estimate
 PLAN_LAMBDA = {"burst": 6.0, "ref": 5.0, "W3": 0.3}          # planning guesses (P-1 band low edge; sustain x0.8); NOT registered values
 
 

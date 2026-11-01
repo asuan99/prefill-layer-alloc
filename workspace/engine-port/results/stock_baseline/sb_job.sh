@@ -1,5 +1,5 @@
 #!/bin/bash
-# Job target of PREREG_STOCK_BASE rev1 (DRAFT): J1, J1-ext, J1b, J2, J3.  NOT SEALED: refuses unless PDMUX_SB_SEALED=1 (after the seal) or
+# Job target of PREREG_STOCK_BASE rev2 (DRAFT): J1, J1-ext, J1b, J2, J3.  NOT SEALED: refuses unless PDMUX_SB_SEALED=1 (after the seal) or
 # PDMUX_SB_TEST_MODE=1 (CPU tests).  Nothing is launched by this file being committed.
 #
 #   launch.sh --campaign stock_<job> --target workspace/engine-port/results/stock_baseline/sb_job.sh \
@@ -28,7 +28,7 @@ case "${job}" in
   *) echo "ABORT_CONFIG: PDMUX_SB_JOB must be J1|J1-ext|J1b|J2|J3; got '${job}'" >&2; exit 16 ;;
 esac
 if [[ "${PDMUX_SB_SEALED:-}" != 1 && "${PDMUX_SB_TEST_MODE:-}" != 1 ]]; then
-  echo "ABORT_UNSEALED: stock-baseline harness not sealed (PREREG_STOCK_BASE rev0 DRAFT)" >&2; exit 16
+  echo "ABORT_UNSEALED: stock-baseline harness not sealed (PREREG_STOCK_BASE rev2 DRAFT)" >&2; exit 16
 fi
 if [[ "${PDMUX_SB_SEALED:-}" == 1 ]] && { [[ -n "${PDMUX_SB_ENGINE_DIGEST_FILE:-}" ]] || [[ -n "${PDMUX_SB_HARNESS_DIGEST:-}" ]] || [[ -n "${PDMUX_SB_MANIFEST:-}" ]]; }; then
   echo "ABORT_SEALED_OVERRIDE: digest/manifest paths cannot be overridden when PDMUX_SB_SEALED=1" >&2; exit 16

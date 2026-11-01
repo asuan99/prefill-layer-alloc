@@ -1,4 +1,4 @@
-"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev1 DRAFT).  No GPU, no server.
+"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev2 DRAFT).  No GPU, no server.
 SB_DIR (env) points the tests at a copy of the harness -- sb_mutants.py uses it: every registered rule must make a test FAIL when it is
 reverted (lesson 53)."""
 import gzip
@@ -54,8 +54,11 @@ class FakeServer:
 
     def start(self):
         self.port = 1
+        mix = "True" if "--enable-mixed-chunk" in self.a["cmd"] else "False"
         self.log.write_text(VL_LOG if self.a["engine"] == "vllm" else
-                            "server_args=ServerArgs(attention_backend='flashinfer', mem_fraction_static=0.83, chunked_prefill_size=8192)\n")
+                            "server_args=ServerArgs(attention_backend='flashinfer', mem_fraction_static=0.83, chunked_prefill_size=8192, "
+                            f"enable_mixed_chunk={mix})\n"
+                            "Prefill batch, #new-seq: 1, #new-token: 5, token usage: 0.1, #running-req: 3, #queue-req: 0\n")
         if self.a["engine"] == "sglang":
             st = self.so or (pristine_stamp() if self.a["tree"] == "pristine" else patched_stamp())
             (self.bdir / f"tree_{self.a['name']}.json").write_text(json.dumps(st))
@@ -102,11 +105,12 @@ def fake_metrics():
     return m
 
 
-def run_fake_job(td, job, add=None, ttft_of=None, server_kw=None, image_check_fn=lambda: dict(IMG_OK)):
+def run_fake_job(td, job, add=None, ttft_of=None, server_kw=None, image_check_fn=lambda: dict(IMG_OK), clock=None):
     plan = SP.make_plan(job, add)
     out = Path(td) / job
+    kw = {"clock": clock} if clock is not None else {}
     res = RU.run_job(plan, out, lambda bdir, a: FakeServer(bdir, a, **(server_kw or {})), make_replay(ttft_of), W1_POOL, W3_POOL,
-                     metrics_fn=fake_metrics(), image_check_fn=image_check_fn)
+                     metrics_fn=fake_metrics(), image_check_fn=image_check_fn, **kw)
     return plan, out, res
 
 
@@ -353,10 +357,18 @@ class RunnerEnvTests(unittest.TestCase):
         self.assertEqual(RU.lambda_pick([(5.0, 0.95), (6.0, 0.95)])[1], "LADDER_TOP_PASS")
         self.assertEqual(RU.lambda_pick([(5.0, 0.5), (6.0, 0.95)]), (None, "LADDER_BOTTOM_FAIL"))
 
-    def test_mixed_proxy(self):
+    def test_mixing_opportunities_and_server_args_firing(self):
+        """rev2 (audit r1 C): the Prefill-batch count is only a mixing-OPPORTUNITY count; firing = server_args."""
         log = "Prefill batch, #new-seq: 1, #new-token: 5, token usage: 0.1, #running-req: 3, #queue-req: 0\n" \
               "Prefill batch, #new-seq: 1, #new-token: 5, token usage: 0.1, #running-req: 0, #queue-req: 0\n"
-        self.assertEqual(RU.mixed_forward_proxy(log), 1)
+        self.assertEqual(RU.mixing_opportunities(log), 1)
+        self.assertFalse(hasattr(RU, "mixed_forward_proxy"))
+        on = RU.parse_sglang_log("server_args=ServerArgs(chunked_prefill_size=8192, enable_mixed_chunk=True, x=1)")
+        self.assertTrue(RU.mix_fired_from_server_args(on))
+        self.assertFalse(RU.mix_fired_from_server_args(dict(on, enable_mixed_chunk="False")))
+        self.assertFalse(RU.mix_fired_from_server_args(dict(on, chunked_prefill_size="-1")))      # chunked prefill off -> no mixing
+        self.assertFalse(RU.mix_fired_from_server_args(dict(on, chunked_prefill_size="None")))
+        self.assertFalse(RU.mix_fired_from_server_args({}))
 
     def test_sustain_eval_rule(self):
         def rec(rate, ttft_first, ttft_last, drop=0.0):
@@ -372,6 +384,63 @@ class RunnerEnvTests(unittest.TestCase):
         self.assertTrue(RU.sustain_eval(rec(2.0, 100.0, 150.0))["pass"])
         self.assertFalse(RU.sustain_eval(rec(2.0, 100.0, 250.0))["pass"])
         self.assertFalse(RU.sustain_eval(rec(2.0, 100.0, 100.0, drop=0.1))["pass"])
+
+    # CAP1-R D44 E2E quantiles (p0, p5, ..., p100) at 5.516 / 6.343 / 7.295 req/s, 720 requests, E2E = completion_s - scheduled_arrival_s
+    # (results/cap_char/policy_runs/pdmux-policy-cap1r-4bef3cf-20261029003539/raw/runs/CAP1R_D44_r{5.516,6.3434,7.29491}_s*.json)
+    CAP1R_D44_E2E_Q = (0.16, 0.83, 1.57, 2.37, 3.38, 4.22, 4.89, 5.65, 6.38, 7.1, 7.81, 8.35, 9.03, 9.56, 10.31, 11.24, 12.44, 13.98,
+                       15.55, 18.45, 23.5)
+
+    def healthy_run(self, rate, seed, ttft=150.0):
+        """Healthy server model (audit r1 A): Poisson arrivals, n = rate x 600 (some arrive after 600 s), E2E drawn from CAP1-R D44."""
+        import random
+        q = self.CAP1R_D44_E2E_Q
+        rng, t, reqs = random.Random(seed), 0.0, []
+        for _ in range(int(round(rate * SP.SUSTAIN_S))):
+            t += rng.expovariate(rate)
+            x = rng.random() * 20
+            i = min(19, int(x))
+            e = q[i] + (q[i + 1] - q[i]) * (x - i)
+            reqs.append({"scheduled_arrival_s": t, "sent_s": t, "ttft_ms": ttft, "completion_s": t + e, "error": "", "token_itl_ms": [20.0]})
+        return {"spec": {"rate": rate}, "segments": [{"requests": reqs}]}
+
+    def test_sustain_healthy_server_passes(self):
+        """rev2 rule passes the healthy model at every rate/seed; the rev1 rule (completed inside the window / arrived inside it) failed
+        it with probability ~0.97 (first window fill transient + completions after 600 s)."""
+        for rate in (3.65, 5.84, 7.29):
+            for seed in range(8):
+                ev = RU.sustain_eval(self.healthy_run(rate, seed))
+                self.assertTrue(ev["pass"], (rate, seed, [round(w["completion_ratio"], 3) for w in ev["windows"]]))
+                self.assertEqual(len(ev["windows"]), 5)
+
+    def test_sustain_e2e_bound_and_late_arrivals(self):
+        """E2E > 60 s does not count even if the request completes and TTFT does not grow; arrivals >= 600 s are excluded."""
+        r = self.healthy_run(5.0, 1)
+        for q in r["segments"][0]["requests"]:
+            if 240.0 <= q["scheduled_arrival_s"] < 360.0 and int(q["scheduled_arrival_s"] * 10) % 10 < 2:
+                q["completion_s"] = q["scheduled_arrival_s"] + 90.0           # ~20 % of window 2 slow, TTFT unchanged
+        ev = RU.sustain_eval(r)
+        self.assertFalse(ev["pass"])
+        self.assertLess(ev["windows"][2]["completion_ratio"], 0.95)
+        self.assertLess(ev["ttft_growth"], 2.0)
+        r = self.healthy_run(5.0, 2)
+        late = [q for q in r["segments"][0]["requests"] if q["scheduled_arrival_s"] >= SP.SUSTAIN_S]
+        for k in range(60):                                                    # client cut-off after the 600 s arrival period
+            t = SP.SUSTAIN_S + 0.1 * k
+            r["segments"][0]["requests"].append({"scheduled_arrival_s": t, "sent_s": t, "ttft_ms": None, "completion_s": None,
+                                                 "error": "cut", "token_itl_ms": []})
+        ev = RU.sustain_eval(r)
+        self.assertTrue(ev["pass"], [w["completion_ratio"] for w in ev["windows"]])
+        self.assertEqual(ev["n_late_excluded"], len(late) + 60)
+        self.assertTrue(all(w["arrivals"] > 0 for w in ev["windows"]))
+
+    def test_sustain_ttft_growth_rule(self):
+        r = self.healthy_run(5.0, 3)
+        for q in r["segments"][0]["requests"]:
+            if q["scheduled_arrival_s"] >= 480.0:
+                q["ttft_ms"] = 400.0                                           # 150 -> 400 ms: growth 2.67 > 2
+        ev = RU.sustain_eval(r)
+        self.assertFalse(ev["pass"])
+        self.assertTrue(all(w["completion_ratio"] >= 0.95 for w in ev["windows"]))
 
     def test_sustain_denominator_is_observed_arrivals(self):
         """Healthy run whose window arrival counts swing around the nominal 240 by Poisson-like noise (+-8 %): every request completes in its
@@ -491,6 +560,46 @@ class RunnerJobTests(unittest.TestCase):
             self.assertEqual(w3["status"], "LADDER_TOP_PASS")
             self.assertIsNone(w3["r3_rate"])
             self.assertEqual(list((out / "runs").glob("*_R3_s*.json")), [])
+            self.assertEqual(RU.exit_code(res), 17)
+
+    def test_server_args_and_opportunities_recorded(self):
+        with tempfile.TemporaryDirectory() as td:
+            _p, out, _r = run_fake_job(td, "J2", ADD)
+            runs = [json.loads(p.read_text()) for p in (out / "runs").glob("*.json")]
+            mix = [r for r in runs if r["arm"] == "SG-mix"]
+            stock = [r for r in runs if r["arm"] == "SG-stock" and r["boot_role"] == "meas"]
+            self.assertTrue(mix and stock)
+            self.assertTrue(all(RU.mix_fired_from_server_args(r["server_args"]) for r in mix))
+            self.assertFalse(any(RU.mix_fired_from_server_args(r["server_args"]) for r in stock))
+            self.assertTrue(all(r.get("mixing_opportunities") is not None for r in mix + stock))
+            self.assertTrue(all("mixing_opportunities" not in r for r in runs if r["arm"] == "SG-off"))
+
+    def test_J3_r3_budget_guard_all_or_nothing(self):
+        """rev2 (audit r1 ⑨): right after the W3 ladder, time left < R3 estimate -> EVERY R3 boot R3_SKIPPED_BUDGET (no half ABBA)."""
+        def tt(a, q):
+            return 9e6 if q["phase"] == "W3" and q["request_id"].split("_W3lad_r")[-1].startswith(("0.50", "0.75")) else 100.0
+        with tempfile.TemporaryDirectory() as td:
+            plan, out, res = run_fake_job(td, "J3", ADD, ttft_of=tt, clock=lambda: 0.0)       # no time spent -> R3 runs
+            bud = json.loads((out / "R3_BUDGET.json").read_text())
+            self.assertFalse(bud["skip"])
+            self.assertTrue(list((out / "runs").glob("*_R3_s*.json")))
+        with tempfile.TemporaryDirectory() as td:
+            plan = SP.make_plan("J3", ADD)
+            calls = {"n": 0}                                   # start at 0; at the decision elapsed = hard cap - 1 min -> left 1 min < need
+            def clock():
+                calls["n"] += 1
+                return 0.0 if calls["n"] == 1 else (plan["hard_cap_min"] - 1) * 60.0
+            plan2, out, res = run_fake_job(td, "J3", ADD, ttft_of=tt, clock=clock)
+            bud = json.loads((out / "R3_BUDGET.json").read_text())
+            self.assertTrue(bud["skip"])
+            self.assertEqual(bud["status"], SP.R3_BUDGET_STATUS)
+            self.assertGreater(bud["need_min"], bud["left_min"])
+            st = {b["boot_id"]: b["status"] for b in res}
+            r3 = [k for k in st if "_R3_" in k]
+            self.assertEqual(len(r3), 2 * len(SP.W3_ARMS))
+            self.assertTrue(all(st[k] == SP.R3_BUDGET_STATUS for k in r3))
+            self.assertEqual(list((out / "runs").glob("*_R3_s*.json")), [])
+            self.assertEqual(st["J3_ref_end"], "done")
             self.assertEqual(RU.exit_code(res), 17)
 
     def test_resume_refused_without_flag(self):
@@ -689,11 +798,16 @@ class AnalyzeTests(unittest.TestCase):
         self.assertFalse(AN.offset_shift(55.0, 40.0))
 
     def test_smoke_verdict(self):
-        def j1(d_sg, d_vl):
-            rows = lambda d: [{"client_ttft_ms": 100.0 + d, "server_ttft_ms": 100.0, "ok": True} for _ in range(20)]
-            return {"runs": [{"kind": "smoke", "engine": "sglang", "rows": rows(d_sg)}, {"kind": "smoke", "engine": "vllm", "rows": rows(d_vl)}]}
+        """rev2 (§5-0 (a) wording): per-engine offset sd <= 5 ms; the two engines' constants need not agree."""
+        def j1(d_sg, d_vl, spread_sg=0.0, spread_vl=0.0):
+            rows = lambda d, sp: [{"client_ttft_ms": 100.0 + d + (sp if i % 2 else -sp), "server_ttft_ms": 100.0, "ok": True} for i in range(20)]
+            return {"runs": [{"kind": "smoke", "engine": "sglang", "rows": rows(d_sg, spread_sg)},
+                             {"kind": "smoke", "engine": "vllm", "rows": rows(d_vl, spread_vl)}]}
         self.assertEqual(AN.smoke_verdict(j1(2.0, 4.0))["status"], "CLIENT_DEF_OK")
-        self.assertEqual(AN.smoke_verdict(j1(2.0, 9.0))["status"], "CLIENT_DEF_MISMATCH")
+        self.assertEqual(AN.smoke_verdict(j1(2.0, 30.0))["status"], "CLIENT_DEF_OK")          # different constants: allowed
+        self.assertEqual(AN.smoke_verdict(j1(2.0, 4.0, spread_vl=9.0))["status"], "CLIENT_DEF_MISMATCH")   # vLLM sd 9 ms
+        self.assertEqual(AN.smoke_verdict(j1(2.0, 4.0, spread_sg=9.0))["status"], "CLIENT_DEF_MISMATCH")   # SGLang sd 9 ms
+        self.assertEqual(AN.smoke_verdict(j1(2.0, 4.0, spread_sg=4.0))["status"], "CLIENT_DEF_OK")
         self.assertEqual(AN.smoke_verdict({"runs": [j1(1, 1)["runs"][0]]})["status"], "CLIENT_DEF_UNCHECKED")
 
     def test_out_of_band(self):
@@ -720,15 +834,71 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(AN.substrate({"runs": [ref("start", 93)]}, {"runs": []})["tag"], "SUBSTRATE_UNCHECKED")
 
     def test_mix_not_fired(self):
+        """rev2: firing = server_args enable_mixed_chunk=True + chunked prefill on; the opportunity count does not decide."""
+        on = {"enable_mixed_chunk": "True", "chunked_prefill_size": "8192"}
         j = job_of(EQ, jitter=JIT)
         for r in j["runs"]:
             if r["arm"] == "SG-mix":
-                r["mixed_forward_proxy"] = 10
-        self.assertEqual(self._pair(j, "Q5:SG-mix_vs_SG-stock")["label"], "MIX_NOT_FIRED")
+                r["mixing_opportunities"] = 500
+                r["server_args"] = dict(on, enable_mixed_chunk="False")
+        p = self._pair(j, "Q5:SG-mix_vs_SG-stock")
+        self.assertEqual(p["label"], "MIX_NOT_FIRED")
+        self.assertTrue(all(v["label"] == "MIX_NOT_FIRED" for v in p["latency"].values()))
         for r in j["runs"]:
             if r["arm"] == "SG-mix":
-                r["mixed_forward_proxy"] = 60
-        self.assertEqual(self._pair(j, "Q5:SG-mix_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
+                r["mixing_opportunities"] = 0
+                r["server_args"] = dict(on)
+            if r["arm"] == "SG-stock":
+                r["mixing_opportunities"] = 7
+        c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(set(c["mixing_opportunities"]), {"SG-mix", "SG-stock"})     # negative control reported
+        self.assertEqual(set(c["mixing_opportunities"]["SG-stock"].values()), {7})
+        j2 = job_of(EQ, jitter=JIT)                                                   # server_args from the boot record also count
+        j2["boots"]["b_SG-mix"]["server_args"] = dict(on)
+        self.assertEqual(self._pair(j2, "Q5:SG-mix_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(job_of(EQ, jitter=JIT), "Q5:SG-mix_vs_SG-stock")["label"], "MIX_NOT_FIRED")
+
+    def test_both_saturated(self):
+        """rev2 (audit r1 B): both arms >= 0.98 on all 4 seeds -> BOTH_SATURATED, never EQUIV; one arm below -> ordinary label."""
+        sat = {a: 99 for a in EQ}
+        jit = {(a, s): d for a in EQ for s, d in zip(SP.EVAL_SEEDS, (0, 1, -1, 0))}
+        for cell in ("R1", "R2"):
+            c = AN.analyze_cell(job_of(sat, cell=cell, jitter=jit), cell, None, SMOKE_OK, 3000.0, OFFSET_OK)
+            p = c["pairs"]["Q8:SG-off_vs_SG-stock"]
+            self.assertEqual(p["label"], "BOTH_SATURATED", cell)
+            self.assertEqual(p["raw_label"], "EQUIV_WITHIN_3PCT")
+            self.assertTrue(p["both_saturated"])
+        p = self._pair(job_of(dict(sat, **{"SG-off": 90}), jitter=jit), "Q8:SG-off_vs_SG-stock")
+        self.assertFalse(p["both_saturated"])
+        self.assertEqual(p["label"], "OFF_BELOW_STOCK")
+        p = self._pair(job_of(EQ, jitter=JIT), "Q8:SG-off_vs_SG-stock")
+        self.assertFalse(p["both_saturated"])
+
+    def test_latency_co_metrics_q8_q5(self):
+        """rev2 (audit r1 B): Q8/Q5 carry seed-level paired ln TPOT mean / TTFT p50 / ITL p95-median labels (same 3 % + t(3) rule)."""
+        j = job_of({a: 99 for a in EQ}, jitter={(a, s): d for a in EQ for s, d in zip(SP.EVAL_SEEDS, (0, 1, -1, 0))})
+        for r in j["runs"]:
+            r["server_args"] = {"enable_mixed_chunk": "True", "chunked_prefill_size": "8192"}
+            if r["arm"] == "SG-off":
+                for q in r["segments"][0]["requests"]:
+                    q["token_itl_ms"] = [22.0, 22.0, 22.0]                              # 10 % slower per token
+            elif r["arm"] in ("SG-stock", "SG-mix"):
+                for q in r["segments"][0]["requests"]:
+                    q["token_itl_ms"] = [20.0, 20.0, 20.0]
+        c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        q8 = c["pairs"]["Q8:SG-off_vs_SG-stock"]
+        self.assertEqual(q8["label"], "BOTH_SATURATED")                                # goodput blind to the 10 % ...
+        self.assertEqual(q8["latency"]["TPOT"]["label"], "OFF_ABOVE_STOCK_TPOT")        # ... latency is not
+        self.assertEqual(q8["latency"]["ITL"]["label"], "OFF_ABOVE_STOCK_ITL")
+        self.assertEqual(q8["latency"]["TTFT"]["label"], "EQUIV_WITHIN_3PCT_TTFT")
+        self.assertAlmostEqual(q8["latency"]["TPOT"]["mean"], math.log(1.1))
+        self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["latency"]["TPOT"]["label"], "EQUIV_WITHIN_3PCT_TPOT")
+        self.assertEqual(set(SP.LATENCY_PAIRS), {"Q5", "Q8"})
+        self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["latency"], {})
+        [r for r in j["runs"] if r["arm"] == "SG-off"][0]["segments"][0]["requests"][0]["error"] = "boom"   # validity reaches latency
+        c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual(c["pairs"]["Q8:SG-off_vs_SG-stock"]["latency"]["TPOT"]["label"], "INVALID")
 
     def test_ladder_lambda_and_ref_min(self):
         def lad(arm, rates_ok, rates_fail):
@@ -801,6 +971,30 @@ class InstrTests(unittest.TestCase):
         r = AN.pc_reduce_windowed(tel, probe, (150.0, 250.0))
         self.assertEqual((r["n_spans"], r["r_span_p50"]), (1, 1.2))
 
+    def test_q6_grid_and_other_stream_invalid(self):
+        """rev2 (audit r1 C): grid {512, 2k} (8k removed); one gap with an extend on another stream -> Q6 INVALID."""
+        self.assertEqual(SP.Q6_L_GRID, (512, 2048))
+        run = {"t_load_start_epoch": 1100.0, "t_load_end_epoch": 1200.0}
+        self.assertEqual(AN.r_ser_from_instr(self.probe(), run)["q6_status"], "Q6_FEW_SPANS")
+        recs = self.probe()
+        recs.append({"event": "extend_forward", "seq": 19, "mode": "extend", "extend_gpu_ms": 5.0, "stream_key": 2, "extend_tokens": 512,
+                     "n_reqs": 1, "t_host_start": 169.0})
+        recs.append({"event": "decode_forward", "seq": 20, "mode": "decode", "bs_real": 4, "stream_key": 1, "decode_fwd_gpu_ms": 10.0,
+                     "t_host_start": 170.0, "decode_iter_seq": 20})
+        res = AN.r_ser_from_instr(recs, run)
+        self.assertEqual(res["q6_status"], "Q6_INVALID:OTHER_STREAM_EXTEND")
+        self.assertEqual(res["n_other_stream_gaps"], 1)
+        P = AN.score_predictions({}, {}, {"SG": dict(res, by_L={2048: {"n": 12, "r_ser_p50": 15.0, "bs_p50": 1}})})
+        self.assertEqual(P["P-4"]["score"], "UNSCORABLE")
+
+    def test_p4_unscorable_below_10(self):
+        P = AN.score_predictions({}, {}, {"SG": {"q6_status": "Q6_FEW_SPANS", "by_L": {2048: {"n": 9, "r_ser_p50": 15.0, "bs_p50": 1}}}})
+        self.assertEqual(P["P-4"]["score"], "UNSCORABLE")
+        self.assertIsNone(P["P-4"]["value"])
+        P = AN.score_predictions({}, {}, {"SG": {"q6_status": "Q6_FEW_SPANS", "by_L": {2048: {"n": 10, "r_ser_p50": 15.0, "bs_p50": 1}}}})
+        self.assertIn(P["P-4"]["score"], ("HIT", "MISS"))
+        self.assertEqual(AN.score_predictions({}, {}, {})["P-4"]["score"], "UNSCORABLE")
+
     def test_probe_window_needs_boot_clock(self):
         with self.assertRaises(ValueError):
             AN.probe_window([{"event": "decode_probe_boot"}], 0, 1)
@@ -820,6 +1014,44 @@ class ReportTests(unittest.TestCase):
         self.assertIn("J3: Job raw tree absent", txt)
         self.assertIn("definition smoke", txt)
         self.assertIn("측정하지 않은 것", AN.render_not_measured(nm))
+
+    def test_question_rows_forced(self):
+        """rev2 (audit r1 ⑦): Q1-Q8 rows always exist, also with no data at all."""
+        nm = AN.not_measured({"J1": None, "J1b": None, "J2": None, "J3": None}, {}, {"status": "CLIENT_DEF_UNCHECKED"}, {}, None, None)
+        for q in SP.QUESTIONS:
+            self.assertTrue(any(x.startswith(f"{q} NOT_MEASURED") for x in nm), q)
+        self.assertTrue(any("기준 용량" in x and "addendum 없음" in x for x in nm))
+        r = AN.report(None, None, None, None, add={})
+        self.assertEqual(list(r["questions"]), list(SP.QUESTIONS))
+        j = job_of(EQ, jitter=JIT)
+        rows = AN.question_rows({"lambda_star_burst": {"SG-stock": 6.0}}, {"R2": AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)}, {})
+        self.assertEqual(rows["Q1"]["status"], "PARTIAL")
+        self.assertEqual(rows["Q8"]["status"], "PARTIAL")                   # R2 measured, R1 cell absent
+        self.assertEqual(rows["Q7"]["status"], "NOT_MEASURED")
+        self.assertEqual(rows["Q6"]["status"], "NOT_MEASURED")
+
+    def test_ref_capacity_none_reason(self):
+        nm = AN.ref_capacity_rows({"lambda_star_ref": None, "lambda_star_ref_why_none": ["VL-stock"], "lambda_star_ref_missing_arms": []})
+        self.assertTrue(nm and "VL-stock" in nm[0] and "None" in nm[0])
+        self.assertEqual(AN.ref_capacity_rows({"lambda_star_ref": 4.0, "lambda_star_ref_missing_arms": []}), [])
+
+    def test_not_measured_reads_done_json(self):
+        """Skipped / correctness-failed / budget-skipped boots (DONE.json status) and never-finished boots are listed."""
+        with tempfile.TemporaryDirectory() as td:
+            raw = Path(td)
+            plan = {"kind": "W3", "pending": [], "boots": [{"boot_id": b} for b in ("a", "b", "c", "d")]}
+            (raw / "plan.json").write_text(json.dumps(plan))
+            for bid, st in (("a", "done"), ("b", "INVALID_CORRECTNESS"), ("c", SP.R3_BUDGET_STATUS)):
+                (raw / "boots" / bid).mkdir(parents=True)
+                (raw / "boots" / bid / "DONE.json").write_text(json.dumps({"boot_id": bid, "status": st}))
+            (raw / "boots" / "b" / "boot.json").write_text(json.dumps({"boot_id": "b", "status": "ok"}))
+            (raw / "runs").mkdir()
+            j = AN.load_job(raw)
+            txt = "\n".join(AN.not_measured({"J3": j}, {}, {"status": "CLIENT_DEF_OK"}, {}, {"status": "TTFT_OFFSET_OK"}, None))
+            self.assertIn("boot b INVALID_CORRECTNESS", txt)
+            self.assertIn(f"boot c {SP.R3_BUDGET_STATUS}", txt)
+            self.assertIn("boot d DONE.json 없음", txt)
+            self.assertNotIn("boot a ", txt)
 
     def test_report_refuses_wrong_plan_kind(self):
         j3 = job_of(EQ, cell="R3", jitter=JIT, phases=("W3",))

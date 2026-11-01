@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job runner of PREREG_STOCK_BASE rev1 (DRAFT, NOT SEALED; sb_job.sh gates it).
+"""Job runner of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED; sb_job.sh gates it).
 
   sb_runner.py plan --job J2 [--addendum ADD.json]
   sb_runner.py run  --job J2 --out RAW --w1-lengths L.json [--w3-tokens F.bin] [--addendum ADD.json] [--resume]
@@ -249,11 +249,22 @@ def vllm_stamp(a, ic, log_text):
             "cudagraph_mode": f["cudagraph_mode"], "cudagraph_modes": f["cudagraph_modes"]}
 
 
-def mixed_forward_proxy(log_slice):
-    """SG-mix firing count (§6) WITHOUT instrumentation: prefill batches logged while >= 1 request was running.  With
-    --enable-mixed-chunk such a batch is mixed with the running decode batch (scheduler mix_with_running) unless it carries logprobs
-    (never in this harness).  A proxy, GPU-unverified; reported as `mixed_forward_proxy`."""
+def mixing_opportunities(log_slice):
+    """Number of MIXING OPPORTUNITIES (rev2, audit r1 C): prefill batches logged while >= 1 request was running.  The line is printed with
+    or without --enable-mixed-chunk (v0.5.10 scheduler_metrics_mixin.py:389-394), so this is NOT a firing count of the treatment; it is
+    reported for SG-mix and for SG-stock (negative control).  Firing = server_args (mix_fired_from_server_args)."""
     return sum(1 for m in PREFILL_RE.finditer(log_slice) if int(m.group(1)) >= 1)
+
+
+def mix_fired_from_server_args(facts):
+    """SG-mix treatment check (§6 rev2): the boot's server_args show enable_mixed_chunk=True AND chunked prefill active
+    (chunked_prefill_size an integer > 0; v0.5.10 Scheduler.is_mixed_chunk = chunked_prefill_size is not None and enable_mixed_chunk)."""
+    f = facts or {}
+    try:
+        cps = int(str(f.get("chunked_prefill_size")))
+    except (TypeError, ValueError):
+        cps = None
+    return f.get("enable_mixed_chunk") == "True" and cps is not None and cps > 0
 
 
 def _log_size(srv):
@@ -322,8 +333,8 @@ def execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens=None, m
     rec["t_load_end_mono"] = rec["segments"][-1]["t_load_end_mono"]
     if scrape:
         rec["server_ttft_metric"] = {"before": m0, "after": scrape_ttft(metrics_fn, srv.base_url)}
-    if a["name"] == "SG-mix":
-        rec["mixed_forward_proxy"] = mixed_forward_proxy(_log_tail(srv, off))
+    if a["name"] in SP.MIX_OPPORTUNITY_ARMS:
+        rec["mixing_opportunities"] = mixing_opportunities(_log_tail(srv, off))
     return rec
 
 
@@ -358,26 +369,38 @@ def smoke_requests(w1_pool):
 
 
 # ---- registered in-boot rules ------------------------------------------------------------------------------------------
+def sustain_done(r, e2e_max_s=SP.SUSTAIN_E2E_MAX_S):
+    """rev2 (audit r1 A): a request counts toward its ARRIVAL window iff it finished without error and E2E = completion_s - sent_s
+    (scheduled_arrival_s when the send stamp is absent; both on the run-start clock) <= 60 s."""
+    if r.get("error") or r.get("completion_s") is None:
+        return False
+    t0 = r.get("sent_s") if r.get("sent_s") is not None else r["scheduled_arrival_s"]
+    return float(r["completion_s"]) - float(t0) <= e2e_max_s
+
+
 def sustain_eval(run_rec, window_s=SP.SUSTAIN_WINDOW_S, ttft_slo=SP.W1_TTFT_MS, itl_slo=SP.ITL_MS):
-    """One sustained run -> per-120 s-window completion / first-token (admission proxy) rates and the pass rule of §3:
-    every window inside the arrival period has completion rate >= 0.95 x arrival rate AND last-window TTFT p50 <= 2 x first-window p50.
-    "arrival rate" = the OBSERVED arrivals of that window (harness reading, open item O-5): the nominal rate x 120 s would fail a healthy
-    run by Poisson noise alone (sd of 720 arrivals = 3.7 %, P(any of 5 windows < 0.95) ~ 0.3)."""
+    """One sustained run -> per-120 s ARRIVAL-window rows and the pass rule of §3 (PREREG rev2, audit r1 A):
+    every arrival window w (arrivals in [120 w, 120 (w+1)), arrival < 600 s) has
+        completion_ratio = #(arrivals of w done with E2E <= 60 s) / #(arrivals of w) >= 0.95
+    AND last-window TTFT p50 <= 2 x first-window p50.  Arrivals at or after 600 s are EXCLUDED (counted in n_late_excluded).
+    The rev1 rule ("completed inside window w" / "arrived inside window w", late arrivals clamped into the last window) failed a healthy
+    server structurally (first window: fill transient; last window: completions after 600 s not counted).  first_token_ratio (first tokens
+    inside window w / arrivals of w) is the admission-speed column, reported only."""
     seg = run_rec["segments"][0]
     reqs = seg["requests"]
     rate = float(run_rec["spec"]["rate"])
     nwin = int(SP.SUSTAIN_S // window_s)
-    comp, first, by_arr = [0] * nwin, [0] * nwin, {}
+    first, by_arr, n_late = [0] * nwin, {}, 0
     for r in reqs:
-        by_arr.setdefault(min(nwin - 1, int(r["scheduled_arrival_s"] // window_s)), []).append(r)
-        if not r.get("error") and r.get("completion_s") is not None:
-            w = int(r["completion_s"] // window_s)
-            if 0 <= w < nwin:
-                comp[w] += 1
+        if float(r["scheduled_arrival_s"]) >= SP.SUSTAIN_S:
+            n_late += 1
+            continue
+        by_arr.setdefault(int(float(r["scheduled_arrival_s"]) // window_s), []).append(r)
         if r.get("ttft_ms") is not None:
             w = int((r["sent_s"] + r["ttft_ms"] / 1000.0) // window_s) if r.get("sent_s") is not None else None
             if w is not None and 0 <= w < nwin:
                 first[w] += 1
+    comp = [sum(1 for r in by_arr.get(w, []) if sustain_done(r)) for w in range(nwin)]
     rows = []
     for w in range(nwin):
         arr = len(by_arr.get(w, []))
@@ -389,7 +412,8 @@ def sustain_eval(run_rec, window_s=SP.SUSTAIN_WINDOW_S, ttft_slo=SP.W1_TTFT_MS, 
     p0, pl = rows[0]["ttft_p50_ms"], rows[-1]["ttft_p50_ms"]
     growth = (pl / p0) if p0 and p0 == p0 and p0 > 0 else float("inf")
     ok = all(r["completion_ratio"] >= SP.SUSTAIN_COMPLETION_MIN for r in rows) and growth <= SP.SUSTAIN_TTFT_GROWTH_MAX
-    return {"windows": rows, "ttft_growth": growth, "pass": bool(ok)}
+    return {"windows": rows, "ttft_growth": growth, "n_late_excluded": n_late, "e2e_max_s": SP.SUSTAIN_E2E_MAX_S,
+            "rule": "rev2: arrival window, E2E <= 60 s, arrivals >= 600 s excluded", "pass": bool(ok)}
 
 
 def lambda_pick(points, attain=SP.CAP_ATTAIN):
@@ -433,6 +457,9 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
     bdir.mkdir(parents=True, exist_ok=True)
     a = resolve(b["arm_def"], bdir)
     if b.get("stage_gated") == "R3":
+        if ctx.get("r3_budget_skip"):
+            dump({"boot_id": b["boot_id"], "status": SP.R3_BUDGET_STATUS, "budget": ctx.get("r3_budget")}, bdir / "DONE.json")
+            return {"boot_id": b["boot_id"], "status": SP.R3_BUDGET_STATUS, "runs": []}
         if ctx.get("r3_rate") is None:
             dump({"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_LAMBDA", "why": ctx.get("w3_status")}, bdir / "DONE.json")
             return {"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_LAMBDA", "runs": []}
@@ -459,8 +486,9 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
     tree_stamp = {}
     if tp.exists():
         tree_stamp = json.loads(tp.read_text())
+    sg_args = parse_sglang_log(_log_tail(srv, 0)) if a["engine"] == "sglang" else None
     dump({"boot_id": b["boot_id"], "arm": b["arm"], "role": b["role"], "status": status, "cmd": getattr(srv, "cmd", None),
-          "engine": a["engine"], "engine_tree": a["tree"], "tree_stamp": tree_stamp, "image_env": ic, **stamp(),
+          "engine": a["engine"], "engine_tree": a["tree"], "tree_stamp": tree_stamp, "server_args": sg_args, "image_env": ic, **stamp(),
           "image_key": a["image_key"], "image": SP.image_digests().get(a["image_key"])}, bdir / "boot.json")
     if status != "ok":
         srv.stop()
@@ -494,6 +522,7 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
                 else:
                     rec = execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens, metrics_fn)
                     rec["tree_stamp"] = tree_stamp
+                    rec["server_args"] = sg_args
                     dump(rec, f)
                 done.append(run["run_id"])
                 if b.get("extra_run") and not pending and run is not b["extra_run"]:
@@ -516,12 +545,38 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
         ctx["r3_rate"] = round(SP.W3_R3_FACTOR * lam, 6) if lam is not None and st == "BRACKETED" else None
         dump({"lambda_star_W3": lam, "status": st, "r3_rate": ctx["r3_rate"], "w3_slo_ms": ctx["w3_slo_ms"], **stamp()},
              Path(out) / "W3_LAMBDA.json")
+        if ctx["r3_rate"] is not None:
+            ctx["r3_budget"] = r3_budget(ctx, ctx["r3_rate"])
+            ctx["r3_budget_skip"] = ctx["r3_budget"]["skip"]
+            dump(ctx["r3_budget"], Path(out) / "R3_BUDGET.json")
     dump({"boot_id": b["boot_id"], "status": "done", "runs": done, "server": info, **stamp()}, bdir / "DONE.json")
     return {"boot_id": b["boot_id"], "status": "done", "runs": done}
 
 
+def r3_budget(ctx, r3_rate):
+    """rev2 (audit r1 ⑨): decided ONCE, right after the W3 ladder, before any R3 boot -> all R3 boots run or none (no half ABBA).
+    need = time-model estimate of every R3 boot at the filled rate + every later boot of the plan (the end refcell); left = hard cap -
+    elapsed (the Job's `timeout` starts with this process).  left < need -> R3_SKIPPED_BUDGET for every R3 boot."""
+    boots = ctx.get("plan_boots") or []
+    i = next((k for k, x in enumerate(boots) if x.get("role") == "w3ladder"), None)
+    later = boots[i + 1:] if i is not None else []
+    need = 0.0
+    for x in later:
+        y = json.loads(json.dumps(x))
+        if y.get("stage_gated") == "R3":
+            for r in y["runs"]:
+                r["rate"] = r3_rate
+        need += SP.boot_est_min(y)
+    elapsed = (ctx["clock"]() - ctx["t0"]) / 60.0 if ctx.get("clock") and ctx.get("t0") is not None else 0.0
+    cap = ctx.get("hard_cap_min")
+    left = (cap - elapsed) if cap is not None else float("inf")
+    return {"r3_rate": r3_rate, "need_min": round(need, 1), "elapsed_min": round(elapsed, 1), "hard_cap_min": cap,
+            "left_min": round(left, 1) if left != float("inf") else None, "skip": bool(left < need),
+            "status": SP.R3_BUDGET_STATUS if left < need else "R3_BUDGET_OK", **stamp()}
+
+
 def run_job(plan, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, resume=False, metrics_fn=LG.fetch_metrics,
-            image_check_fn=image_env_check):
+            image_check_fn=image_env_check, clock=time.monotonic):
     problems = SP.plan_problems(plan)
     if problems:
         raise RuntimeError(f"ABORT_PLAN: {problems}")
@@ -529,7 +584,7 @@ def run_job(plan, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None,
     if out.exists() and any((out / "runs").glob("*.json")) and not resume:
         raise RuntimeError("ABORT_RAW_NOT_EMPTY: raw directory has runs; set --resume")
     dump(plan, out / "plan.json")
-    ctx = {}
+    ctx = {"clock": clock, "t0": clock(), "hard_cap_min": plan.get("hard_cap_min"), "plan_boots": plan["boots"]}
     if (out / "floor.json").exists():
         f = json.loads((out / "floor.json").read_text()).get("floor_ms")
         ctx["w3_slo_ms"] = SP.W3_TTFT_K * f if f else None
