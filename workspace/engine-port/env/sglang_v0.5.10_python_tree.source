@@ -1,0 +1,6 @@
+tag=v0.5.10
+commit=1519acf37c23f2189adb93f57ca9cd2db1bebf18
+generator=engine_tree.py ref --git <sglang> --tag v0.5.10
+command=git archive v0.5.10 python | tar -x
+entries=2257
+manifest_sha256=1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3

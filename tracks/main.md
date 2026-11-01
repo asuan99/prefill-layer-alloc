@@ -39,7 +39,7 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정 후속** / 4 Job 결과·감사 r1(아래) — 다음 측정은 새 PREREG 필요 / (A) 하네스 결함(PC 축약 부하 창) 수정 + 박자 셀 검출력 확보 + EVAL 셀 플래그 분리(E1만·E2만·E1+E2, 용량 아래 셀) 재측정(권고) · (B) 결과 promote만 하고 측정 중단 · (C) EVAL 셀만 재측정
-- **기준선 Phase B**: §13 결정 7건 **전부 확정**(2026-11-01 "진행" = 권고 채택: 지속 기준·vLLM 0.31.0·공통 절대 rate·PM-ref34·Job 분할·bring-up 재시도 허용·SG-off). ★정오: 지금까지 VESSL 모든 fused/OFF arm = **수정 트리·플래그 OFF**(이미지는 pristine, Job이 install) → Q8 `SG-off vs SG-stock` 신설. 남은 봉인 조건 = §11 선행(EXTEND 플래그·pristine 트리 boot 모드 engine-porter ×2 진행 중, vLLM bring-up은 A100 용량 대기 재시도 중, 부하 창 필터, A5 봉인) + 하네스 감사 1회 — promote 필요: 예 (결정·정오)
+- **기준선 Phase B**: §13 결정 7건 전부 확정(2026-11-01). ★정오: VESSL 모든 fused/OFF arm = 수정 트리·플래그 OFF → Q8 `SG-off vs SG-stock` 신설; 진단(부록 D): **OFF에서도 causal_conv1d int64 커널 차이 발화**(커널 수준 비동치, 성능 미측정) + host 오버헤드 4건. 선행 완료(CPU): EXTEND 시간 플래그(digest `2836112b…`)·부하 창 변이 테스트·pristine 트리 boot 모드(`engine_tree.py`, 참조 manifest `1bd84d88…`). 남은 봉인 조건 = `sb_spec`/runner 배선 · A5 sha256 · 하네스 감사 1회 · vLLM bring-up(A100 용량 대기) — promote 필요: 예 (결정·정오·진단)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`

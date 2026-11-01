@@ -26,7 +26,7 @@
   - `SG-stock`·`SG-mix` = **pristine 트리**(install 전 보존본, `PDMUX_*` env 0개, 마커 가드) — 진짜 stock.
   - `SG-off` = **수정 트리·플래그 OFF**(새 arm) — M3 J1 fused·implfix C6("OFF = main"은 CPU golden만)·CAP/TUNE OFF 참조와 잇는 다리. `SG-off vs SG-stock`이 처음으로 GPU에서 "수정 트리 OFF = stock인가"를 잰다(라벨 `PATCH_OFF_vs_STOCK`, Q8).
   - `PM-ref` = 수정 트리, 비sticky static D44(결정 49).
-  - 각 boot 메타에 `engine_tree`와 트리 manifest sha256을 기록하고 분석기 스탬프 검사(⑤)에 포함한다.
+  - 각 boot 메타(`tree_<arm>.json`)에 `engine_tree`·`engine_tree_manifest_sha256`·`engine_tree_ref_sha256`·`engine_tree_ref_overridden`·`engine_tree_markers_found`·`engine_tree_sglang_init`·`engine_tree_root`를 기록하고 분석기 스탬프 검사(⑤)에 포함: SG-stock/rep/mix는 `pristine`·manifest == ref `1bd84d88…`·overridden false·markers `[]`·argv에 `--enable-pdmux` 없음; SG-off/PM은 `patched`·마커 3개·같은 Job의 patched manifest 동일. 30항목 ENGINE_DIGEST(`2836112b…`)와 트리 전체 manifest를 둘 다 기록.
 - 엔진 digest는 계측 플래그(§5)가 들어간 트리로 1개 고정(봉인 시 `ENGINE_DIGEST.txt`).
 - vLLM 버전: **0.31.0**(pip index 2026-11-01 최신 stable; 결정 62 ① "제출 시점 최신 stable") — 봉인 시점에 더 새 stable이 있으면 그것으로 갱신하고 봉인 문서에 적는다. attention 백엔드·`CUDAGraphMode`·chunked prefill 상태는 서버 로그에서 채취해 결과에 병기(기본값 그대로, 튜닝 0).
 
@@ -44,7 +44,7 @@
 
 **승계 상수 공시**: `PM-ref`의 D44·cap 48·budget 65536은 KISTI 승계값이며 Nano에서 재결정되지 않았다(R Job: D34–64 goodput 고원 1.5% 안, 순위 미분해). 따라서 Q2·Q4의 라벨은 **"static PD-mux(D44 구성)"** 범위로만 성립하고 "static PD-mux 최적" 범위가 아니다. 최적 D 재결정은 CAP′(HE0 셀 재정의 결정 뒤)의 몫이다. 결정 ④(2026-11-01): `PM-ref34` 포함 — Q2·Q4 라벨은 D34·D44 두 점으로 보고하며 "고원 안 두 점" 범위.
 
-공통: `--context-length 20480`·`--max-prefill-tokens 16384`(정책 하네스 S7 승계; W3 7k 평균이 들어감) · max_running 48(vLLM `--max-num-seqs 48`) · 출력 길이 trace 고정 · 같은 체크포인트 경로 `/data/hf`.
+공통: **`--disable-piecewise-cuda-graph`**(v0.5.10 NemotronH 기본 ON이나 이 이미지에서 트리 무관 부팅 실패 — `multigpu/RESULT_m2g_c1395d0_2026-10-12.md` `typing.Union`; "기본값"에서 유일하게 바꾸는 플래그, 공시) · `--context-length 20480`·`--max-prefill-tokens 16384`(정책 하네스 S7 승계; W3 7k 평균이 들어감) · max_running 48(vLLM `--max-num-seqs 48`) · 출력 길이 trace 고정 · 같은 체크포인트 경로 `/data/hf`.
 
 ## 3. 워크로드·셀 [결정 44·49, 부하 위치 규약]
 - W1 ShareGPT(정책 하네스 `ph_spec` 정의·seed 그대로), W3 arXiv-Sum(7k 평균, `W3_MAX_NEW` 1024). SLO: W1 TTFT 3000 ms ∧ 요청 내부 ITL p95 60 ms; W3 TTFT = 3 × floor(같은 Job 첫 boot에서 측정, N3 규칙).
@@ -94,7 +94,7 @@
 4. 부하 창 필터 축약 함수 + 변이 테스트(5-1·5-3).
 5. A5 예보 파일 sha256 봉인.
 6. 하네스 감사 1회(규칙층 반전 시험 + 파이프라인 모집단 층 표).
-7. **pristine 트리 boot 모드**(engine-porter 진행 중): install 전 보존본 + `PDMUX_ENGINE_TREE` 선택 + 마커 가드 + 메타 기록 + CPU mock 테스트. 수정 트리 14파일 중 OFF에서 발화하는 변경 목록(진단 표)을 PREREG 부록으로 봉인.
+7. ~~pristine 트리 boot 모드~~ **완료(CPU, 2026-11-01)**: `install_runtime.sh` step 0이 이미지 트리를 `sglang_pristine/`에 보존(커밋된 참조 manifest `env/sglang_v0.5.10_python_tree.sha256` 2257항목·sha `1bd84d88…`와 바이트 대조, 마커 가드), 서버 boot는 `engine_tree.py boot --stamp <json> -- <server cmd>`로 `PDMUX_ENGINE_TREE=pristine|patched` 선택(pristine은 `PDMUX_*` 전부 제거·`--enable-pdmux` 거부·`find_spec` 해석 위치 검사). 테스트 `test_engine_tree` 21 + `test_job_entry_cpu.sh` 29 통과. **GPU 이미지에서 미검증**(pip -e 잔여물로 보존 FAIL 가능 → `PDMUX_REQUIRE_PRISTINE=1`로 fail-closed). 진단 표는 부록 D.
 
 ## 12. 이 Job이 채우는 COSTMODEL 칸
 CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔차) · CM-1(T_dec 점 추가, stock 경로) · CM-2(r_ser 분자 = EXTEND GPU 시간) · 확장 열 "엔진 대조" 신설 후보.
@@ -109,3 +109,22 @@ CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔�
 7. `SG-off` arm 추가(권고: Q8은 implfix·M3 J1 수치의 범위를 정하는 데 필요) / 미추가.
 
 확정(2026-11-01, 사용자 "진행" = 권고 채택): ① 둘 다 보고·판정 셀 rate는 **지속 기준** · ② vLLM 0.31.0 · ③ 공통 절대 rate · ④ `PM-ref34` 추가 · ⑤ Job 3분할 · ⑥ 승인(Workspace create 재시도 허용) · ⑦ `SG-off` 추가. → §13은 닫혔고 남은 봉인 조건은 §11 선행 작업 + 하네스 감사 1회.
+
+## 부록 D — 수정 트리에서 플래그 OFF일 때 upstream과 달라지는 실행 경로 (engine-porter 진단, 2026-11-01, 코드 판독·GPU 미측정)
+
+기준: `git archive v0.5.10` + HEAD `install_runtime.sh` → 수정 파일 15개(+3071/−55), 새 파일 11개. 줄 번호는 수정 트리.
+
+| 파일 | OFF에서 발화 | 성격 | 근거 줄 |
+|---|---|---|---|
+| `layers/attention/mamba/causal_conv1d_triton.py` | **발화, 커널 수준** — int64 캐스트 2곳. triton conv 경로를 타는 모든 Mamba2 prefill(NemotronH xBC 포함). int32 범위에서 값 동일, 컴파일된 커널이 다름 → 성능 미측정 | GPU | 69, 77 |
+| `models/nemotron_h.py` | 발화 — 매 forward env 3–4회 읽기·`current_stream()`·층별 `nullcontext()`; env 없으면 같은 층 순서·같은 커널. decode cudagraph에서는 capture 때만 | host | 645–737, 608, 859 |
+| `models/granitemoehybrid.py` | 같은 패턴 | host | 455–497 |
+| `distributed/parallel_state.py` | 매 `get_tp_group()`에서 `ContextVar.get()`(값 항상 False) | host | 1439–1454 |
+| `managers/scheduler.py` | 프로브 import·`_holb is not None` 검사 2회/run_batch(env 없으면 None) | host | 189, 292, 440, 458, 2708, 2762, 3539, 3671, 3681 |
+| `model_executor/model_runner.py` | ngram `getattr` 동치, Zamba2 isinstance, coord 메서드는 pdmux 전용 | 없음 | 2407, 1862 |
+| `utils/hf_transformers_utils.py`·`configs/__init__.py` | import 시 mamba2/zamba2 전역 등록 | 없음(모델 종류 한정) | 122, 142–145 |
+| `layers/attention/triton_backend.py` | `--attention-backend triton` + mamba 계열만(flashinfer 미발화) | 조건부 | 98 |
+| `memory_pool.py`·`model_runner_kv_cache_mixin.py`·`server_args.py` | 순수 SSM / `Mamba2ForCausalLM`만 | 조건부 | 1420, 184, 1919 |
+| `falcon_h1.py`·`multiplexing_mixin.py`·`pdmux_context.py` | OFF 변화 없음(새 메서드·상수·pdmux 전용) | 없음 | — |
+
+**함의**: "수정 트리 OFF = upstream"은 **커널 수준에서 성립하지 않는다**(causal_conv1d int64). implfix C6의 CPU golden은 프로브 None 경로만 덮는다. 이 차이를 GPU에서 처음 재는 것이 Q8(`SG-off vs SG-stock`)이며, 그 전까지 M3 J1 fused·CAP/TUNE/EVAL OFF 참조·KISTI `plain`은 전부 "수정 트리·OFF" 범위다. 그 밖의 공시: 두 트리는 site-packages(sgl_kernel·flashinfer·triton·torch·py3.14 shim)를 공유한다 — "pristine"은 SGLang 파이썬 소스 한정; triton/flashinfer JIT 캐시 공유(정확성 영향 없음, warmup 순서 차이만); pip 메타데이터는 수정 트리를 가리키므로 선택은 PYTHONPATH 우선순위 + boot 시 해석 위치 검사에 의존.
