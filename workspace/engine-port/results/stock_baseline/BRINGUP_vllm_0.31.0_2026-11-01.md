@@ -21,3 +21,6 @@ Recipe label de69d4328c1478d08f62b8308db29efde9bd4620 (clean); ghcr.io/asuan99/v
 
 ## Workspace create attempt (2026-11-01)
 GHCR package confirmed PUBLIC (anonymous manifest 200). `workspace create pdmux-vllm` (approved command, run once) failed: resourcespec-a100x1 "has no available capacity right now"; all A100/H100/L40S specs show AVAILABILITY=unavailable. No workspace was created; (a)-(e) still not run. Existing workspaces standby.
+
+## Retry window (2026-11-01)
+User-approved retry: 6 checks at 5-min intervals (30 min) of `resource-spec list --usable-only`; resourcespec-a100x1 AVAILABILITY=unavailable on every check, so no create was issued. No workspace created; (a)-(e) not run. Existing workspaces standby.
