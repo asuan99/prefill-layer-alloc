@@ -1,0 +1,11 @@
+# vllm-runtime pins (2026-11-01). NOT installed by pip: the base image already contains this stack
+# (vllm/vllm-openai@sha256:c1c9f6fd...). This file is the assertion list; the Dockerfile RUN checks vllm/torch.
+# Source: `pip download vllm==0.31.0 --no-deps` METADATA, Requires-Dist.
+vllm==0.31.0
+torch==2.13.0
+torchvision==0.28.0
+torchaudio==2.11.0
+flashinfer-python==0.7.0.post1
+# FULL freeze: lives in the image at /opt/pdmux/pip_freeze.txt (+ .sha256); extract with
+#   docker run --rm --entrypoint cat <image> /opt/pdmux/pip_freeze.txt
+# and recorded in results/stock_baseline/BRINGUP_vllm_0.31.0_2026-11-01.md.

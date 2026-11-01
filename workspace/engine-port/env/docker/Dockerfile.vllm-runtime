@@ -1,0 +1,32 @@
+# PUBLIC stock-baseline image for VESSL Cloud (A100 SXM 80GB, us-west-2): UNMODIFIED vLLM 0.31.0 (pristine).
+# It contains NO project engine code, patches, PREREG or results (public registry; see vessl_operating_model sec 6-2).
+# Used only for the Phase B `VL-stock` arm (results/stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md).
+#
+# BASE CHOICE (2026-11-01): NOT the quay.io/vessl-ai/torch base used by Dockerfile.sglang-runtime.
+# vllm 0.31.0 wheel metadata pins torch==2.13.0 / torchvision==0.28.0 / torchaudio==2.11.0 /
+# flashinfer-python==0.7.0.post1, and that base carries torch 2.9.1+cu130 (python 3.14.6) -> mismatch.
+# So the base is vLLM's official image, which ships exactly that stack (measured: python 3.12.3,
+# torch 2.13.0+cu130, vllm 0.31.0, Ubuntu 24.04), pinned by manifest-list DIGEST (tag v0.31.0 as of 2026-11-01).
+FROM vllm/vllm-openai@sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3
+
+# The official image's ENTRYPOINT is the API server; a Workspace/Job needs a plain shell.
+ENTRYPOINT []
+
+# VESSL parity with the sglang image: sshd (Workspace ssh), rsync, curl, libnuma1.
+RUN apt-get update \
+ && apt-get install -y --no-install-recommends openssh-server rsync curl libnuma1 \
+ && mkdir -p /run/sshd && rm -rf /var/lib/apt/lists/*
+
+# Assert the intended version (fails the build if the base digest is ever re-pointed to something else).
+COPY requirements.vllm-runtime.txt /opt/pdmux/requirements.vllm-runtime.txt
+RUN python3 -c 'import vllm,torch,sys; assert vllm.__version__=="0.31.0", vllm.__version__; assert torch.__version__.startswith("2.13.0"), torch.__version__' \
+ && (python3 -m pip check > /opt/pdmux/pip_check.txt 2>&1 || true) \
+ && python3 -m pip list --format=freeze > /opt/pdmux/pip_freeze.txt \
+ && python3 -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/pdmux/python_torch.txt \
+ && sha256sum /opt/pdmux/pip_freeze.txt > /opt/pdmux/pip_freeze.sha256
+
+ARG REPO_COMMIT=unknown
+LABEL org.opencontainers.image.title="vllm-runtime" \
+      runtime.vllm_version="0.31.0" \
+      runtime.recipe_commit="${REPO_COMMIT}" \
+      runtime.base_digest="sha256:c1c9f6fd5c109ba7f0546a59f5b2f15fb87f64c77782e90a27b648b42a8e67c3"
