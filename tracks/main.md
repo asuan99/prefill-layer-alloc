@@ -23,6 +23,7 @@
   - 통합 정책 측정(EVAL 흡수, PREREG rev1 봉인 `736ec49c`, 4 Job 회수) 결과 `implfix:…/policy_implfix/RESULT_policy_implfix_2026-11-01.md` + 결과 감사 r1(`96793350`): 박자 셀 층 종류 반영 대 무시 **UNTESTED_REMAINS**(+4.4% [−0.6,+9.5]; PC 축약이 warmup·프로브를 섞은 **하네스 결함**) · EVAL 셀 E1+E2 묶음 **ON_BELOW_REF 부호만**(과부하 HI 구간만, LO 동일; 크기·일반화 금지) · 동적 OFF=static(미전환 null) · D\* E-1…5 HIT, E-6·7 MISS, E-8 점추정 MISS · handoff 대 drain ±3% 안(물리 handoff 미관측) · CM-2 γ 1.3–1.7 주장 철회. 그림 8개 `implfix:…/policy_implfix/figures/`
   - 결정(이 세션): 57·58(구 54)·59·60i·61i·62i·63i·64i — 원문은 git `tracks/main.md` 10-29~31. ※ 다른 세션과 번호 충돌(58·60·61) → impl 쪽은 58·접미사 i로 구분, promote 때 재번호 필요 — promote 필요: 예 (결정·감사·결과)
 - **설계 결함·반복 패턴 정리(2026-11-01, 사용자 요청 "진행")**: `reports/audit/2026-11-01_design_defects/REPORT.md` — 결함 S1–S12 심각도 순, 반복 패턴 P1–P6 원인(계획/셋업) 분류. 에이전트 규약 개정 적용: experiment-runner(부하 위치·승계 상수·처치 발생 횟수·PREREG 필수 항), result-analyst(게이트 4 차단형·"측정하지 않은 것" 절·cost model 2칸), claims-auditor(confound 12·13·파이프라인 모집단 층·`GO-with-caveats(검출력)`·caveat 상한). 미감사 — promote 필요: 예 (결정·규약)
+- **Phase B 착수(2026-11-01 오후)**: PREREG STOCK-BASE rev0 DRAFT 작성(새 규약 첫 적용: 질문 목록 Q1–Q7·검출력 사전 계산·축약 필터 표·승계 상수 공시) · stock 대 PD-mux 그림 2장 `reports/figures/stock_vs_pdmux_2026-11-01/`(N=1 기술값·측정 지도) · vLLM 최신 stable 0.31.0 확인 · engine-porter EXTEND 플래그 작업 중 — promote 필요: 예 (결정)
 ## 다음 행동
 1. (완료 2026-11-01) 통합 정책 측정 4 Job 회수·분석·결과 감사 r1 — 다음은 아래 결정 대기 "통합 정책 측정 후속"과 promote 7차(나머지)
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
@@ -38,7 +39,7 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정 후속** / 4 Job 결과·감사 r1(아래) — 다음 측정은 새 PREREG 필요 / (A) 하네스 결함(PC 축약 부하 창) 수정 + 박자 셀 검출력 확보 + EVAL 셀 플래그 분리(E1만·E2만·E1+E2, 용량 아래 셀) 재측정(권고) · (B) 결과 promote만 하고 측정 중단 · (C) EVAL 셀만 재측정
-- **기준선 Phase B**(결정 62) / VESSL·Nano 한 Job: SG-stock·SG-mix·VL-stock·PM-ref(D44), W1/W3·변화 trace n≥4, 단일 클라이언트, r 계측 boot 분리 + 감사 r1 권고(stock plain L∈{512,2k,8k} 계측 ON/OFF 짝) / 선행 = EXTEND 플래그(engine-porter)·vLLM 이미지 bring-up·PREREG·하네스 감사 1회 — 착수 승인 대기
+- **기준선 Phase B 봉인 전 결정 6건**(사용자 2026-11-01 "진행 그리고 관련 수치들에 대한 확보"로 착수) / PREREG 초안 `stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md` §13: ① 용량 기준량 둘 다(권고) ② vLLM 0.31.0 고정(권고) ③ 판정 셀 = λ*_ref(min arm) 공통 절대 rate(권고) ④ PM-ref34 추가(권고) ⑤ Job 3분할(권고) ⑥ **vLLM 이미지 빌드 + Workspace bring-up 1회 승인(비용 행위)** / 선행 작업: EXTEND 플래그(engine-porter 진행 중)·부하 창 필터·A5 봉인·하네스 감사 1회
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
