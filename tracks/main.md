@@ -22,12 +22,13 @@
   - 엔진 수정 E1 span budget|time|time_typed · E2 발행 깊이 · E3 handoff · E5 계측(기본 OFF, digest `0a5d9c3c`) · GPU 정확성 gate rev0.1 FAIL(하네스 원인) → rev0.2 UNRESOLVED(E3는 문언상 UNRESOLVED, nocache 경로 미실행; 결과 감사 r1)
   - 통합 정책 측정(EVAL 흡수, PREREG rev1 봉인 `736ec49c`, 4 Job 회수) 결과 `implfix:…/policy_implfix/RESULT_policy_implfix_2026-11-01.md` + 결과 감사 r1(`96793350`): 박자 셀 층 종류 반영 대 무시 **UNTESTED_REMAINS**(+4.4% [−0.6,+9.5]; PC 축약이 warmup·프로브를 섞은 **하네스 결함**) · EVAL 셀 E1+E2 묶음 **ON_BELOW_REF 부호만**(과부하 HI 구간만, LO 동일; 크기·일반화 금지) · 동적 OFF=static(미전환 null) · D\* E-1…5 HIT, E-6·7 MISS, E-8 점추정 MISS · handoff 대 drain ±3% 안(물리 handoff 미관측) · CM-2 γ 1.3–1.7 주장 철회. 그림 8개 `implfix:…/policy_implfix/figures/`
   - 결정(이 세션): 57·58(구 54)·59·60i·61i·62i·63i·64i — 원문은 git `tracks/main.md` 10-29~31. ※ 다른 세션과 번호 충돌(58·60·61) → impl 쪽은 58·접미사 i로 구분, promote 때 재번호 필요 — promote 필요: 예 (결정·감사·결과)
+- **설계 결함·반복 패턴 정리(2026-11-01, 사용자 요청 "진행")**: `reports/audit/2026-11-01_design_defects/REPORT.md` — 결함 S1–S12 심각도 순, 반복 패턴 P1–P6 원인(계획/셋업) 분류. 에이전트 규약 개정 적용: experiment-runner(부하 위치·승계 상수·처치 발생 횟수·PREREG 필수 항), result-analyst(게이트 4 차단형·"측정하지 않은 것" 절·cost model 2칸), claims-auditor(confound 12·13·파이프라인 모집단 층·`GO-with-caveats(검출력)`·caveat 상한). 미감사 — promote 필요: 예 (결정·규약)
 ## 다음 행동
 1. (완료 2026-11-01) 통합 정책 측정 4 Job 회수·분석·결과 감사 r1 — 다음은 아래 결정 대기 "통합 정책 측정 후속"과 promote 7차(나머지)
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
 3. promote 7차 후보 정리: 결정 43–58·60·60i–64i, 정책 캠페인 결과·감사 r1 4건, 구조 검증(`7a7a2c08`, 감사 필요), 두 메모(감사 필요)
 ## 사용자 결정 대기
-- **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`
+- **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md` · ★2026-11-01 규약 개정(REPORT 위)이 이 결정에 걸려 있음 — 결정 전까지 정책 판정 셀 Job 제출 금지(승계 상수 규약)
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
 - **roofline η 정본 반영** / 집계 η≈0.49는 층별 η 아님 / 수식 문서 §6 "실측 대조"에 한 줄만(권고) · 반영 안 함
@@ -44,6 +45,7 @@
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
 ## 최근 로그
+- 2026-11-01(오후): 그림 8개 설명 · 설계 결함 S1–S12·패턴 P1–P6 정리 · 에이전트 규약 3파일 개정(`reports/audit/2026-11-01_design_defects/`)
 - 2026-10-28~11-01(impl 세션): 구현 결함 Phase 0·범위 감사·7차 promote(부분) · 엔진 수정 E1–E3·E5(브랜치) · GPU 정확성 gate 2회 · 통합 정책 측정 4 Job·결과 감사 r1 · 축 지도 §6b(시스템 동작·r 정의)
 - 2026-10-28~30(정책 캠페인 세션): 진단·정책 PREREG(감사 r1/r2), gate+smoke·CAP1·CAP1-R·CAP2+지속성·TUNE 6 Job 측정·회수·결과 감사, 결정 43–58·60, raw 반출, implfix 영향·HE0 셀 재정의 메모
 - 2026-10-27 오후: catch-up · 외부 비판 문서 대조 · C 감사 r1·학회 검토 · HyMux 구조 대조 · lockstep 정지 진단(CPU) · 방향 재정리(제안)

@@ -103,8 +103,29 @@ python3 workspace/engine-port/scripts/discipline/presubmit.py --help       # 제
 - **cudagraph(운영점 ON), backend, KV capacity, max-running 고정.** GPU clock/power는 VESSL
   컨테이너에서 **고정 불가** — 매 실행 `clk.csv`·`substrate.json`으로 기록하고 arm 간 동일성을 검사한다.
 - **대조 arm은 같은 Job(같은 노드·드라이버) 안에**. 다른 Job·노드에서 잰 arm끼리의 비교는 기판 교락.
-- warm-up / correctness / benchmark phase 분리.
+- warm-up / correctness / benchmark phase 분리. ★**분석기도 분리해야 한다**(2026-11-01 결함 B1): 계측
+  boot의 축약(r_span·dose·handoff 수 등)은 **등록 부하 창(`t_load_start`–`t_load_end`) 안의 레코드만**
+  입력으로 받는다. warmup·가드 프로브 레코드를 섞으면 라벨이 바뀌는 **변이 테스트**가 있어야 봉인한다
+  (policy_implfix P Job: 등록 부하 span이 30%뿐이라 PC 라벨이 측정 arm의 영역을 재지 못했다).
 - 한 번에 변수 하나만. 루트의 실행 로그(`.out`/`.err`)는 커밋하지 않는다.
+- ★**부하 위치**(2026-11-01, S1): 정책 비교 셀(동적 대 static·플래그 ON 대 OFF)의 HI는 **best static의
+  TTFT-attainment가 0.6–0.85 대역**에 들도록 잡는다. 그 위(과부하)에서는 (i) FEAS 혼잡 가드가 batch 상한에서
+  닫혀 동적 arm이 static과 같은 구성으로 돌고(TUNE 4/4 전환 0), (ii) threshold-goodput이 구간 길이에 묶여
+  크기를 인용할 수 없다. 과부하 셀은 **"용량·기술값" 측정으로만** 등록한다.
+- ★**승계 상수**(2026-11-01, S3): cap·D·split budget·HI 배율 h처럼 다른 모델·기판에서 승계한 값으로 돌리는 측정은
+  정책 판정 셀이 될 수 없다 — 기술값으로만 등록하고, 판정 셀은 그 상수를 **현재 모델에서 재결정한 뒤** 봉인한다
+  (순서: cap → λ\* → h → TUNE → EVAL). "일단 승계값으로"는 측정 우선 원칙의 적용이 아니라 오용이다.
+- ★**처치 발생 횟수**(2026-11-01, S8): 처치가 특정 사건(전환·handoff·multi-chunk span)에서만 작동하면 PREREG에
+  run당 **최소 발생 횟수**를 등록하고, 예보가 미달이면 arm을 바꾼다. "발생 ≥ 1"은 유효 조건이지 검출 조건이 아니다
+  (E3: run당 전환 5–9회 → handoff가 goodput에 드러날 기회 없음).
+
+## PREREG에 반드시 있어야 하는 항 (2026-11-01 신설 — 없으면 봉인 전 반려)
+
+1. **답하는 질문 목록**: 이 Job이 끝나면 답이 나오는 질문을 번호로 적는다. 예산이 모자라면 arm이 아니라 **질문을
+   줄이고** 그 사실을 적는다(E1·E2 묶음 arm만 남겨 "E2 효과"가 질문에서 사라진 전례, S7).
+2. **검출력 사전 계산**: 판정 쌍마다 플라시보 sd(ln) 예보와 라벨에 필요한 sd(n=4·t(3)이면 EQUIV는 sd < 0.0186)를
+   나란히 적는다. 예보가 미달이면 seed 수·셀을 바꾼 뒤 봉인한다. 미달인 채 "caveat로 공시"하고 제출하지 않는다(S5).
+3. **축약 입력 필터**: 라벨마다 입력 레코드의 창·종류 필터를 한 줄로 적는다(위 phase 분리 항).
 
 ## 실패 시그니처
 
