@@ -1,0 +1,62 @@
+# PUBLIC combined stock-baseline image (decision 8, option (b'), 2026-11-02): the EXISTING public sglang-runtime image
+# (byte-unchanged) + a SEPARATE Python 3.12 venv /opt/vllm-venv holding UNMODIFIED vLLM 0.31.0. It contains NO project
+# engine code, patches, PREREG or results (public registry; vessl_operating_model sec 6-2).
+# Used by the Phase B stock arms (results/stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md): one Job, SGLang
+# and vLLM arms on the same node.  Design: results/stock_baseline/REPORT_sb_harness_design_2026-11-01.md sec 3.
+#
+# INVARIANT: everything the SGLang side owns is untouched -- /opt/conda (py3.14 site-packages + sitecustomize.py),
+# /opt/pdmux/sglang_engine_dev, /opt/pdmux/pip_freeze.txt, /opt/pdmux/python_torch.txt, ENV/ENTRYPOINT/CMD of the base.
+# This file adds ONLY: /opt/vllm-python (standalone CPython), /opt/vllm-venv, and /opt/vllm-venv-meta.
+# No ENV is added (vLLM-side runtime env such as CUDA_HOME/TORCH_CUDA_ARCH_LIST is set per Job by the launcher).
+#
+# vLLM-side packages: DEVIATION from "pip install --require-hashes -r freeze" (measured 2026-11-02): the vllm-runtime
+# freeze cannot be reproduced from indexes -- flashinfer-cubin==0.7.0.post1 is on neither PyPI nor the flashinfer.ai
+# index, deep_ep==2.0.0+local is a locally built wheel, and vllm==0.31.0 itself was installed from a local wheel.
+# So the venv site-packages are copied BYTE-FOR-BYTE from the already-pinned image
+# ghcr.io/asuan99/vllm-runtime@sha256:57e5e7a9... (/usr/local/lib/python3.12/dist-packages), excluding the 15 Ubuntu apt
+# packages of /usr/lib/python3/dist-packages that `pip list` showed. Integrity = source image digest (content-addressed)
+# + the freeze sha256 asserted below + a per-file sha256 manifest of the venv.
+FROM ghcr.io/asuan99/vllm-runtime@sha256:57e5e7a9b1a173847648fb3786d4d0a02338c9687114e568688204ce28802c0a AS vllmsrc
+
+FROM ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+
+# Standalone CPython 3.12 (python-build-standalone, release 20261026). The vllm-runtime source used Ubuntu's 3.12.3; all
+# vLLM wheels are cp312 / cp38-abi3, so 3.12.16 is ABI-compatible (recorded as a deviation).
+ARG PBS_TAG=20261026
+ARG PBS_FILE=cpython-3.12.16+20261026-x86_64-unknown-linux-gnu-install_only.tar.gz
+ARG PBS_SHA256=6a79e922e50006b601f29e688407659da1c2b86ebcd4e9c7254cf234be8b89de
+RUN mkdir -p /opt/vllm-python \
+ && curl -fsSL -o /tmp/pbs.tar.gz "https://github.com/astral-sh/python-build-standalone/releases/download/${PBS_TAG}/$(echo "${PBS_FILE}" | sed 's/+/%2B/')" \
+ && echo "${PBS_SHA256}  /tmp/pbs.tar.gz" | sha256sum -c - \
+ && tar -xzf /tmp/pbs.tar.gz -C /opt/vllm-python && rm /tmp/pbs.tar.gz \
+ && /opt/vllm-python/python/bin/python3 -m venv --without-pip /opt/vllm-venv
+
+# Byte-for-byte site-packages of the pinned vllm-runtime (see header). Console scripts are copied to a scratch dir first,
+# so their shebang (/usr/bin/python3, the apt interpreter) can be rewritten to the venv interpreter.
+COPY --from=vllmsrc /usr/local/lib/python3.12/dist-packages/ /opt/vllm-venv/lib/python3.12/site-packages/
+COPY --from=vllmsrc /usr/local/bin/ /tmp/vllm-src-bin/
+COPY --from=vllmsrc /opt/pdmux/pip_freeze.txt /opt/vllm-venv-meta/source_pip_freeze.txt
+RUN set -e \
+ && for f in /tmp/vllm-src-bin/*; do \
+      [ -f "$f" ] || continue; \
+      if [ "$(head -c 19 "$f")" = '#!/usr/bin/python3' ]; then \
+        b="/opt/vllm-venv/bin/$(basename "$f")"; [ -e "$b" ] && continue; \
+        sed '1s|^#!/usr/bin/python3$|#!/opt/vllm-venv/bin/python|' "$f" > "$b"; chmod 0755 "$b"; \
+      fi; \
+    done \
+ && rm -rf /tmp/vllm-src-bin \
+ && echo "1b6127e23e3697b3f7752eba8628b69f8075b3b3c6ae833d5f68f2b64ad5ac0d  /opt/vllm-venv-meta/source_pip_freeze.txt" | sha256sum -c - \
+ && /opt/vllm-venv/bin/python -c 'import vllm, torch; assert vllm.__version__=="0.31.0", vllm.__version__; assert torch.__version__.startswith("2.13.0"), torch.__version__' \
+ && /opt/vllm-venv/bin/python -m pip list --format=freeze > /opt/vllm-venv/pip_freeze.txt \
+ && sha256sum /opt/vllm-venv/pip_freeze.txt | cut -d' ' -f1 > /opt/vllm-venv/pip_freeze.sha256 \
+ && (/opt/vllm-venv/bin/python -m pip check > /opt/vllm-venv-meta/pip_check.txt 2>&1 || true) \
+ && /opt/vllm-venv/bin/python -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/vllm-venv-meta/python_torch.txt \
+ && (cd /opt/vllm-venv/lib/python3.12/site-packages && find . -type f -not -name '*.pyc' -print0 | sort -z | xargs -0 sha256sum) > /opt/vllm-venv-meta/site_packages.manifest.sha256
+
+ARG REPO_COMMIT=unknown
+LABEL org.opencontainers.image.title="sglang-vllm-runtime" \
+      runtime.vllm_version="0.31.0" \
+      runtime.recipe_commit="${REPO_COMMIT}" \
+      runtime.sglang_base_digest="sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d" \
+      runtime.vllm_source_digest="sha256:57e5e7a9b1a173847648fb3786d4d0a02338c9687114e568688204ce28802c0a" \
+      runtime.vllm_python="python-build-standalone ${PBS_FILE} sha256:${PBS_SHA256}"
