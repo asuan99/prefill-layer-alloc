@@ -1,0 +1,465 @@
+#!/usr/bin/env python3
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev0 (DRAFT, NOT SEALED).  CPU only; starts no server.
+
+Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
+  * SGLang arms boot through `scripts/vessl/engine_tree.py boot --stamp <json> -- <server cmd>` with PDMUX_ENGINE_TREE chosen per arm
+    (pristine for SG-stock/SG-rep/SG-mix; patched for SG-off/PM-ref/PM-ref34 and for every instrumentation boot -- the decode probe
+    exists only in the patched tree, see INSTR_TREE_NOTE).
+  * VL-stock = `vllm serve` defaults + --max-num-seqs 48 + prefix caching OFF + --port, image PDMUX_VESSL_IMAGE_VLLM.  The vLLM image
+    differs from the SGLang image, so VL-stock cannot share a Job (= a container) with the SGLang arms as things stand.  HOW to place it is
+    a USER DECISION (VLLM_PLACEMENT, report §3); until it is made every plan carries VL-stock as `pending` and the runner refuses VL boots.
+Jobs (PREREG §7): J1 ladder (+ definition smoke), J1b sustained cells, J2 steady-state R1/R2 (+ instrumentation boots), J3 change trace +
+W3.  Rates that depend on earlier Jobs come from an ADDENDUM json (written by sb_analyze.py addendum after the earlier Job); plans that need
+one refuse with ABORT_NO_ADDENDUM.  Path rule: os.path.abspath, never Path.resolve() (job_entry swaps results/ for a volume symlink).
+"""
+from __future__ import annotations
+
+import hashlib
+import json
+import math
+import os
+import random
+import sys
+from pathlib import Path
+
+HERE = Path(os.path.abspath(__file__)).parent
+ENG = HERE.parents[1]
+PH_DIR = HERE.parent / "cap_char" / "policy_harness"
+if str(PH_DIR) not in sys.path:
+    sys.path.insert(0, str(PH_DIR))
+import ph_spec as P  # noqa: E402  (sealed S7 policy harness constants: SLO, seeds, W3 cap, ladder(), static_arm(), arm_env())
+
+S = P.S                                         # ct_spec (NANO_ID, NANO_REV, ...)
+PREREG = "results/stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md"
+PLAN_SEED = 20261101                            # ordering seed of every plan (boot order, cell order, ABBA seed halves)
+ENGINE_TREE_PY = ENG / "scripts" / "vessl" / "engine_tree.py"
+VESSL_ENV = ENG / "scripts" / "vessl" / "vessl.env"
+ENGINE_DIGEST_FILE = HERE / "ENGINE_DIGEST.txt"
+ENGINE_DIGEST_EXPECTED = "2836112bd710a712a26a31fb516a685a25c6d893308b2058bb7b5590deda5ed7"   # 30-entry pathless-v1 (dev_tree_edits #39)
+PRISTINE_REF_SHA256 = "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3"      # env/sglang_v0.5.10_python_tree.source
+REQUIRED_PATCHED_MARKERS = ("pdmux_role_is_thread_local", "maybe_create_holb_probe", "maybe_install_chunk_probe")
+
+# ---- SLO / decision margins (PREREG §3, §4) ----------------------------------------------------------------------------
+W1_TTFT_MS, ITL_MS, W3_TTFT_K = P.W1_TTFT_MS, P.ITL_MS, P.W3_TTFT_K       # 3000 ms, 60 ms, 3 x floor
+MARGIN = math.log(1.03)
+CAP_ATTAIN = 0.90
+PLACEBO_SD_EQUIV_MAX = 0.0186                   # n=4, t(3): EQUIV possible only if sd(ln) < this (PREREG §4)
+ENGINE_PAIR_SD_MAX = 0.02                       # SG vs VL pairs: sd above this -> registered seed-8 rerun flag
+CLIENT_DEF_TOL_MS = 5.0                         # §5-0
+OUT_OF_BAND_ALL_ABOVE, OUT_OF_BAND_BEST_BELOW = 0.90, 0.50   # §3 CELL_OUT_OF_BAND on the HI phase
+SUBSTRATE_SHIFT_PP = 0.10                       # refcell attainment difference vs Job 1 (>= 10 %p)
+
+# ---- arms (PREREG §2) --------------------------------------------------------------------------------------------------
+NANO_ARGS = ["--model-path", S.NANO_ID, "--revision", S.NANO_REV]
+# Loading identity (+ the PREREG §2 "common" flags).  Everything else = SGLang v0.5.10 default (chunked prefill 8192, overlap ON, mixed OFF,
+# cudagraph ON, attention backend auto, mem fraction auto, random seed default); the backend / mem fraction actually chosen are read from
+# the server log and recorded (sb_runner.parse_sglang_log).
+SG_COMMON = ["--trust-remote-code", "--dtype", "bfloat16", "--disable-radix-cache", "--disable-piecewise-cuda-graph",
+             "--context-length", "20480", "--max-prefill-tokens", "16384", "--max-running-requests", "48", "--host", "127.0.0.1"]
+VL_COMMON = ["--trust-remote-code", "--dtype", "bfloat16", "--max-model-len", "20480", "--max-num-seqs", "48",
+             "--no-enable-prefix-caching", "--host", "127.0.0.1"]
+PM_D = {"PM-ref": 44, "PM-ref34": 34}
+ARM_NAMES = ("SG-stock", "SG-rep", "SG-mix", "SG-off", "VL-stock", "PM-ref", "PM-ref34")
+SG_ARMS = tuple(a for a in ARM_NAMES if a != "VL-stock")
+PRISTINE_ARMS = ("SG-stock", "SG-rep", "SG-mix")
+PATCHED_ARMS = ("SG-off", "PM-ref", "PM-ref34")
+INSTR_TREE_NOTE = ("decode_probe (PDMUX_PROBE_EXTEND_TIME) lives only in the PATCHED tree; a pristine boot refuses PDMUX_* knobs. The 'SG-stock "
+                   "instrumentation boot' of PREREG §5-1 therefore runs SG-stock argv on the patched tree (= SG-off config + probe). Deviation D-1.")
+
+# vLLM placement: USER DECISION (report §3).  None of these is implemented beyond the refusal; PENDING keeps VL-stock out of every plan.
+VLLM_PLACEMENT_OPTIONS = ("separate_job", "vllm_venv_in_sglang_image", "sglang_in_vllm_image")
+VLLM_PLACEMENT = "PENDING_USER_DECISION"
+
+
+def image_digests(path=VESSL_ENV):
+    """{'PDMUX_VESSL_IMAGE': ..., 'PDMUX_VESSL_IMAGE_VLLM': ...} parsed from vessl.env (values only, nothing secret)."""
+    out = {}
+    try:
+        for ln in Path(path).read_text().splitlines():
+            for k in ("PDMUX_VESSL_IMAGE", "PDMUX_VESSL_IMAGE_VLLM"):
+                if ln.startswith(k + "="):
+                    out[k] = ln.split("=", 1)[1].split("#")[0].strip().strip('"')
+    except OSError:
+        pass
+    return out
+
+
+def pm_argv(D):
+    import ph_runner as PR                       # the sealed policy-harness argv (bridge arm: identical bytes to CAP/TUNE/implfix boots)
+    # the PD-mux config path is absolute on each machine; the plan stores it relative to engine-port ("{ENG}/...") so the plan sha is
+    # machine-independent; sb_runner.resolve() substitutes the real root at boot time
+    return [x.replace(str(ENG), "{ENG}") for x in PR.server_argv(P.static_arm(D))]
+
+
+def arm(name):
+    """Static definition of one arm: engine, tree, image key, argv (without --port), engine env (harness labels added by the runner)."""
+    if name not in ARM_NAMES:
+        raise ValueError(f"unknown arm {name}")
+    if name == "VL-stock":
+        return {"name": name, "engine": "vllm", "tree": "vllm", "image_key": "PDMUX_VESSL_IMAGE_VLLM",
+                "cmd": ["vllm", "serve", S.NANO_ID, "--revision", S.NANO_REV] + VL_COMMON, "env": {}, "api": "openai",
+                "placement": VLLM_PLACEMENT}
+    if name in PM_D:
+        D = PM_D[name]
+        return {"name": name, "engine": "sglang", "tree": "patched", "image_key": "PDMUX_VESSL_IMAGE", "D": D,
+                "cmd": ["-m", "sglang.launch_server"] + pm_argv(D), "env": dict(P.arm_env(P.static_arm(D))), "api": "sglang",
+                "sticky": P.STATIC_STICKY, "inherited": "D, cap 48, budget 65536 = KISTI 승계 (PREREG §2)"}
+    argv = NANO_ARGS + SG_COMMON + (["--enable-mixed-chunk"] if name == "SG-mix" else [])
+    tree = "pristine" if name in PRISTINE_ARMS else "patched"
+    return {"name": name, "engine": "sglang", "tree": tree, "image_key": "PDMUX_VESSL_IMAGE",
+            "cmd": ["-m", "sglang.launch_server"] + argv, "env": {}, "api": "sglang"}
+
+
+def smoke_arm(engine):
+    """Definition smoke (§5-0, not a measurement): same arms + the server TTFT histogram (SGLang needs --enable-metrics; vLLM has /metrics)."""
+    a = arm("SG-stock" if engine == "sglang" else "VL-stock")
+    a = json.loads(json.dumps(a))
+    a["name"] = f"SMOKE-{a['name']}"
+    if engine == "sglang":
+        a["cmd"] = a["cmd"] + ["--enable-metrics"]
+    a["role"] = "smoke"
+    return a
+
+
+def instr_arm(kind, bdir="{dir}"):
+    """Instrumentation boots (§5, C5: never a goodput arm).  SG = SG-stock argv on the PATCHED tree + decode probe EXTEND timing (D-1);
+    PM = PM-ref + the implfix PC instrumentation env; VL = profiler window (pending with VL-stock)."""
+    if kind == "SG":
+        a = json.loads(json.dumps(arm("SG-stock")))
+        a.update(name="INSTR-SG-stock", tree="patched", role="instr", deviation="D-1",
+                 env={"PDMUX_DECODE_PROBE_PATH": f"{bdir}/decode_probe.jsonl", "PDMUX_PROBE_EXTEND_TIME": "1"})
+        return a
+    if kind == "PM":
+        a = json.loads(json.dumps(arm("PM-ref")))
+        a["env"].update({"PDMUX_TELEMETRY_PATH": f"{bdir}/tel.jsonl", "PDMUX_PHASE_EVENTS": "1", "PDMUX_PHASE_DIAG": "1",
+                         "PDMUX_DECODE_PROBE_PATH": f"{bdir}/decode_probe.jsonl"})
+        a.update(name="INSTR-PM-ref", role="instr")
+        return a
+    if kind == "VL":
+        a = json.loads(json.dumps(arm("VL-stock")))
+        a.update(name="INSTR-VL-stock", role="instr", profiler=True)
+        return a
+    raise ValueError(kind)
+
+
+# ---- cells (PREREG §3) -------------------------------------------------------------------------------------------------
+LADDER_RMIN, LADDER_FACTOR, LADDER_N = 5.516, 1.15, 10      # CAP1-R grid (k = 0..9)
+LADDER_EXT_K = (10, 11, 12, 13)                             # registered single extension on LADDER_TOP_PASS
+LADDER_ARMS = ("SG-stock", "SG-mix", "SG-off", "VL-stock", "PM-ref")   # §7 (PM-ref34 inherits CAP1-R D34 lambda* 6.343, no ladder)
+PM_REF34_LAMBDA_INHERITED = 6.343
+CAP_SEEDS, CAP_N = P.CAP_SEEDS, 120                          # (201, 202)
+SUSTAIN_S, SUSTAIN_SEED, SUSTAIN_WINDOW_S = 600.0, 201, 120.0
+SUSTAIN_FACTORS, SUSTAIN_EXTRA = (1.0, 0.8), 0.5
+SUSTAIN_COMPLETION_MIN, SUSTAIN_TTFT_GROWTH_MAX = 0.95, 2.0
+STEADY = {"R1": 0.5, "R2": 0.8}
+STEADY_N, EVAL_SEEDS = 200, P.HE0_SEEDS                      # (1, 2, 3, 4)
+TRACE_LO, TRACE_HI, TRACE_NP, TRACE_ROUNDS = 0.2, 0.8, 200, 3
+W3_LADDER = (0.1, 1.5, 6)
+W3_LADDER_N, W3_R3_FACTOR, W3_R3_N = P.CAP_CELL_REQUESTS["W3"], 0.8, 96
+W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock")      # §3 "arm 4개" -- the set is not named in the PREREG (open item O-3)
+REFCELL_ARM, REFCELL_N, REFCELL_SEED = "SG-stock", 120, 201
+SMOKE_N, SMOKE_SEED, SMOKE_MAX_OUT = 20, 9, 64
+INSTR_N, INSTR_SEED = 60, 301
+MEAS_ARMS = SG_ARMS + ("VL-stock",)
+MIX_MIN_FORWARDS = 50                                        # §6
+Q6_MIN_SPANS, Q6_MIN_PER_L, Q6_L_GRID, Q6_L_BAND = 30, 10, (512, 2048, 8192), 0.25
+
+# ---- pairs / labels (PREREG §0, §4) ------------------------------------------------------------------------------------
+# (question, A, B, label tokens (A, B)); label = A_ABOVE_B / EQUIV_WITHIN_3PCT / A_BELOW_B / UNRESOLVED_INTERVAL
+PAIRS = (("Q2", "PM-ref", "SG-stock", ("PM", "SG")), ("Q2", "PM-ref34", "SG-stock", ("PM34", "SG")),
+         ("Q3", "VL-stock", "SG-stock", ("VL", "SG")),
+         ("Q4", "PM-ref", "VL-stock", ("PM", "VL")), ("Q4", "PM-ref34", "VL-stock", ("PM34", "VL")),
+         ("Q5", "SG-mix", "SG-stock", ("MIX", "SG")),
+         ("Q8", "SG-off", "SG-stock", ("OFF", "STOCK")))
+PLACEBO = ("SG-rep", "SG-stock")
+ENGINE_PAIR_ARMS = ("VL-stock",)
+
+# ---- time model (planning only; [유도] PREREG §7 + rate-based run lengths) ----------------------------------------------
+BOOT_OH_MIN = 6.0                    # boot ~3 + warm-up 1 + check + slack (pi_spec)
+CAP_CELL_MIN = 1.6                   # 120-request ladder cell (PREREG §7)
+DRAIN_MIN = 0.6                      # tail of a fixed-rate segment (W1 output ~200 tok x ~30 ms + slack)
+W3_DRAIN_MIN = 1.2                   # 1024-token natural tail
+SMOKE_RUN_MIN, FLOOR_MIN = 2.0, 1.5
+HARD_CAP_FACTOR = 1.25
+PLAN_LAMBDA = {"burst": 6.0, "ref": 5.0, "W3": 0.3}          # planning guesses (P-1 band low edge; sustain x0.8); NOT registered values
+
+
+def stable(o):
+    return json.dumps(o, sort_keys=True, separators=(",", ":"))
+
+
+def sha(o):
+    return hashlib.sha256(stable(o).encode()).hexdigest()
+
+
+def _rng(*salt):
+    return random.Random(int(hashlib.sha256("|".join(map(str, (PLAN_SEED,) + salt)).encode()).hexdigest()[:12], 16))
+
+
+def ladder_rates(ext=False):
+    if ext:
+        return [round(LADDER_RMIN * LADDER_FACTOR ** k, 6) for k in LADDER_EXT_K]
+    return P.ladder(LADDER_RMIN, LADDER_FACTOR, LADDER_N)
+
+
+def w3_ladder_rates():
+    return P.ladder(*W3_LADDER)
+
+
+def need(addendum, *keys):
+    if not addendum:
+        raise RuntimeError("ABORT_NO_ADDENDUM: this Job needs the addendum of the earlier Job(s) (sb_analyze.py addendum)")
+    cur = addendum
+    for k in keys:
+        if not isinstance(cur, dict) or k not in cur or cur[k] is None:
+            raise RuntimeError(f"ABORT_NO_ADDENDUM: missing {'.'.join(keys)}")
+        cur = cur[k]
+    return cur
+
+
+def vllm_ready():
+    return VLLM_PLACEMENT in VLLM_PLACEMENT_OPTIONS
+
+
+def _arms(names):
+    """Arms that can be planned in an SGLang-image Job; VL-stock goes to `pending` until the placement decision."""
+    ok = [a for a in names if a != "VL-stock" or vllm_ready()]
+    return ok, [a for a in names if a not in ok]
+
+
+# ---- run constructors --------------------------------------------------------------------------------------------------
+def cap_run(rid, workload, rate, seed, n, kind="cap", **kw):
+    return {"run_id": rid, "kind": kind, "workload": workload, "rate": rate, "seed": seed, "n_requests": n, **kw}
+
+
+def trace_run(rid, seed, lam_ref):
+    return {"run_id": rid, "kind": "trace", "workload": "W1", "seed": seed, "rate_lo": round(TRACE_LO * lam_ref, 6),
+            "rate_hi": round(TRACE_HI * lam_ref, 6), "np": TRACE_NP, "rounds": TRACE_ROUNDS, "cell": "TRACE"}
+
+
+def boot(bid, a, runs, role="meas", **kw):
+    return {"boot_id": bid, "arm": a["name"], "arm_def": a, "role": role, "runs": runs, **kw}
+
+
+def refcell_boot(job, tag, rate, floor=False):
+    r = cap_run(f"{job}_REF_{tag}", "W1", rate, REFCELL_SEED, REFCELL_N, kind="refcell", cell="REFCELL", tag=tag)
+    return boot(f"{job}_ref_{tag}", arm(REFCELL_ARM), [r], role="refcell", floor=floor)
+
+
+def abba(job, cell_key, arm_names, runs_for):
+    """ABBA boot order: round 1 = random permutation of the arms, round 2 = round 1 reversed; the seeds are split in two halves (random,
+    the SAME halves for every arm of the cell, so every pair's seed s sits in the same round).  runs_for(arm_name, seeds, round) -> runs."""
+    rng = _rng(job, cell_key)
+    seeds = list(EVAL_SEEDS)
+    rng.shuffle(seeds)
+    halves = (sorted(seeds[:2]), sorted(seeds[2:]))
+    order = list(arm_names)
+    rng.shuffle(order)
+    boots = []
+    for rd, names in ((1, order), (2, list(reversed(order)))):
+        for name in names:
+            runs = runs_for(name, halves[rd - 1], rd)
+            rng.shuffle(runs)
+            boots.append(boot(f"{job}_{cell_key}_r{rd}_{name}", arm(name), runs, abba_round=rd))
+    return boots, halves
+
+
+# ---- Job plans (PREREG §7) -----------------------------------------------------------------------------------------------
+def plan_J1(addendum=None, ext=False):
+    """Ladder (all ladder arms in this Job, one boot per arm, cells in random order) + definition smoke first."""
+    job = "J1"
+    rng = _rng(job)
+    rates = ladder_rates(ext)
+    names, pending = _arms(LADDER_ARMS)
+    smoke = [boot(f"{job}_smoke_sglang", smoke_arm("sglang"), [{"run_id": f"{job}_SMOKE_sglang", "kind": "smoke", "seed": SMOKE_SEED,
+                                                                 "n_requests": SMOKE_N, "cell": "SMOKE"}], role="smoke")]
+    if vllm_ready():
+        smoke.append(boot(f"{job}_smoke_vllm", smoke_arm("vllm"), [{"run_id": f"{job}_SMOKE_vllm", "kind": "smoke", "seed": SMOKE_SEED,
+                                                                    "n_requests": SMOKE_N, "cell": "SMOKE"}], role="smoke"))
+    order = list(names)
+    rng.shuffle(order)
+    boots = list(smoke)
+    for name in order:
+        cells = [cap_run(f"{job}_{name}_lad_r{r}_s{s}", "W1", r, s, CAP_N, cell="LADDER") for r in rates for s in CAP_SEEDS]
+        rng.shuffle(cells)
+        boots.append(boot(f"{job}_lad_{name}", arm(name), cells))
+    return {"job": job, "kind": "LADDER", "ladder": rates, "ext": ext, "boots": boots, "pending": pending}
+
+
+def plan_J1b(addendum):
+    """Sustained cells: {lambda*_arm, 0.8 lambda*_arm} x 600 s x seed 201 per ladder arm (+ registered 0.5 point, decided in-boot);
+    refcell at Job start and end."""
+    job = "J1b"
+    rng = _rng(job)
+    lam = need(addendum, "lambda_star_burst")
+    ref_rate = need(addendum, "refcell_rate")
+    names, pending = _arms(LADDER_ARMS)
+    order = list(names)
+    rng.shuffle(order)
+    boots = [refcell_boot(job, "start", ref_rate)]
+    for name in order:
+        l = need(addendum, "lambda_star_burst", name)
+        pts = [round(f * l, 6) for f in SUSTAIN_FACTORS]
+        rng.shuffle(pts)
+        runs = [cap_run(f"{job}_{name}_sus_r{r}", "W1", r, SUSTAIN_SEED, int(round(r * SUSTAIN_S)), kind="sustain", cell="SUSTAIN",
+                        factor=round(r / l, 6)) for r in pts]
+        boots.append(boot(f"{job}_sus_{name}", arm(name), runs, lambda_burst=l,
+                          extra_run=cap_run(f"{job}_{name}_sus_r{round(SUSTAIN_EXTRA * l, 6)}", "W1", round(SUSTAIN_EXTRA * l, 6),
+                                            SUSTAIN_SEED, int(round(SUSTAIN_EXTRA * l * SUSTAIN_S)), kind="sustain", cell="SUSTAIN",
+                                            factor=SUSTAIN_EXTRA, conditional=True)))
+    boots.append(refcell_boot(job, "end", ref_rate))
+    return {"job": job, "kind": "SUSTAIN", "lambda_star_burst": lam, "boots": boots, "pending": pending}
+
+
+def plan_J2(addendum):
+    """Steady-state R1/R2 x 4 seeds, 7 arms (ABBA), refcells, then the instrumentation boots (separate from every measurement arm, C5)."""
+    job = "J2"
+    lam = need(addendum, "lambda_star_ref")
+    ref_rate = need(addendum, "refcell_rate")
+    names, pending = _arms(MEAS_ARMS)
+    rates = {c: round(f * lam, 6) for c, f in STEADY.items()}
+
+    def runs_for(name, seeds, rd):
+        return [cap_run(f"{job}_{name}_{c}_s{s}", "W1", rates[c], s, STEADY_N, kind="steady", cell=c) for c in STEADY for s in seeds]
+    meas, halves = abba(job, "STEADY", names, runs_for)
+    instr = []
+    for k in ("SG", "PM") + (("VL",) if vllm_ready() else ()):
+        a = instr_arm(k)
+        instr.append(boot(f"{job}_instr_{k}", a, [cap_run(f"{job}_INSTR_{k}", "W1", rates["R2"], INSTR_SEED, INSTR_N, kind="instr",
+                                                          cell="INSTR")], role="instr"))
+    boots = [refcell_boot(job, "start", ref_rate)] + meas + instr + [refcell_boot(job, "end", ref_rate)]
+    return {"job": job, "kind": "STEADY", "lambda_star_ref": lam, "rates": rates, "seed_halves": halves, "boots": boots,
+            "pending": pending + ([] if vllm_ready() else ["INSTR-VL-stock"])}
+
+
+def plan_J3(addendum):
+    """Change trace (LO 0.2 / HI 0.8 x lambda*_ref, 200 per segment, 3 rounds) x 4 seeds x 7 arms (ABBA) + W3: floor (refcell-start boot),
+    SG-stock W3 ladder (6 rungs x 2 seeds), then R3 = 0.8 lambda*_W3 x 96 requests x 4 seeds x W3 arms (rates filled in-Job)."""
+    job = "J3"
+    lam = need(addendum, "lambda_star_ref")
+    ref_rate = need(addendum, "refcell_rate")
+    names, pending = _arms(MEAS_ARMS)
+
+    def trace_for(name, seeds, rd):
+        return [trace_run(f"{job}_{name}_TRACE_s{s}", s, lam) for s in seeds]
+    tr, halves = abba(job, "TRACE", names, trace_for)
+    rng = _rng(job, "W3")
+    w3l = [cap_run(f"{job}_SG-stock_W3lad_r{r}_s{s}", "W3", r, s, W3_LADDER_N, cell="W3LADDER") for r in w3_ladder_rates() for s in CAP_SEEDS]
+    rng.shuffle(w3l)
+    w3names, w3pending = _arms(W3_ARMS)
+
+    def w3_for(name, seeds, rd):
+        return [cap_run(f"{job}_{name}_R3_s{s}", "W3", None, s, W3_R3_N, kind="steady", cell="R3", rate_key="R3") for s in seeds]
+    w3, w3halves = abba(job, "R3", w3names, w3_for)
+    boots = [refcell_boot(job, "start", ref_rate, floor=True)] + tr + [boot(f"{job}_w3lad_SG-stock", arm("SG-stock"), w3l, role="w3ladder")]
+    boots += [dict(b, stage_gated="R3") for b in w3] + [refcell_boot(job, "end", ref_rate)]
+    return {"job": job, "kind": "TRACE_W3", "lambda_star_ref": lam, "seed_halves": {"TRACE": halves, "R3": w3halves}, "boots": boots,
+            "pending": sorted(set(pending + w3pending))}
+
+
+JOBS = ("J1", "J1b", "J2", "J3")
+
+
+def make_plan(job, addendum=None):
+    if job == "J1":
+        return finish(plan_J1(addendum))
+    if job == "J1-ext":
+        return finish(dict(plan_J1(addendum, ext=True), job="J1-ext"))
+    if job == "J1b":
+        return finish(plan_J1b(addendum))
+    if job == "J2":
+        return finish(plan_J2(addendum))
+    if job == "J3":
+        return finish(plan_J3(addendum))
+    raise ValueError(f"unknown job {job}")
+
+
+# ---- time model ----------------------------------------------------------------------------------------------------------
+def run_est_min(run, lam=PLAN_LAMBDA):
+    k = run["kind"]
+    if k == "smoke":
+        return SMOKE_RUN_MIN
+    if k in ("cap", "refcell") and run["workload"] == "W1":
+        return CAP_CELL_MIN
+    if k == "trace":
+        return run["rounds"] * (run["np"] / run["rate_lo"] + run["np"] / run["rate_hi"]) / 60.0 + run["rounds"] * 2 * DRAIN_MIN
+    rate = run.get("rate") or (W3_R3_FACTOR * lam["W3"])
+    drain = W3_DRAIN_MIN if run["workload"] == "W3" else DRAIN_MIN
+    return run["n_requests"] / rate / 60.0 + drain
+
+
+def boot_est_min(b):
+    m = BOOT_OH_MIN + sum(run_est_min(r) for r in b["runs"]) + (FLOOR_MIN if b.get("floor") else 0.0)
+    if b.get("extra_run"):
+        m += run_est_min(b["extra_run"])            # worst case: the conditional 0.5 point runs
+    return round(m, 1)
+
+
+def finish(plan):
+    plan["est_min"] = round(sum(boot_est_min(b) for b in plan["boots"]), 1)
+    plan["hard_cap_min"] = int(-(-plan["est_min"] * HARD_CAP_FACTOR // 5) * 5)
+    plan["engine_trees"] = sorted({b["arm_def"]["tree"] for b in plan["boots"]})
+    plan["vllm_placement"] = VLLM_PLACEMENT
+    return plan
+
+
+CANON = {"lambda_star_burst": {a: 6.0 + 0.1 * i for i, a in enumerate(LADDER_ARMS)}, "lambda_star_ref": 5.0, "refcell_rate": 6.0}
+
+
+def plans_sha(addendum=CANON):
+    return {j: sha(make_plan(j, addendum)) for j in JOBS}
+
+
+# ---- plan checks (runner refuses a plan with any problem) -----------------------------------------------------------------
+def plan_problems(plan):
+    out = []
+    ids = [r["run_id"] for b in plan["boots"] for r in b["runs"]] + [b["extra_run"]["run_id"] for b in plan["boots"] if b.get("extra_run")]
+    if len(ids) != len(set(ids)):
+        out.append("duplicate run_id")
+    bids = [b["boot_id"] for b in plan["boots"]]
+    if len(bids) != len(set(bids)):
+        out.append("duplicate boot_id")
+    if set(EVAL_SEEDS) & (set(CAP_SEEDS) | {SUSTAIN_SEED, INSTR_SEED, SMOKE_SEED}):
+        out.append("evaluation seeds overlap capacity/instrumentation seeds")
+    for b in plan["boots"]:
+        a = b["arm_def"]
+        if a["engine"] == "vllm" and not vllm_ready():
+            out.append(f"{b['boot_id']}: vLLM boot planned while VLLM_PLACEMENT={VLLM_PLACEMENT}")
+        if a["engine"] == "sglang":
+            if a["name"] in PRISTINE_ARMS + ("SMOKE-SG-stock",) and a["tree"] != "pristine":
+                out.append(f"{b['boot_id']}: {a['name']} must boot the pristine tree")
+            if a["tree"] == "pristine" and (a["env"] or any(x in ("--enable-pdmux", "--pdmux-config-path") for x in a["cmd"])):
+                out.append(f"{b['boot_id']}: pristine boot with PD-mux env/argv")
+            if a["name"] in PM_D and a.get("sticky") is not False:
+                out.append(f"{b['boot_id']}: static PD-mux arm must be non-sticky (decision 49)")
+        if b["role"] == "meas" and a["env"].get("PDMUX_DECODE_PROBE_PATH"):
+            out.append(f"{b['boot_id']}: instrumentation env in a measurement boot (C5)")
+    meas = [b for b in plan["boots"] if b["role"] == "meas" and plan["kind"] in ("STEADY", "TRACE_W3")]
+    cells = {}
+    for b in meas:
+        for r in b["runs"]:
+            cells.setdefault(r["cell"], {}).setdefault(b["arm"], []).append(r["seed"])
+    for c, by in cells.items():
+        for a, seeds in by.items():
+            if sorted(seeds) != sorted(EVAL_SEEDS):
+                out.append(f"cell {c}: arm {a} seeds {sorted(seeds)} != {list(EVAL_SEEDS)}")
+        if c != "R3" and "SG-rep" not in by:
+            out.append(f"cell {c}: placebo arm SG-rep missing")
+    if plan["kind"] in ("STEADY", "TRACE_W3"):
+        refs = [b for b in plan["boots"] if b["role"] == "refcell"]
+        if [b["runs"][0]["tag"] for b in refs] != ["start", "end"] or plan["boots"][0]["role"] != "refcell" or plan["boots"][-1]["role"] != "refcell":
+            out.append("refcell must be the first and the last boot")
+    return out
+
+
+if __name__ == "__main__":
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("job", choices=JOBS + ("J1-ext",))
+    ap.add_argument("--addendum")
+    a = ap.parse_args()
+    add = json.load(open(a.addendum)) if a.addendum else (CANON if a.job != "J1" else None)
+    p = make_plan(a.job, add)
+    print(json.dumps({"job": p["job"], "boots": len(p["boots"]), "est_min": p["est_min"], "hard_cap_min": p["hard_cap_min"],
+                      "pending": p["pending"], "problems": plan_problems(p), "plan_sha": sha(p),
+                      "canonical_addendum": a.addendum is None and a.job != "J1"}, indent=1))

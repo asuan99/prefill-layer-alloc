@@ -108,6 +108,8 @@ CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔�
 6. 선행 1(vLLM 이미지 + Workspace bring-up 1회) 승인. → **승인·진행 중(2026-11-01)**
 7. `SG-off` arm 추가(권고: Q8은 implfix·M3 J1 수치의 범위를 정하는 데 필요) / 미추가.
 
+**rev0 → rev1 전 추가 결정(2026-11-02, `REPORT_sb_harness_design_2026-11-01.md` §3·§4)**: ⑧ vLLM 배치 — (a) 별도 Job / **(b′) `sglang-runtime` + `/opt/vllm-venv` 새 공개 이미지(권고)** / (b) Job 안 격리 venv / (c) 비권고 — J1b 전 결정 필수 · ⑨ J3 시간 ≈670 min(상한 초과) — J3a(W1 trace, ≈8.6 h → 또 분할) / trace 라운드 3→2(게이트 2 이탈 공시) / W3를 J4로 분리 / 조합 — 권고: **W3를 J4로 분리 + W1 trace를 arm 절반씩 J3a·J3b(쌍은 같은 Job 유지)** · ⑩ 하네스 편차 D-1…D-6·해소 O-2…O-14 승인(권고: 전부 승인, D-1·O-10은 범위 문구로 공시).
+
 확정(2026-11-01, 사용자 "진행" = 권고 채택): ① 둘 다 보고·판정 셀 rate는 **지속 기준** · ② vLLM 0.31.0 · ③ 공통 절대 rate · ④ `PM-ref34` 추가 · ⑤ Job 3분할 · ⑥ 승인(Workspace create 재시도 허용) · ⑦ `SG-off` 추가. → §13은 닫혔고 남은 봉인 조건은 §11 선행 작업 + 하네스 감사 1회.
 
 ## 부록 D — 수정 트리에서 플래그 OFF일 때 upstream과 달라지는 실행 경로 (engine-porter 진단, 2026-11-01, 코드 판독·GPU 미측정)
