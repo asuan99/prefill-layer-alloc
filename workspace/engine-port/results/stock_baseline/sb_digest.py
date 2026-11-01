@@ -1,6 +1,6 @@
 #!/usr/bin/env python3
-"""HARNESS_DIGEST of PREREG_STOCK_BASE rev0.  `make` runs ONCE at the seal; `check` runs in sb_job.sh when PDMUX_SB_SEALED=1 (rc 13 on any
-differing byte).  `make` refuses unless ENGINE_DIGEST.txt holds the registered 30-entry engine digest 2836112b... (the tree with the
+"""HARNESS_DIGEST of PREREG_STOCK_BASE rev1 (PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md).  `make` runs ONCE at the seal; `check` runs
+in sb_job.sh when PDMUX_SB_SEALED=1 (rc 13 on any differing byte).  `make` refuses unless ENGINE_DIGEST.txt holds the registered 30-entry engine digest 2836112b... (the tree with the
 decode-probe EXTEND flag, dev_tree_edits #39).
 Covered: every sb_* file except sb_mutants.py, sb_job.sh, ENGINE_DIGEST.txt, the PREREG, the A5 forecast R_SER_FORECAST_NANO.csv (§11-5
 seal); the reused sealed policy / cost-term harness files (bytes are also pinned by their own HARNESS_DIGEST, here they are re-hashed so a
@@ -37,7 +37,7 @@ def sha(p):
 def own_files():
     names = sorted(p.name for p in HERE.glob("sb_*.py") if p.name != "sb_mutants.py")
     return [HERE / n for n in names] + [HERE / "sb_job.sh", HERE / "ENGINE_DIGEST.txt", HERE / "R_SER_FORECAST_NANO.csv",
-                                        ENG / "results/stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md"]
+                                        ENG / "results/stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md"]
 
 
 def make():

@@ -1,4 +1,4 @@
-"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev0 DRAFT).  No GPU, no server.
+"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev1 DRAFT).  No GPU, no server.
 SB_DIR (env) points the tests at a copy of the harness -- sb_mutants.py uses it: every registered rule must make a test FAIL when it is
 reverted (lesson 53)."""
 import gzip
@@ -29,6 +29,17 @@ def pristine_stamp(argv=()):
             "engine_tree_ref_overridden": False, "engine_tree_markers_found": [], "argv": list(argv)}
 
 
+def vllm_stamp(**kw):
+    return dict({"engine_tree": "vllm", "python": SP.VLLM_PY, "vllm_venv_freeze_sha256": SP.VLLM_VENV_FREEZE_SHA256,
+                 "sglang_freeze_sha256": SP.SGLANG_FREEZE_SHA256, "attention_backend": "FLASHINFER", "cudagraph_mode": "FULL_AND_PIECEWISE"}, **kw)
+
+
+IMG_OK = {"sglang_ok": True, "vllm_ok": True, "sglang_freeze_sha256": SP.SGLANG_FREEZE_SHA256,
+          "vllm_venv_freeze_sha256": SP.VLLM_VENV_FREEZE_SHA256, "vllm_venv_freeze_sha256_file": SP.VLLM_VENV_FREEZE_SHA256}
+VL_LOG = ("INFO [cuda.py:300] Using FLASHINFER backend.\n"
+          "INFO [core.py:90] compilation_config={'cudagraph_mode': <CUDAGraphMode.FULL_AND_PIECEWISE: (2, 1)>, 'level': 3}\n")
+
+
 def patched_stamp(sha="p" * 64):
     return {"engine_tree": "patched", "engine_tree_manifest_sha256": sha, "engine_tree_markers_found": list(SP.REQUIRED_PATCHED_MARKERS) + [r"\bPDMUX_[A-Z]"],
             "argv": []}
@@ -43,7 +54,8 @@ class FakeServer:
 
     def start(self):
         self.port = 1
-        self.log.write_text("server_args=ServerArgs(attention_backend='flashinfer', mem_fraction_static=0.83, chunked_prefill_size=8192)\n")
+        self.log.write_text(VL_LOG if self.a["engine"] == "vllm" else
+                            "server_args=ServerArgs(attention_backend='flashinfer', mem_fraction_static=0.83, chunked_prefill_size=8192)\n")
         if self.a["engine"] == "sglang":
             st = self.so or (pristine_stamp() if self.a["tree"] == "pristine" else patched_stamp())
             (self.bdir / f"tree_{self.a['name']}.json").write_text(json.dumps(st))
@@ -90,11 +102,11 @@ def fake_metrics():
     return m
 
 
-def run_fake_job(td, job, add=None, ttft_of=None, server_kw=None):
+def run_fake_job(td, job, add=None, ttft_of=None, server_kw=None, image_check_fn=lambda: dict(IMG_OK)):
     plan = SP.make_plan(job, add)
     out = Path(td) / job
     res = RU.run_job(plan, out, lambda bdir, a: FakeServer(bdir, a, **(server_kw or {})), make_replay(ttft_of), W1_POOL, W3_POOL,
-                     metrics_fn=fake_metrics())
+                     metrics_fn=fake_metrics(), image_check_fn=image_check_fn)
     return plan, out, res
 
 
@@ -133,13 +145,33 @@ class SpecTests(unittest.TestCase):
 
     def test_vllm_arm(self):
         a = SP.arm("VL-stock")
-        self.assertEqual(a["image_key"], "PDMUX_VESSL_IMAGE_VLLM")
-        self.assertEqual(a["cmd"][:2], ["vllm", "serve"])
+        self.assertEqual(SP.VLLM_PLACEMENT, "same_image_venv")
+        self.assertEqual(a["image_key"], "PDMUX_VESSL_IMAGE_SBASE")
+        self.assertEqual(a["cmd"][:3], ["/opt/vllm-venv/bin/python", "-m", "vllm.entrypoints.openai.api_server"])
+        self.assertEqual(a["cmd"][a["cmd"].index("--model") + 1], SP.S.NANO_ID)
         self.assertEqual(a["cmd"][a["cmd"].index("--max-num-seqs") + 1], "48")
         self.assertIn("--no-enable-prefix-caching", a["cmd"])
-        self.assertEqual(SP.VLLM_PLACEMENT, "PENDING_USER_DECISION")
-        with self.assertRaises(RuntimeError):
-            RU.server_cmd(a, "/x", 1)
+        self.assertEqual(a["env"], {"CUDA_HOME": "/usr/local/cuda", "TORCH_CUDA_ARCH_LIST": "8.0"})
+        self.assertEqual(RU.server_cmd(a, "/x", 7), a["cmd"] + ["--port", "7"])
+
+    def test_one_image_for_every_arm(self):
+        self.assertTrue(SP.IMAGE_SBASE_DIGEST.startswith("sha256:a5f9bf0f"))
+        self.assertTrue(SP.image_is_sbase(SP.image_digests()["PDMUX_VESSL_IMAGE_SBASE"]))
+        self.assertFalse(SP.image_is_sbase(SP.image_digests()["PDMUX_VESSL_IMAGE"]))
+        self.assertFalse(SP.image_is_sbase(""))
+        self.assertIn(SP.IMAGE_SBASE_DIGEST, SP.image_digests().get("PDMUX_VESSL_IMAGE_SBASE", ""))
+        for n in SP.ARM_NAMES:
+            self.assertEqual(SP.arm(n)["image_key"], "PDMUX_VESSL_IMAGE_SBASE", n)
+        for j in SP.JOBS:
+            p = SP.make_plan(j, ADD if j != "J1" else None)
+            self.assertEqual({b["arm_def"]["image_key"] for b in p["boots"]}, {"PDMUX_VESSL_IMAGE_SBASE"})
+        p = SP.make_plan("J2", ADD)
+        p["boots"][1]["arm_def"]["image_key"] = "PDMUX_VESSL_IMAGE_VLLM"
+        self.assertTrue(any("image key" in x for x in SP.plan_problems(p)))
+        p = SP.make_plan("J2", ADD)
+        b = [x for x in p["boots"] if x["arm"] == "VL-stock"][0]
+        b["arm_def"]["env"] = dict(b["arm_def"]["env"], PYTHONPATH="/opt/pdmux/sglang_engine_dev/python")
+        self.assertTrue(any("vLLM boot must use" in x for x in SP.plan_problems(p)))
 
     def test_ladder_grid(self):
         r = SP.ladder_rates()
@@ -151,9 +183,10 @@ class SpecTests(unittest.TestCase):
     def test_J1_plan(self):
         p = SP.make_plan("J1")
         self.assertEqual(p["boots"][0]["role"], "smoke")
+        self.assertEqual([b["arm"] for b in p["boots"] if b["role"] == "smoke"], ["SMOKE-SG-stock", "SMOKE-VL-stock"])
         lad = [b for b in p["boots"] if b["role"] == "meas"]
-        self.assertEqual(sorted(b["arm"] for b in lad), sorted(["SG-stock", "SG-mix", "SG-off", "PM-ref"]))
-        self.assertIn("VL-stock", p["pending"])
+        self.assertEqual(sorted(b["arm"] for b in lad), sorted(["SG-stock", "SG-mix", "SG-off", "PM-ref", "VL-stock"]))
+        self.assertEqual(p["pending"], [])
         for b in lad:
             self.assertEqual(len(b["runs"]), 20)
             self.assertEqual({r["seed"] for r in b["runs"]}, {201, 202})
@@ -177,7 +210,7 @@ class SpecTests(unittest.TestCase):
         r1 = [b["arm"] for b in meas if b["abba_round"] == 1]
         r2 = [b["arm"] for b in meas if b["abba_round"] == 2]
         self.assertEqual(r2, list(reversed(r1)))
-        self.assertEqual(sorted(r1), sorted(SP.SG_ARMS))
+        self.assertEqual(sorted(r1), sorted(SP.MEAS_ARMS))
         h1, h2 = p["seed_halves"]
         for b in meas:
             seeds = {r["seed"] for r in b["runs"]}
@@ -192,18 +225,37 @@ class SpecTests(unittest.TestCase):
         self.assertEqual(sg["arm_def"]["tree"], "patched")
         self.assertEqual(sg["arm_def"]["env"]["PDMUX_PROBE_EXTEND_TIME"], "1")
         self.assertEqual(sg["runs"][0]["rate"], p["rates"]["R2"])
+        mt = [b for b in p["boots"] if b["role"] == "instr_metrics"]
+        self.assertEqual(len(mt), 1)
+        mt = mt[0]
+        self.assertEqual((mt["arm_def"]["tree"], mt["arm_def"]["env"]), ("pristine", {}))
+        self.assertEqual(mt["arm_def"]["cmd"], SP.arm("SG-stock")["cmd"] + ["--enable-metrics"])
+        self.assertEqual([(r["rate"], r["seed"], r["n_requests"], r["cell"]) for r in mt["runs"]], [(p["rates"]["R1"], 301, 200, "INSTR_METRICS")])
+        self.assertGreater(roles.index("instr_metrics"), max(k for k, r in enumerate(roles) if r == "meas"))
+        self.assertTrue(any("INSTR-VL-stock" in x for x in p["pending"]))
         self.assertEqual(SP.plan_problems(p), [])
 
     def test_J3_plan(self):
+        """rev1: J3 = W3 only -- refcell(+floor) -> SG-stock W3 ladder -> R3 ABBA over W3_ARMS -> refcell; no W1 change trace."""
         p = SP.make_plan("J3", ADD)
-        tr = [r for b in p["boots"] for r in b["runs"] if r["kind"] == "trace"]
-        self.assertTrue(all(abs(r["rate_lo"] - 1.0) < 1e-9 and abs(r["rate_hi"] - 4.0) < 1e-9 for r in tr))
+        self.assertEqual(p["kind"], "W3")
+        self.assertFalse(hasattr(SP, "trace_run") or hasattr(SP, "TRACE_LO"))
+        roles = [b["role"] for b in p["boots"]]
+        self.assertEqual(roles, ["refcell", "w3ladder"] + ["meas"] * (2 * len(SP.W3_ARMS)) + ["refcell"])
         self.assertTrue(p["boots"][0]["floor"])
+        runs = [r for b in p["boots"] if b["role"] in ("meas", "w3ladder") for r in b["runs"]]
+        self.assertTrue(runs and all(r["workload"] == "W3" for r in runs))
+        self.assertEqual({r["cell"] for b in p["boots"] if b["role"] == "meas" for r in b["runs"]}, {"R3"})
         r3 = [b for b in p["boots"] if b.get("stage_gated") == "R3"]
-        self.assertEqual(sorted({b["arm"] for b in r3}), sorted(a for a in SP.W3_ARMS if a != "VL-stock"))
+        self.assertEqual(sorted({b["arm"] for b in r3}), sorted(SP.W3_ARMS))
+        self.assertIn("VL-stock", SP.W3_ARMS)
         lad = [b for b in p["boots"] if b["role"] == "w3ladder"][0]
         self.assertEqual(len(lad["runs"]), 12)
         self.assertEqual(SP.plan_problems(p), [])
+        bad = json.loads(json.dumps(p))
+        bad["boots"].insert(2, SP.boot("J3_x", SP.arm("SG-stock"), [SP.cap_run("J3_x_R2", "W1", 4.0, 1, 200, kind="steady", cell="R2")]))
+        self.assertTrue(any("W3 only" in x for x in SP.plan_problems(bad)))
+        self.assertTrue(any("plan kind" in x for x in SP.plan_problems(dict(p, kind="TRACE_W3"))))
 
     def test_plan_problems_catch_bad_boots(self):
         p = SP.make_plan("J2", ADD)
@@ -222,12 +274,60 @@ class SpecTests(unittest.TestCase):
         txt = SP.stable(SP.make_plan("J2", ADD))
         self.assertNotIn(str(SP.ENG), txt)
 
-    def test_time_model_reports_J3_over_4h(self):
-        self.assertGreater(SP.make_plan("J3", ADD)["est_min"], 240)
+    def test_time_model_and_hard_cap(self):
+        for j in SP.JOBS:
+            p = SP.make_plan(j, ADD if j != "J1" else None)
+            self.assertEqual(p["hard_cap_min"], int(-(-p["est_min"] * SP.HARD_CAP_FACTOR // 5) * 5))
+        p = SP.make_plan("J3", ADD)
+        self.assertAlmostEqual(p["est_min"], sum(SP.boot_est_min(b) for b in p["boots"]), places=6)
+        self.assertLess(p["est_min"], 400)                  # rev0 (trace + W3) was ~670 min
 
 
 # ============================================================================================================== runner
 class RunnerEnvTests(unittest.TestCase):
+    def test_vllm_env(self):
+        base = {"PDMUX_JOB_NAME": "j", "PDMUX_ROOT": "/r", "PDMUX_R2_POLICY": "fixed", "PYTHONPATH": "/opt/pdmux/sglang_engine_dev/python",
+                "PATH": "/opt/conda/bin:/bin"}
+        env = RU.server_env(SP.arm("VL-stock"), "/b", base)
+        self.assertEqual([k for k in env if k.startswith("PDMUX_")], [])
+        self.assertNotIn("PYTHONPATH", env)
+        self.assertEqual((env["CUDA_HOME"], env["TORCH_CUDA_ARCH_LIST"]), ("/usr/local/cuda", "8.0"))
+        self.assertTrue(env["PATH"].startswith("/opt/vllm-venv/bin" + os.pathsep))
+
+    def test_image_env_check(self):
+        import hashlib
+        with tempfile.TemporaryDirectory() as td:
+            opt, venv = Path(td) / "opt", Path(td) / "venv"
+            opt.mkdir()
+            venv.mkdir()
+            (opt / "pip_freeze.txt").write_text("sglang==0.5.10\n")
+            (venv / "pip_freeze.txt").write_text("vllm==0.31.0\n")
+            sg = hashlib.sha256(b"sglang==0.5.10\n").hexdigest()
+            vl = hashlib.sha256(b"vllm==0.31.0\n").hexdigest()
+            (venv / "pip_freeze.sha256").write_text(vl + "\n")
+            ic = RU.image_env_check(opt, venv)
+            self.assertEqual((ic["sglang_freeze_sha256"], ic["vllm_venv_freeze_sha256"], ic["vllm_venv_freeze_sha256_file"]), (sg, vl, vl))
+            self.assertFalse(ic["sglang_ok"] or ic["vllm_ok"])               # not the registered bytes
+            saved = (SP.SGLANG_FREEZE_SHA256, SP.VLLM_VENV_FREEZE_SHA256)
+            try:
+                SP.SGLANG_FREEZE_SHA256, SP.VLLM_VENV_FREEZE_SHA256 = sg, vl
+                ic = RU.image_env_check(opt, venv)
+                self.assertTrue(ic["sglang_ok"] and ic["vllm_ok"])
+                (venv / "pip_freeze.sha256").write_text("0" * 64 + "\n")      # recorded sha disagrees with the bytes
+                self.assertFalse(RU.image_env_check(opt, venv)["vllm_ok"])
+            finally:
+                SP.SGLANG_FREEZE_SHA256, SP.VLLM_VENV_FREEZE_SHA256 = saved
+        self.assertIsNone(RU.image_refusal(IMG_OK, "vllm"))
+        self.assertIn("VLLM_VENV_FREEZE", RU.image_refusal(dict(IMG_OK, vllm_ok=False), "vllm"))
+        self.assertIsNone(RU.image_refusal(dict(IMG_OK, vllm_ok=False), "sglang"))
+        self.assertIn("SGLANG_FREEZE", RU.image_refusal(dict(IMG_OK, sglang_ok=False), "vllm"))
+        self.assertIn("SGLANG_FREEZE", RU.image_refusal(dict(IMG_OK, sglang_ok=False), "sglang"))
+
+    def test_vllm_log_facts(self):
+        f = RU.parse_vllm_log(VL_LOG)
+        self.assertEqual((f["attention_backend"], f["cudagraph_mode"]), ("FLASHINFER", "FULL_AND_PIECEWISE"))
+        self.assertEqual(RU.parse_vllm_log("nothing")["attention_backend"], None)
+
     def test_pristine_env_has_no_engine_knob(self):
         base = {"PDMUX_R2_POLICY": "fixed", "PDMUX_JOB_NAME": "j", "PDMUX_TELEMETRY_PATH": "/t", "PATH": "/bin"}
         env = RU.server_env(SP.arm("SG-stock"), "/b", base)
@@ -273,6 +373,19 @@ class RunnerEnvTests(unittest.TestCase):
         self.assertFalse(RU.sustain_eval(rec(2.0, 100.0, 250.0))["pass"])
         self.assertFalse(RU.sustain_eval(rec(2.0, 100.0, 100.0, drop=0.1))["pass"])
 
+    def test_sustain_denominator_is_observed_arrivals(self):
+        """Healthy run whose window arrival counts swing around the nominal 240 by Poisson-like noise (+-8 %): every request completes in its
+        window, so it must PASS; a nominal-rate denominator (2.0 x 120 = 240) would fail it on the 220-arrival windows (220/240 < 0.95)."""
+        reqs = []
+        for w, n in enumerate((240, 220, 260, 220, 260)):
+            for i in range(n):
+                t = w * 120.0 + i * (118.0 / n)
+                reqs.append({"scheduled_arrival_s": t, "sent_s": t, "ttft_ms": 100.0, "completion_s": t + 1.0, "error": "", "token_itl_ms": [10.0]})
+        ev = RU.sustain_eval({"spec": {"rate": 2.0}, "segments": [{"requests": reqs}]})
+        self.assertTrue(ev["pass"], ev["windows"])
+        self.assertEqual([w["arrivals"] for w in ev["windows"]], [240, 220, 260, 220, 260])
+        self.assertTrue(all(w["nominal_arrivals"] == 240.0 for w in ev["windows"]))
+
 
 class RunnerJobTests(unittest.TestCase):
     def setUp(self):
@@ -298,7 +411,12 @@ class RunnerJobTests(unittest.TestCase):
             self.assertEqual(len(runs), n_req)
             for r in runs:
                 self.assertEqual((r["job_name"], r["gpu_uuid"]), ("jobA", "GPU-a"))
-                self.assertIn(r["engine_tree"], ("pristine", "patched"))
+                self.assertIn(r["engine_tree"], ("pristine", "patched", "vllm"))
+                scraped = r["arm"] == "VL-stock" or r["cell"] == "INSTR_METRICS"
+                self.assertEqual("server_ttft_metric" in r, scraped, r["run_id"])
+                if scraped:
+                    self.assertIsNotNone(r["server_ttft_metric"]["before"]["count"])
+                    self.assertIsNotNone(r["server_ttft_metric"]["after"]["count"])
                 self.assertLessEqual(r["t_load_start_epoch"], r["t_load_end_epoch"])
                 q = r["segments"][0]["requests"][0]
                 for k in ("t_sent_mono", "t_finished_mono", "token_t_mono"):
@@ -306,6 +424,28 @@ class RunnerJobTests(unittest.TestCase):
                 self.assertTrue(r["tree_stamp"])
             boots = [json.loads(p.read_text()) for p in (out / "boots").glob("*/boot.json")]
             self.assertTrue(all(b["job_name"] == "jobA" and b["gpu_uuid"] == "GPU-a" for b in boots))
+            self.assertTrue(all(b["image_env"]["sglang_ok"] for b in boots))
+            vl = [b for b in boots if b["engine"] == "vllm"]
+            self.assertEqual(len(vl), 2)
+            for b in vl:
+                st = b["tree_stamp"]
+                self.assertEqual(st["engine_tree"], "vllm")
+                self.assertEqual(st["vllm_venv_freeze_sha256"], SP.VLLM_VENV_FREEZE_SHA256)
+                self.assertEqual((st["attention_backend"], st["cudagraph_mode"]), ("FLASHINFER", "FULL_AND_PIECEWISE"))
+
+    def test_image_mismatch_refuses_boot(self):
+        with tempfile.TemporaryDirectory() as td:
+            _p, out, res = run_fake_job(td, "J2", ADD, image_check_fn=lambda: dict(IMG_OK, vllm_ok=False))
+            st = {b["boot_id"]: b["status"] for b in res}
+            self.assertTrue(all(v == "REFUSED_IMAGE_ENV" for k, v in st.items() if "VL-stock" in k))
+            self.assertTrue(all(v == "done" for k, v in st.items() if "VL-stock" not in k))
+            self.assertEqual(RU.exit_code(res), 17)
+            b = json.loads((out / "boots" / [k for k in st if "VL-stock" in k][0] / "boot.json").read_text())
+            self.assertIn("VLLM_VENV_FREEZE", b["why"])
+            self.assertEqual(list((out / "runs").glob("*VL-stock*")), [])
+        with tempfile.TemporaryDirectory() as td:
+            _p, _o, res = run_fake_job(td, "J1", None, image_check_fn=lambda: dict(IMG_OK, sglang_ok=False))
+            self.assertTrue(all(b["status"] == "REFUSED_IMAGE_ENV" for b in res))
 
     def test_dead_boot_nonzero(self):
         with tempfile.TemporaryDirectory() as td:
@@ -375,7 +515,7 @@ def seg(phase, n_good, n_bad, dur, good_ttft=500.0, bad_ttft=8000.0, err=""):
 
 def boot_rec(arm, tree_stamp=None):
     if arm == "VL-stock":
-        return {"boot_id": f"b_{arm}", "engine": "vllm", "engine_tree": "vllm", "status": "ok", "tree_stamp": {}}
+        return {"boot_id": f"b_{arm}", "engine": "vllm", "engine_tree": "vllm", "status": "ok", "tree_stamp": tree_stamp or vllm_stamp()}
     t = "pristine" if arm in SP.PRISTINE_ARMS else "patched"
     return {"boot_id": f"b_{arm}", "engine": "sglang", "engine_tree": t, "status": "ok",
             "tree_stamp": tree_stamp or (pristine_stamp() if t == "pristine" else patched_stamp())}
@@ -394,6 +534,7 @@ def job_of(good_by_arm, cell="R2", jitter=None, job_override=None, stamp_overrid
 
 
 SMOKE_OK = {"status": "CLIENT_DEF_OK"}
+OFFSET_OK = {"status": "TTFT_OFFSET_OK"}
 EQ = {"SG-stock": 80, "SG-rep": 80, "SG-mix": 80, "SG-off": 80, "PM-ref": 80, "PM-ref34": 80, "VL-stock": 80}
 JIT = {(a, s): d for a in EQ for s, d in zip(SP.EVAL_SEEDS, (0, 1, -1, 0))}
 
@@ -421,8 +562,8 @@ class AnalyzeTests(unittest.TestCase):
         self.assertTrue(AN.placebo_invalid(dict(ok, mean=-0.01, lo=-0.018, hi=-0.002)))
         self.assertTrue(AN.placebo_invalid(None))
 
-    def _pair(self, job, key, smoke=SMOKE_OK, cell="R2"):
-        return AN.analyze_cell(job, cell, None, smoke, 3000.0)["pairs"][key]
+    def _pair(self, job, key, smoke=SMOKE_OK, cell="R2", offset=OFFSET_OK):
+        return AN.analyze_cell(job, cell, None, smoke, 3000.0, offset)["pairs"][key]
 
     def test_equiv_cell_valid(self):
         p = self._pair(job_of(EQ, jitter=JIT), "Q8:SG-off_vs_SG-stock")
@@ -490,6 +631,62 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(self._pair(j, "Q3:VL-stock_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
         self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", smoke={"status": "CLIENT_DEF_UNCHECKED"})["label"], "EQUIV_WITHIN_3PCT")
 
+    def test_engine_pair_needs_in_load_offset(self):
+        j = job_of(EQ, jitter=JIT)
+        p = self._pair(j, "Q3:VL-stock_vs_SG-stock", offset={"status": "TTFT_OFFSET_SHIFT"})
+        self.assertEqual(p["label"], "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT")
+        self.assertIn("TTFT_OFFSET_SHIFT", p["tags"])
+        p = self._pair(j, "Q4:PM-ref_vs_VL-stock", offset=None)
+        self.assertEqual(p["label"], "INVALID")
+        self.assertIn("TTFT_OFFSET_UNCHECKED", p["validity"])
+        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", offset={"status": "TTFT_OFFSET_SHIFT"})["label"], "EQUIV_WITHIN_3PCT")
+
+    def test_vllm_stamp_rules(self):
+        p = self._pair(job_of(EQ, jitter=JIT, stamp_override={"VL-stock": vllm_stamp(vllm_venv_freeze_sha256="0" * 64)}),
+                       "Q3:VL-stock_vs_SG-stock")
+        self.assertEqual(p["label"], "INVALID")
+        self.assertIn("VLLM_VENV_FREEZE:VL-stock", p["validity"])
+        p = self._pair(job_of(EQ, jitter=JIT, stamp_override={"VL-stock": vllm_stamp(sglang_freeze_sha256="1" * 64)}),
+                       "Q3:VL-stock_vs_SG-stock")
+        self.assertIn("SGLANG_FREEZE:VL-stock", p["validity"])
+        j = job_of(EQ, jitter=JIT)
+        j["boots"]["b_smoke_vl"] = dict(boot_rec("VL-stock", vllm_stamp(cudagraph_mode="PIECEWISE")), boot_id="b_smoke_vl")
+        p = self._pair(j, "Q3:VL-stock_vs_SG-stock")
+        self.assertEqual(p["label"], "INVALID")
+        self.assertIn("VLLM_STAMP_DIFFERS_IN_JOB:2", p["validity"])
+        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
+
+    @staticmethod
+    def _offset_j2(sg_server_ms, vl_server_ms, client_ms=200.0, n=200, vl_count_delta=None):
+        def run(rid, arm, cell, role, server_ms, dc=None):
+            reqs = [{"request_id": f"q{i}", "phase": "W1", "ttft_ms": client_ms, "token_itl_ms": [20.0], "error": ""} for i in range(n)]
+            m = {"before": {"sum_s": 10.0, "count": 50}, "after": {"sum_s": 10.0 + n * server_ms / 1000.0, "count": 50 + (dc or n)}}
+            return {"run_id": rid, "arm": arm, "cell": cell, "boot_role": role, "seed": 1, "segments": [{"phase": "W1", "duration_s": 60.0,
+                                                                                                        "requests": reqs}],
+                    "server_ttft_metric": m}
+        runs = [run("m", "INSTR-METRICS-SG-stock", "INSTR_METRICS", "instr_metrics", sg_server_ms)]
+        runs += [run(f"v{s}", "VL-stock", "R1", "meas", vl_server_ms, vl_count_delta) for s in SP.EVAL_SEEDS]
+        runs.append(run("v_r2", "VL-stock", "R2", "meas", 0.0))                  # R2 runs are not part of the comparison
+        return {"runs": runs, "boots": {}, "plan": {"kind": "STEADY"}}
+
+    def test_ttft_offset_verdict(self):
+        smoke = {"per_engine": {"sglang": {"median_ms": 4.0}, "vllm": {"median_ms": 6.0}}}
+        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 195.0))["status"], "TTFT_OFFSET_OK")     # 3 / 5 ms
+        v = AN.ttft_offset_verdict(smoke, self._offset_j2(170.0, 195.0))                                                # SG 30 ms
+        self.assertEqual(v["status"], "TTFT_OFFSET_SHIFT")
+        self.assertAlmostEqual([r for r in v["rows"] if r["engine"] == "sglang"][0]["load_offset_ms"], 30.0)
+        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 187.0))["status"], "TTFT_OFFSET_SHIFT")   # VL 13 ms > 2 x 6
+        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 195.0, vl_count_delta=150))["status"], "TTFT_OFFSET_UNCHECKED")
+        self.assertEqual(AN.ttft_offset_verdict({"per_engine": {"sglang": {"median_ms": 4.0}}}, self._offset_j2(197.0, 195.0))["status"],
+                         "TTFT_OFFSET_UNCHECKED")
+        self.assertEqual(AN.ttft_offset_verdict(smoke, None)["status"], "TTFT_OFFSET_UNCHECKED")
+        self.assertTrue(AN.offset_shift(25.0, 4.0))
+        self.assertTrue(AN.offset_shift(9.0, 4.0))
+        self.assertFalse(AN.offset_shift(7.0, 4.0))
+        self.assertTrue(AN.offset_shift(3.0, 25.0))
+        self.assertTrue(AN.offset_shift(65.0, 40.0))            # 25 ms apart, factor 1.6: the 20 ms rule alone
+        self.assertFalse(AN.offset_shift(55.0, 40.0))           # 15 ms apart, factor 1.4
+
     def test_smoke_verdict(self):
         def j1(d_sg, d_vl):
             rows = lambda d: [{"client_ttft_ms": 100.0 + d, "server_ttft_ms": 100.0, "ok": True} for _ in range(20)]
@@ -499,15 +696,18 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(AN.smoke_verdict({"runs": [j1(1, 1)["runs"][0]]})["status"], "CLIENT_DEF_UNCHECKED")
 
     def test_out_of_band(self):
-        g = dict(EQ)
-        j = job_of({a: 95 for a in g}, cell="TRACE", jitter=JIT, phases=("LO", "HI"))
-        c = AN.analyze_cell(j, "TRACE", None, SMOKE_OK, 3000.0)
-        self.assertTrue(c["cell_out_of_band"])
-        self.assertIn("CELL_OUT_OF_BAND", c["pairs"]["Q8:SG-off_vs_SG-stock"]["tags"])
-        j = job_of({a: 75 for a in g}, cell="TRACE", jitter=JIT, phases=("LO", "HI"))
-        self.assertFalse(AN.analyze_cell(j, "TRACE", None, SMOKE_OK, 3000.0)["cell_out_of_band"])
-        j = job_of({a: 40 for a in g}, cell="TRACE", jitter=JIT, phases=("LO", "HI"))
-        self.assertTrue(AN.analyze_cell(j, "TRACE", None, SMOKE_OK, 3000.0)["cell_out_of_band"])
+        """rev1: judged on the steady-state cells R2 (W1) and R3 (W3) -- all arms > 0.9 or best < 0.5; R1 is never tagged."""
+        for cell, ph in (("R2", "W1"), ("R3", "W3")):
+            j = job_of({a: 95 for a in EQ}, cell=cell, jitter=JIT, phases=(ph,))
+            c = AN.analyze_cell(j, cell, None, SMOKE_OK, 3000.0, OFFSET_OK)
+            self.assertTrue(c["cell_out_of_band"], cell)
+            self.assertIn("CELL_OUT_OF_BAND", c["pairs"]["Q2:PM-ref_vs_SG-stock"]["tags"])
+            j = job_of({a: 75 for a in EQ}, cell=cell, jitter=JIT, phases=(ph,))
+            self.assertFalse(AN.analyze_cell(j, cell, None, SMOKE_OK, 3000.0, OFFSET_OK)["cell_out_of_band"])
+            j = job_of({a: 40 for a in EQ}, cell=cell, jitter=JIT, phases=(ph,))
+            self.assertTrue(AN.analyze_cell(j, cell, None, SMOKE_OK, 3000.0, OFFSET_OK)["cell_out_of_band"])
+        j = job_of({a: 95 for a in EQ}, cell="R1", jitter=JIT)
+        self.assertIsNone(AN.analyze_cell(j, "R1", None, SMOKE_OK, 3000.0, OFFSET_OK)["cell_out_of_band"])
 
     def test_substrate(self):
         base = mk_run("j1", "SG-stock", 201, "LADDER", [seg("W1", 95, 5, 20.0)], th="REF")
@@ -608,15 +808,29 @@ class InstrTests(unittest.TestCase):
 class ReportTests(unittest.TestCase):
     def test_not_measured_lists_pending_and_deviation(self):
         j = job_of(EQ, jitter=JIT)
-        j["plan"] = {"pending": ["VL-stock"]}
+        j["plan"] = {"pending": [SP.VL_PROFILER_PENDING], "kind": "STEADY"}
         nm = AN.not_measured({"J2": j, "J3": None}, {"R2": AN.analyze_cell(j, "R2", None, {"status": "CLIENT_DEF_UNCHECKED"}, 3000.0)},
                              {"status": "CLIENT_DEF_UNCHECKED"}, {})
         txt = "\n".join(nm)
-        self.assertIn("VL-stock pending", txt)
+        self.assertIn("INSTR-VL-stock", txt)
+        self.assertIn("TTFT_OFFSET_UNCHECKED", txt)
+        self.assertIn("변화 trace 미적용", txt)
         self.assertIn("D-1", txt)
         self.assertIn("J3: Job raw tree absent", txt)
         self.assertIn("definition smoke", txt)
         self.assertIn("측정하지 않은 것", AN.render_not_measured(nm))
+
+    def test_report_refuses_wrong_plan_kind(self):
+        j3 = job_of(EQ, cell="R3", jitter=JIT, phases=("W3",))
+        j3["plan"] = {"kind": "TRACE_W3", "pending": []}
+        j3["floor"] = {"floor_ms": 1000.0}
+        r = AN.report(None, None, None, j3, add={})
+        self.assertIn("J3", r["kind_problems"])
+        self.assertNotIn("R3", r["cells"])
+        j3["plan"]["kind"] = "W3"
+        r = AN.report(None, None, None, j3, add={})
+        self.assertEqual(r["kind_problems"], {})
+        self.assertIn("R3", r["cells"])
 
     def test_predictions(self):
         add = {"lambda_star_burst": {"SG-stock": 7.0, "VL-stock": 9.5}}

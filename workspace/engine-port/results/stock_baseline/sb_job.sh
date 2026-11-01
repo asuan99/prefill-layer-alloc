@@ -1,12 +1,13 @@
 #!/bin/bash
-# Job target of PREREG_STOCK_BASE rev0 (DRAFT): J1, J1-ext, J1b, J2, J3.  NOT SEALED: refuses unless PDMUX_SB_SEALED=1 (after the seal) or
+# Job target of PREREG_STOCK_BASE rev1 (DRAFT): J1, J1-ext, J1b, J2, J3.  NOT SEALED: refuses unless PDMUX_SB_SEALED=1 (after the seal) or
 # PDMUX_SB_TEST_MODE=1 (CPU tests).  Nothing is launched by this file being committed.
 #
 #   launch.sh --campaign stock_<job> --target workspace/engine-port/results/stock_baseline/sb_job.sh \
 #             --env PDMUX_SB_JOB=J2 --env PDMUX_SB_ADDENDUM=/data/stock/addendum_<sha>.json --env PDMUX_REQUIRE_PRISTINE=1
 #
 # J1 needs no addendum; J1b needs lambda_star_burst + refcell_rate (after J1); J2/J3 need lambda_star_ref (after J1b).
-# VL-stock is NOT run by this target until the vLLM placement decision (sb_spec.VLLM_PLACEMENT); the plan lists it as pending.
+# Image: every arm runs in ONE image, PDMUX_VESSL_IMAGE_SBASE (launch.sh -i); VL-stock boots /opt/vllm-venv/bin/python inside it.
+# sb_runner refuses any boot whose image pip-freeze sha256 (SGLang /opt/pdmux, vLLM /opt/vllm-venv) differs from the registered values.
 # rc: 0 ok, 2 setup, 13 ABORT_ENGINE_DIGEST/ABORT_HARNESS_DIGEST/ABORT_DATASET, 15 ABORT_PRISTINE, 16 config/unsealed/substrate,
 #     17 boot failures, 18 raw export, 124/137 hard cap.  Nothing here prints the environment.
 set -uo pipefail
@@ -53,6 +54,10 @@ if [[ "${PDMUX_SB_TEST_MODE:-}" != 1 ]]; then
   echo "gpu_count=${ngpu}" > "${summary}/preflight.txt"
   [[ "${ngpu}" == 1 ]] || { echo "ABORT_SUBSTRATE: ${ngpu} GPUs visible, stock-baseline Jobs need exactly 1" >&2; exit 16; }
   nvidia-smi --query-gpu=uuid,name,driver_version --format=csv,noheader > "${summary}/gpu.txt" 2>/dev/null || true
+  # rev1: one combined image for every arm (VL-stock in /opt/vllm-venv); refuse a Job launched on any other image up front
+  echo "image=${PDMUX_IMAGE:-}" >> "${summary}/preflight.txt"
+  python3 -c 'import sys; sys.path.insert(0, sys.argv[1]); import sb_spec as S; sys.exit(0 if S.image_is_sbase(sys.argv[2]) else 1)' \
+    "${here}" "${PDMUX_IMAGE:-}" || { echo "ABORT_SUBSTRATE: image '${PDMUX_IMAGE:-}' is not PDMUX_VESSL_IMAGE_SBASE" >&2; exit 16; }
   manifest="${PDMUX_SB_MANIFEST:-${data}/runs/${name}/meta/runtime_source_manifest.sha256}"
   python3 "${eng}/scripts/bootstrap/engine_digest.py" check --manifest "${manifest}" --sealed-file "${edigest}" \
     --out "${summary}/ENGINE_DIGEST_CHECK.json" > "${summary}/ENGINE_DIGEST_CHECK.txt" 2>&1 \

@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev0 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev1 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
   sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job (after J1 / after J1b)
   sb_analyze.py report   --j1 RAW --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]    # labels, predictions, "not measured" section
@@ -8,13 +8,18 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
   * good request = no error AND TTFT <= SLO AND request-internal token-ITL p95 <= SLO (gate 4)
   * goodput = sum(good) / sum(segment durations) (gate 7: durations ADD, never max)
   * lambda* = pick rule (sb_runner.lambda_pick; tie -> lower rate); sustained lambda* = largest sustained point passing (§3)
-  * lambda*_ref = min over the arms present (the scope of that min is recorded: VL-stock may be pending)
+  * lambda*_ref = min over the arms present (the scope of that min is recorded)
   * pair label (§4): A_ABOVE_B iff lo > 0 and mean >= ln1.03; A_BELOW_B iff hi < 0 and mean <= -ln1.03; EQUIV_WITHIN_3PCT iff
     |mean| < ln1.03 and the t(3) CI is inside (-ln1.03, ln1.03); otherwise UNRESOLVED_INTERVAL (also n < 4)
   * K3 placebo (SG-rep vs SG-stock): invalid iff n < 4 or |mean| >= ln1.03 or CI excludes 0 -> every label of the cell BOOT_NOISE
   * validity chain: trace hash per seed, cliff (TTFT within SLO +-5 % > 10 %) in neither arm, one Job and one GPU per pair, engine-tree
-    stamps per PREREG §1, placebo, definition smoke (engine pairs), zero request failures
-  * tags: CELL_OUT_OF_BAND (trace HI attainment: all arms > 0.9 or best < 0.5), SUBSTRATE_SHIFT (refcell vs the identical Job-1 cell
+    stamps per PREREG §1 (VL-stock: engine_tree "vllm", registered venv + SGLang freeze sha, all VL boots of the Job identical), placebo,
+    definition smoke (engine pairs), zero request failures
+  * TTFT time base (§5-0, two steps; engine pairs only): (a) smoke offset = median(client - server) of sequential requests; (b) in-load
+    offset = run mean client TTFT - server histogram mean (delta sum / delta count around the run) of the J2 INSTR_METRICS run (SGLang)
+    and of every VL-stock R1 measurement run.  |b - a| > 20 ms or a factor > 2 -> TTFT_OFFSET_SHIFT -> engine pairs
+    "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"; (b) not computable -> TTFT_OFFSET_UNCHECKED -> engine pairs INVALID (fail-closed)
+  * tags: CELL_OUT_OF_BAND (steady-state cell R2 (W1) / R3 (W3) attainment: all arms > 0.9 or best < 0.5), SUBSTRATE_SHIFT (refcell vs the identical Job-1 cell
     differs by >= 10 %p; SUBSTRATE_UNCHECKED when Job 1 holds no identical cell), MIX_NOT_FIRED (SG-mix proxy < 50 per run)
   * r_ser / r_mix: decode_probe.pacing_ratios on the load window ONLY (t_load_start/end mapped to the probe clock through the probe's
     boot record); PM-ref r_span = implfix pc_reduce definition + the same window filter (new function, implfix file untouched)
@@ -192,7 +197,15 @@ def tree_failures(run, job):
     arm = run["arm"]
     why = []
     if arm == "VL-stock":
-        return [] if b.get("engine") == "vllm" else [f"ENGINE_MISMATCH:{arm}"]
+        if b.get("engine") != "vllm":
+            why.append(f"ENGINE_MISMATCH:{arm}")
+        if st.get("engine_tree") != "vllm" or run.get("engine_tree") != "vllm":
+            why.append(f"TREE_MISMATCH:{arm}:{st.get('engine_tree')}")
+        if st.get("vllm_venv_freeze_sha256") != SP.VLLM_VENV_FREEZE_SHA256:
+            why.append(f"VLLM_VENV_FREEZE:{arm}")
+        if st.get("sglang_freeze_sha256") != SP.SGLANG_FREEZE_SHA256:
+            why.append(f"SGLANG_FREEZE:{arm}")
+        return why
     want = "pristine" if arm in SP.PRISTINE_ARMS else "patched"
     if st.get("engine_tree") != want or run.get("engine_tree") != want:
         why.append(f"TREE_MISMATCH:{arm}:{st.get('engine_tree')}")
@@ -216,6 +229,13 @@ def patched_manifest_failures(job):
     shas = {b.get("tree_stamp", {}).get("engine_tree_manifest_sha256") for b in job["boots"].values()
             if b.get("engine_tree") == "patched" and b.get("status") == "ok"}
     return [] if len(shas) <= 1 else [f"PATCHED_MANIFEST_DIFFERS_IN_JOB:{len(shas)}"]
+
+
+def vllm_stamp_failures(job):
+    """All vLLM boots of one Job (smoke, measurement) carry the same image / interpreter / backend / CUDAGraphMode stamp."""
+    keys = {tuple((k, json.dumps((b.get("tree_stamp") or {}).get(k), sort_keys=True)) for k in SP.VL_STAMP_KEYS)
+            for b in job["boots"].values() if b.get("engine") == "vllm" and b.get("status") == "ok"}
+    return [] if len(keys) <= 1 else [f"VLLM_STAMP_DIFFERS_IN_JOB:{len(keys)}"]
 
 
 def stamp_failures(runs):
@@ -249,6 +269,53 @@ def smoke_verdict(j1):
     return {"status": st, "diff_ms": a - b, "per_engine": med}
 
 
+def run_ttft_offset(run):
+    """(b) in-load offset of one run = mean client TTFT - mean server TTFT, the server mean being delta sum / delta count of the TTFT
+    histogram scraped right before and after the run.  The count delta must equal the number of requests with a first token."""
+    m = run.get("server_ttft_metric") or {}
+    b, a = m.get("before") or {}, m.get("after") or {}
+    tt = [q["ttft_ms"] for s in run["segments"] for q in s["requests"] if q.get("ttft_ms") is not None]
+    if None in (b.get("sum_s"), b.get("count"), a.get("sum_s"), a.get("count")):
+        return None, "NO_METRIC"
+    dc = a["count"] - b["count"]
+    if not tt or dc != len(tt):
+        return None, f"COUNT_MISMATCH:{dc}!={len(tt)}"
+    return statistics.fmean(tt) - (a["sum_s"] - b["sum_s"]) / dc * 1000.0, "OK"
+
+
+def offset_shift(load_ms, smoke_ms):
+    d = abs(load_ms - smoke_ms)
+    lo, hi = sorted((abs(load_ms), abs(smoke_ms)))
+    return d > SP.TTFT_OFFSET_SHIFT_MS or hi > SP.TTFT_OFFSET_SHIFT_RATIO * lo
+
+
+def ttft_offset_verdict(smoke, j2):
+    """§5-0 (b): compare the in-load offsets of J2 (SGLang: the INSTR_METRICS run; vLLM: every VL-stock R1 measurement run) with the smoke
+    offset of the same engine.  -> {status: TTFT_OFFSET_OK | TTFT_OFFSET_SHIFT | TTFT_OFFSET_UNCHECKED, rows}."""
+    per = (smoke or {}).get("per_engine") or {}
+    if j2 is None:
+        return {"status": "TTFT_OFFSET_UNCHECKED", "why": "no J2", "rows": []}
+    rows = []
+    for r in j2["runs"]:
+        if r.get("cell") == "INSTR_METRICS":
+            eng = "sglang"
+        elif r.get("arm") == "VL-stock" and r.get("cell") == SP.METRICS_CELL and r.get("boot_role") == "meas":
+            eng = "vllm"
+        else:
+            continue
+        off, st = run_ttft_offset(r)
+        sm = (per.get(eng) or {}).get("median_ms")
+        rows.append({"run_id": r["run_id"], "engine": eng, "load_offset_ms": off, "smoke_offset_ms": sm, "status": st,
+                     "shift": None if off is None or sm is None else offset_shift(off, sm)})
+    engines = {x["engine"] for x in rows}
+    if any(x["shift"] for x in rows):
+        return {"status": "TTFT_OFFSET_SHIFT", "rows": rows}
+    if engines != {"sglang", "vllm"} or any(x["shift"] is None for x in rows):
+        return {"status": "TTFT_OFFSET_UNCHECKED", "why": f"engines {sorted(engines)}; unusable rows "
+                f"{[x['run_id'] for x in rows if x['shift'] is None]}", "rows": rows}
+    return {"status": "TTFT_OFFSET_OK", "rows": rows}
+
+
 # ---- substrate (refcell) -------------------------------------------------------------------------------------------------
 def substrate(job, j1, ttft_slo=SP.W1_TTFT_MS):
     refs = [r for r in job["runs"] if r.get("cell") == "REFCELL"]
@@ -276,11 +343,14 @@ def cell_runs(job, cell):
 
 
 def phases_of(cell):
-    return ("LO", "HI") if cell == "TRACE" else ("W3",) if cell == "R3" else ("W1",)
+    return ("W3",) if cell == "R3" else ("W1",)
 
 
-def out_of_band(arms_runs, ttft_slo):
-    att = {a: attainment_pooled(v, ttft_slo, "HI") for a, v in arms_runs.items()}
+OOB_CELLS = ("R2", "R3")                     # the 80 % steady-state cells (W1, W3); rev1 has no change trace
+
+
+def out_of_band(arms_runs, ttft_slo, phase):
+    att = {a: attainment_pooled(v, ttft_slo, phase) for a, v in arms_runs.items()}
     att = {a: x for a, x in att.items() if x is not None}
     if not att:
         return None, att
@@ -293,7 +363,7 @@ def attainment_pooled(runs, ttft_slo, phase):
     return sum(1 for q in reqs if V.req_good(q, ttft_slo, SP.ITL_MS)) / len(reqs) if reqs else None
 
 
-def pair_validity(a, b, arms, job, ttft_slo, cell, smoke, placebo_bad):
+def pair_validity(a, b, arms, job, ttft_slo, cell, smoke, placebo_bad, offset=None):
     why = []
     ra, rb = arms[a], arms[b]
     for s in sorted(set(ra) & set(rb)):
@@ -312,12 +382,17 @@ def pair_validity(a, b, arms, job, ttft_slo, cell, smoke, placebo_bad):
     why += patched_manifest_failures(job)
     if set(ra) != set(SP.EVAL_SEEDS) or set(rb) != set(SP.EVAL_SEEDS):
         why.append(f"SEEDS_MISMATCH:{a}={sorted(ra)}:{b}={sorted(rb)}")
-    if (a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS) and smoke.get("status") != "CLIENT_DEF_OK":
-        why.append(f"{smoke.get('status')}")
+    if a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS:
+        if smoke.get("status") != "CLIENT_DEF_OK":
+            why.append(f"{smoke.get('status')}")
+        ost = (offset or {}).get("status", "TTFT_OFFSET_UNCHECKED")
+        if ost != "TTFT_OFFSET_OK":
+            why.append(ost)
+        why += vllm_stamp_failures(job)
     return sorted(set(why))
 
 
-def analyze_cell(job, cell, j1, smoke, ttft_slo):
+def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
     arms = cell_runs(job, cell)
     out = {"cell": cell, "arms": sorted(arms), "pairs": {}, "goodput_mean": {}}
     for a, v in arms.items():
@@ -328,8 +403,9 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo):
     out["placebo_invalid"] = pbad
     if pl and not math.isnan(pl["sd"]) and pl["sd"] >= SP.PLACEBO_SD_EQUIV_MAX:
         out["placebo_note"] = "placebo sd >= 0.0186: EQUIV not reachable at n=4 (UNRESOLVED_INTERVAL is the normal result)"
-    oob, hi_att = out_of_band(arms, ttft_slo) if cell == "TRACE" else (None, {})
-    out["hi_attainment"], out["cell_out_of_band"] = hi_att, oob
+    oob, cell_att = out_of_band(arms, ttft_slo, phases_of(cell)[0]) if cell in OOB_CELLS else (None, {})
+    out["band_attainment"], out["cell_out_of_band"] = cell_att, oob
+    out["ttft_offset"] = (offset or {}).get("status", "TTFT_OFFSET_UNCHECKED")
     sub = substrate(job, j1)
     out["substrate"] = sub
     for q, a, b, tok in SP.PAIRS:
@@ -339,14 +415,17 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo):
             continue
         p = paired(arms[a], arms[b], ttft_slo)
         raw = label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
-        why = pair_validity(a, b, arms, job, ttft_slo, cell, smoke, pbad)
+        why = pair_validity(a, b, arms, job, ttft_slo, cell, smoke, pbad, offset)
+        engine_pair = a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS
         if pbad:
             final = "BOOT_NOISE"
+        elif engine_pair and "TTFT_OFFSET_SHIFT" in why:
+            final = "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"
         elif why:
             final = "INVALID"
         else:
             final = raw
-        tags = []
+        tags = ["TTFT_OFFSET_SHIFT"] if engine_pair and "TTFT_OFFSET_SHIFT" in why else []
         if oob:
             tags.append("CELL_OUT_OF_BAND")
         if sub["tag"] != "SUBSTRATE_OK":
@@ -487,36 +566,40 @@ def score_predictions(add, cells, instr):
 
 
 # ---- "not measured" (auto) -------------------------------------------------------------------------------------------------
-PREREG_LOST = ("조율 fused", "Llama-8B", "동적 PD-mux", "best D 재결정", "W3 사다리(SG-stock 외 arm)", "과부하 구간", "prefix caching ON", "TP>1")
+PREREG_LOST = ("조율 fused", "Llama-8B", "동적 PD-mux", "best D 재결정", "W3 사다리(SG-stock 외 arm)", "과부하 구간",
+               "부하 변화(LO↔HI) 반응 — 변화 trace 미적용(고정 설정 비교, 게이트 2는 컨트롤러 비교 한정; 결정 2026-11-02)",
+               "prefix caching ON", "TP>1")
 GPU_UNVERIFIED = ("EXTEND 이벤트 실측", "overlap 경로의 단일 forward stream(stream_key 상수)", "EXTEND ON boot 출력 불변", "관측자 비용",
                   "pristine 보존(PRESERVE_STATUS) GPU 이미지", "SG-mix 발화 proxy(Prefill batch #running-req)", "vLLM 로그 백엔드/CUDAGraphMode 패턴",
-                  "server TTFT 히스토그램 이름(smoke)")
+                  "server TTFT 히스토그램 이름(smoke·부하 중 오프셋)", "/opt/vllm-venv boot(CUDA graph 캡처·flashinfer JIT sm80) on A100")
 
 
-def not_measured(jobs, cells, smoke, instr):
+def not_measured(jobs, cells, smoke, instr, offset=None):
     out = [f"PREREG §10: {x}" for x in PREREG_LOST]
     for name, j in jobs.items():
         if j is None:
             out.append(f"{name}: Job raw tree absent")
             continue
         for p in (j["plan"] or {}).get("pending", []):
-            out.append(f"{name}: {p} pending (VLLM_PLACEMENT={SP.VLLM_PLACEMENT})")
+            out.append(f"{name}: {p} pending")
         for b in j["boots"].values():
             if b.get("status") != "ok":
                 out.append(f"{name}: boot {b['boot_id']} status {b.get('status')}")
     for cname, c in cells.items():
         for k, v in c.get("pairs", {}).items():
-            if v.get("label") in ("NOT_RUN", "INVALID", "BOOT_NOISE", "MIX_NOT_FIRED"):
+            if v.get("label") in ("NOT_RUN", "INVALID", "BOOT_NOISE", "MIX_NOT_FIRED", "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"):
                 out.append(f"{cname} {k}: {v['label']} {v.get('why') or v.get('validity') or ''}")
             if "CELL_OUT_OF_BAND" in v.get("tags", []):
                 out.append(f"{cname} {k}: CELL_OUT_OF_BAND (label only, magnitude not citable)")
     if smoke.get("status") != "CLIENT_DEF_OK":
         out.append(f"§5-0 definition smoke: {smoke.get('status')} -> every engine pair INVALID")
+    if (offset or {}).get("status") != "TTFT_OFFSET_OK":
+        out.append(f"§5-0 (b) in-load TTFT offset: {(offset or {}).get('status', 'TTFT_OFFSET_UNCHECKED')} -> every engine pair INVALID")
     if "SG" not in instr:
         out.append("Q6 r_ser/r_mix: no SG instrumentation summary")
     elif instr["SG"].get("q6_status") != "Q6_OK":
         out.append(f"Q6: {instr['SG'].get('q6_status')} (single-request spans {instr['SG'].get('n_single_request_spans')})")
-    out.append("§5-2 VL-stock profiler r_mix: pending with VL-stock")
+    out.append("§5-2 VL-stock profiler r_mix: not implemented (runner has no profiler window)")
     out.append(f"D-1: {SP.INSTR_TREE_NOTE}")
     out += [f"GPU 미검증: {x}" for x in GPU_UNVERIFIED]
     return out
@@ -526,23 +609,34 @@ def render_not_measured(items):
     return "## 측정하지 않은 것 (sb_analyze 자동 생성)\n\n" + "\n".join(f"- {x}" for x in items) + "\n"
 
 
+EXPECTED_KIND = {"J1": "LADDER", "J1b": "SUSTAIN", "J2": "STEADY", "J3": "W3"}
+
+
+def kind_problems(jobs):
+    """Each raw tree's plan kind must be the rev1 kind of its Job (J3 = W3 only; a rev0 TRACE_W3 tree is refused)."""
+    return {n: f"plan kind {(j.get('plan') or {}).get('kind')} != {EXPECTED_KIND[n]}" for n, j in jobs.items()
+            if j is not None and (j.get("plan") or {}).get("kind") != EXPECTED_KIND[n]}
+
+
 def report(j1, j1b, j2, j3, add=None):
+    jobs = {"J1": j1, "J1b": j1b, "J2": j2, "J3": j3}
+    kp = kind_problems(jobs)
+    j2u, j3u = (None if "J2" in kp else j2), (None if "J3" in kp else j3)
     smoke = smoke_verdict(j1)
+    offset = ttft_offset_verdict(smoke, j2u)
     cells = {}
-    for job, names in ((j2, ("R1", "R2")), (j3, ("TRACE",))):
-        if job is None:
-            continue
-        for c in names:
-            if cell_runs(job, c):
-                cells[c] = analyze_cell(job, c, j1, smoke, SP.W1_TTFT_MS)
-    if j3 is not None and j3.get("floor") and cell_runs(j3, "R3"):
-        cells["R3"] = analyze_cell(j3, "R3", j1, smoke, SP.W3_TTFT_K * j3["floor"]["floor_ms"])
-    instr = instr_summary(j2)
+    if j2u is not None:
+        for c in ("R1", "R2"):
+            if cell_runs(j2u, c):
+                cells[c] = analyze_cell(j2u, c, j1, smoke, SP.W1_TTFT_MS, offset)
+    if j3u is not None and j3u.get("floor") and cell_runs(j3u, "R3"):
+        cells["R3"] = analyze_cell(j3u, "R3", j1, smoke, SP.W3_TTFT_K * j3u["floor"]["floor_ms"], offset)
+    instr = instr_summary(j2u)
     add = add or (build_addendum(j1, None, j1b) if j1 else None)
     preds = score_predictions(add, cells, instr)
-    nm = not_measured({"J1": j1, "J1b": j1b, "J2": j2, "J3": j3}, cells, smoke, instr)
-    return {"smoke": smoke, "addendum": add, "cells": cells, "instr": instr, "predictions": preds, "not_measured": nm,
-            "not_measured_md": render_not_measured(nm)}
+    nm = [f"{n}: REFUSED ({w})" for n, w in sorted(kp.items())] + not_measured(jobs, cells, smoke, instr, offset)
+    return {"smoke": smoke, "ttft_offset": offset, "kind_problems": kp, "addendum": add, "cells": cells, "instr": instr,
+            "predictions": preds, "not_measured": nm, "not_measured_md": render_not_measured(nm)}
 
 
 def main(argv=None):

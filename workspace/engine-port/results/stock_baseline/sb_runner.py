@@ -1,11 +1,13 @@
 #!/usr/bin/env python3
-"""Job runner of PREREG_STOCK_BASE rev0 (DRAFT, NOT SEALED; sb_job.sh gates it).
+"""Job runner of PREREG_STOCK_BASE rev1 (DRAFT, NOT SEALED; sb_job.sh gates it).
 
   sb_runner.py plan --job J2 [--addendum ADD.json]
   sb_runner.py run  --job J2 --out RAW --w1-lengths L.json [--w3-tokens F.bin] [--addendum ADD.json] [--resume]
 
-Per boot: server start (SGLang through engine_tree.py boot with PDMUX_ENGINE_TREE = the arm's tree; vLLM only once VLLM_PLACEMENT is
-decided) -> warm-up 60 s (discarded) + length check -> runs -> server stop.  Every run record carries job_name, gpu_uuid, the engine-tree
+Per boot: image check (both pip-freeze sha256 of the combined image; mismatch -> REFUSED_IMAGE_ENV, stamped) -> server start (SGLang
+through engine_tree.py boot with PDMUX_ENGINE_TREE = the arm's tree; vLLM = /opt/vllm-venv/bin/python -m vllm.entrypoints.openai.api_server,
+stamp tree_<arm>.json with engine_tree="vllm", freeze sha, attention backend / CUDAGraphMode from the server log) -> warm-up 60 s
+(discarded) + length check -> runs -> server stop.  Every run record carries job_name, gpu_uuid, the engine-tree
 stamp of its boot, the trace hash, the load window (epoch + CLOCK_MONOTONIC: t_load_start/t_load_end) and per-request send / first-token /
 finish stamps (t_sent_mono, token_t_mono[0], t_finished_mono).  Boot-specific steps:
   smoke    (J1)  : §5-0 sequential fixed requests + server TTFT histogram deltas
@@ -13,6 +15,7 @@ finish stamps (t_sent_mono, token_t_mono[0], t_finished_mono).  Boot-specific st
   refcell        : first and last boot of J1b/J2/J3 (J3 start boot also measures the W3 floor)
   w3ladder (J3)  : SG-stock W3 ladder; lambda*_W3 (pick rule, in-Job) fills the R3 rate of the stage-gated R3 boots
   instr    (J2)  : instrumentation boots after every measurement boot (C5); raw probe / telemetry files gzipped, reduced by sb_analyze
+  instr_metrics (J2) / every vLLM run : server TTFT histogram (sum, count) scraped right before and right after the run (§5-0 (b))
 Resume: a run whose record exists is skipped.  A dead / invalid boot makes the exit code non-zero (17).
 """
 from __future__ import annotations
@@ -22,7 +25,6 @@ import gzip
 import json
 import os
 import re
-import shlex
 import shutil
 import signal
 import socket
@@ -91,10 +93,13 @@ def resolve(a, bdir):
 
 
 def server_env(a, bdir, base=None):
-    """Every PDMUX_* is dropped except Job plumbing; the arm's own engine env is added.  Pristine boots get NO engine knob (engine_tree.py
-    would refuse them); patched boots also get the policy-harness label env (PDMUX_RUN_ID / WORKLOAD_ID / HEARTBEAT_S, as ph_runner)."""
+    """SGLang: every PDMUX_* is dropped except Job plumbing; the arm's own engine env is added.  Pristine boots get NO engine knob
+    (engine_tree.py would refuse them); patched boots also get the policy-harness label env (PDMUX_RUN_ID / WORKLOAD_ID / HEARTBEAT_S).
+    vLLM: EVERY PDMUX_* and PYTHONPATH dropped (the venv interpreter must not see the SGLang trees), CUDA_HOME / TORCH_CUDA_ARCH_LIST set,
+    the venv bin first on PATH (JIT tools such as ninja are resolved from PATH; the base image has /opt/conda/bin there)."""
     base = dict(os.environ if base is None else base)
-    env = {k: v for k, v in base.items() if not k.startswith("PDMUX_") or k in INFRA_PASS}
+    keep = INFRA_PASS if a["engine"] == "sglang" else ()
+    env = {k: v for k, v in base.items() if not k.startswith("PDMUX_") or k in keep}
     env.pop("SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN", None)
     env.update(PYTHONUNBUFFERED="1", CUDA_VISIBLE_DEVICES="0")
     if a["engine"] == "sglang":
@@ -102,7 +107,8 @@ def server_env(a, bdir, base=None):
         if a["tree"] == "patched":
             env.update(PDMUX_RUN_ID=job_name(), PDMUX_WORKLOAD_ID=f"stock_{Path(bdir).name}", PDMUX_HEARTBEAT_S="0")
     else:
-        env.pop("PYTHONPATH", None)               # the vLLM interpreter must not see the SGLang trees (placement pending)
+        env.pop("PYTHONPATH", None)
+        env["PATH"] = os.pathsep.join([str(Path(SP.VLLM_PY).parent)] + ([env["PATH"]] if env.get("PATH") else []))
     env.update(a["env"])
     return env
 
@@ -111,10 +117,7 @@ def server_cmd(a, bdir, port, py=None):
     py = py or sys.executable
     if a["engine"] == "sglang":
         return [py, str(SP.ENGINE_TREE_PY), "boot", "--stamp", str(Path(bdir) / f"tree_{a['name']}.json"), "--", py] + a["cmd"] + ["--port", str(port)]
-    if not SP.vllm_ready():
-        raise RuntimeError(f"ABORT_VLLM_PLACEMENT: VLLM_PLACEMENT={SP.VLLM_PLACEMENT} (user decision, report §3)")
-    prefix = shlex.split(os.environ.get("PDMUX_SB_VLLM_CMD", "vllm"))
-    return prefix + a["cmd"][1:] + ["--port", str(port)]
+    return list(a["cmd"]) + ["--port", str(port)]
 
 
 def free_port():
@@ -181,6 +184,8 @@ def _health(port):
 SG_LOG_KEYS = {k: re.compile(rf"\b{k}=([^,)]+)") for k in ("attention_backend", "mem_fraction_static", "chunked_prefill_size",
                                                               "enable_mixed_chunk", "disable_overlap_schedule", "disable_cuda_graph",
                                                               "cuda_graph_max_bs", "max_running_requests", "max_mamba_cache_size")}
+VL_BACKEND_RE = re.compile(r"Using (?:AttentionBackendEnum\.)?([A-Za-z0-9_]+) (?:attention )?backend")
+VL_CGMODE_RE = re.compile(r"cudagraph_mode['\"]?\s*[:=]\s*<?(?:CUDAGraphMode\.)?([A-Z_]+)")
 VL_LOG_RE = re.compile(r"(?i)(attention backend|attn_backend|cudagraph_mode|CUDAGraphMode|chunked prefill|enable_chunked_prefill|"
                        r"max_num_batched_tokens|Using .*Backend)")
 
@@ -196,7 +201,52 @@ def parse_sglang_log(text):
 def parse_vllm_log(text, keep=40):
     """Backend / CUDAGraphMode / chunked-prefill lines, verbatim (GPU-unverified patterns: bring-up (a)-(e) not run)."""
     lines = [ln.strip() for ln in text.splitlines() if VL_LOG_RE.search(ln)]
-    return {"matched_lines": lines[:keep], "n_matched": len(lines)}
+    uniq = lambda xs: list(dict.fromkeys(xs))
+    be, cg = uniq(VL_BACKEND_RE.findall(text)), uniq(VL_CGMODE_RE.findall(text))
+    return {"matched_lines": lines[:keep], "n_matched": len(lines), "attention_backend": be[0] if be else None, "attention_backends": be,
+            "cudagraph_mode": cg[0] if cg else None, "cudagraph_modes": cg}
+
+
+# ---- image identity (rev1: one combined image; both freezes checked before every boot) --------------------------------------
+def _sha_file(p):
+    import hashlib
+    try:
+        return hashlib.sha256(Path(p).read_bytes()).hexdigest()
+    except OSError:
+        return None
+
+
+def image_env_check(opt=None, venv=SP.VLLM_VENV):
+    """sha256 of the SGLang freeze (/opt/pdmux/pip_freeze.txt, PDMUX_OPT) and of the vLLM venv freeze (/opt/vllm-venv/pip_freeze.txt, also
+    the sha recorded in the image at /opt/vllm-venv/pip_freeze.sha256), compared with the registered values."""
+    opt = Path(opt or os.environ.get("PDMUX_OPT", "/opt/pdmux"))
+    sg = _sha_file(opt / "pip_freeze.txt")
+    vt = _sha_file(Path(venv) / "pip_freeze.txt")
+    try:
+        vf = (Path(venv) / "pip_freeze.sha256").read_text().split()[0]
+    except (OSError, IndexError):
+        vf = None
+    return {"sglang_freeze_path": str(opt / "pip_freeze.txt"), "sglang_freeze_sha256": sg, "vllm_venv": str(venv),
+            "vllm_venv_freeze_sha256": vt, "vllm_venv_freeze_sha256_file": vf,
+            "sglang_ok": sg == SP.SGLANG_FREEZE_SHA256, "vllm_ok": vt == SP.VLLM_VENV_FREEZE_SHA256 and vf == SP.VLLM_VENV_FREEZE_SHA256}
+
+
+def image_refusal(ic, engine):
+    """-> None (boot allowed) or the refusal reason.  Every boot needs the SGLang side unchanged; a vLLM boot also needs the venv freeze."""
+    why = []
+    if not ic.get("sglang_ok"):
+        why.append(f"SGLANG_FREEZE:{ic.get('sglang_freeze_sha256')}")
+    if engine == "vllm" and not ic.get("vllm_ok"):
+        why.append(f"VLLM_VENV_FREEZE:{ic.get('vllm_venv_freeze_sha256')}|{ic.get('vllm_venv_freeze_sha256_file')}")
+    return ",".join(why) or None
+
+
+def vllm_stamp(a, ic, log_text):
+    f = parse_vllm_log(log_text)
+    return {"engine_tree": "vllm", "python": a["cmd"][0], "argv": list(a["cmd"]), "env": dict(a["env"]),
+            "vllm_venv_freeze_sha256": ic.get("vllm_venv_freeze_sha256"), "sglang_freeze_sha256": ic.get("sglang_freeze_sha256"),
+            "attention_backend": f["attention_backend"], "attention_backends": f["attention_backends"],
+            "cudagraph_mode": f["cudagraph_mode"], "cudagraph_modes": f["cudagraph_modes"]}
 
 
 def mixed_forward_proxy(log_slice):
@@ -236,16 +286,25 @@ def replay_segment(replay_fn, api, base_url, seg, out_dir, w3_tokens=None):
 
 
 def build_segments(run, w1_pool, w3_pool):
-    k = run["kind"]
-    if k == "trace":
-        return T.he0_trace(w1_pool, run["rate_lo"], run["rate_hi"], run["np"], run["rounds"], run["seed"], run["run_id"])
     if run.get("rate") is None:
         raise RuntimeError(f"ABORT_RATE_UNFILLED: {run['run_id']}")
     pool = w1_pool if run["workload"] == "W1" else w3_pool
     return T.cap_trace(run["workload"], pool, run["rate"], run["seed"], run["n_requests"], run["run_id"])
 
 
-def execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens=None):
+def scrape_ttft(metrics_fn, base_url):
+    try:
+        s, c = LG.parse_ttft_metric(metrics_fn(base_url))
+        return {"sum_s": s, "count": c}
+    except Exception as e:  # noqa: BLE001
+        return {"sum_s": None, "count": None, "error": repr(e)}
+
+
+def wants_ttft_scrape(a, b):
+    return a["engine"] == "vllm" or b["role"] == "instr_metrics"
+
+
+def execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens=None, metrics_fn=LG.fetch_metrics):
     a = b["arm_def"]
     segs = build_segments(run, w1_pool, w3_pool)
     rec = {"run_id": run["run_id"], "kind": run["kind"], "cell": run.get("cell"), "seed": run["seed"], "arm": b["arm"],
@@ -253,12 +312,16 @@ def execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens=None):
            "spec": {k: v for k, v in run.items() if k != "run_id"}, "segments": [], **stamp(),
            "engine": a["engine"], "engine_tree": a["tree"]}
     off = _log_size(srv)
+    scrape = wants_ttft_scrape(a, b)
+    m0 = scrape_ttft(metrics_fn, srv.base_url) if scrape else None
     for s in segs:
         rec["segments"].append(replay_segment(replay_fn, a["api"], srv.base_url, s, Path(out) / "segments" / run["run_id"], w3_tokens))
     rec["t_load_start_epoch"] = rec["segments"][0]["t_load_start_epoch"]
     rec["t_load_end_epoch"] = rec["segments"][-1]["t_load_end_epoch"]
     rec["t_load_start_mono"] = rec["segments"][0]["t_load_start_mono"]
     rec["t_load_end_mono"] = rec["segments"][-1]["t_load_end_mono"]
+    if scrape:
+        rec["server_ttft_metric"] = {"before": m0, "after": scrape_ttft(metrics_fn, srv.base_url)}
     if a["name"] == "SG-mix":
         rec["mixed_forward_proxy"] = mixed_forward_proxy(_log_tail(srv, off))
     return rec
@@ -363,7 +426,8 @@ def gzip_instr(bdir):
             f.unlink()
 
 
-def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, ctx=None, metrics_fn=LG.fetch_metrics):
+def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, ctx=None, metrics_fn=LG.fetch_metrics,
+             image_check_fn=image_env_check):
     ctx = ctx if ctx is not None else {}
     bdir = Path(out) / "boots" / b["boot_id"]
     bdir.mkdir(parents=True, exist_ok=True)
@@ -377,14 +441,26 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
     if b.get("role") == "w3ladder" and ctx.get("w3_slo_ms") is None:
         dump({"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR"}, bdir / "DONE.json")
         return {"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR", "runs": []}
+    ic = image_check_fn()
+    tp = bdir / f"tree_{a['name']}.json"
+    refuse = image_refusal(ic, a["engine"])
+    if refuse:
+        if a["engine"] == "vllm":
+            dump(vllm_stamp(a, ic, ""), tp)
+        dump({"boot_id": b["boot_id"], "arm": b["arm"], "role": b["role"], "status": "REFUSED_IMAGE_ENV", "why": refuse, "image_env": ic,
+              "engine": a["engine"], "engine_tree": a["tree"], **stamp(), "image_key": a["image_key"],
+              "image": SP.image_digests().get(a["image_key"])}, bdir / "boot.json")
+        dump({"boot_id": b["boot_id"], "status": "REFUSED_IMAGE_ENV", "why": refuse}, bdir / "DONE.json")
+        return {"boot_id": b["boot_id"], "status": "REFUSED_IMAGE_ENV", "runs": []}
     srv = make_server(bdir, a)
     status = srv.start()
+    if a["engine"] == "vllm":
+        dump(vllm_stamp(a, ic, _log_tail(srv, 0)), tp)
     tree_stamp = {}
-    tp = bdir / f"tree_{a['name']}.json"
     if tp.exists():
         tree_stamp = json.loads(tp.read_text())
     dump({"boot_id": b["boot_id"], "arm": b["arm"], "role": b["role"], "status": status, "cmd": getattr(srv, "cmd", None),
-          "engine": a["engine"], "engine_tree": a["tree"], "tree_stamp": tree_stamp, **stamp(),
+          "engine": a["engine"], "engine_tree": a["tree"], "tree_stamp": tree_stamp, "image_env": ic, **stamp(),
           "image_key": a["image_key"], "image": SP.image_digests().get(a["image_key"])}, bdir / "boot.json")
     if status != "ok":
         srv.stop()
@@ -416,7 +492,7 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
                 if f.exists():
                     rec = json.loads(f.read_text())
                 else:
-                    rec = execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens)
+                    rec = execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens, metrics_fn)
                     rec["tree_stamp"] = tree_stamp
                     dump(rec, f)
                 done.append(run["run_id"])
@@ -444,7 +520,8 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
     return {"boot_id": b["boot_id"], "status": "done", "runs": done}
 
 
-def run_job(plan, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, resume=False, metrics_fn=LG.fetch_metrics):
+def run_job(plan, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, resume=False, metrics_fn=LG.fetch_metrics,
+            image_check_fn=image_env_check):
     problems = SP.plan_problems(plan)
     if problems:
         raise RuntimeError(f"ABORT_PLAN: {problems}")
@@ -456,7 +533,7 @@ def run_job(plan, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None,
     if (out / "floor.json").exists():
         f = json.loads((out / "floor.json").read_text()).get("floor_ms")
         ctx["w3_slo_ms"] = SP.W3_TTFT_K * f if f else None
-    res = [run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens, ctx, metrics_fn) for b in plan["boots"]]
+    res = [run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens, ctx, metrics_fn, image_check_fn) for b in plan["boots"]]
     dump({"job": plan["job"], "plan_sha": SP.sha(plan), "boots": res, "resumed": bool(resume), "pending": plan["pending"], **stamp()},
          out / "RUN_DONE.json")
     return res
