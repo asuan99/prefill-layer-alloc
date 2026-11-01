@@ -17,7 +17,7 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
     definition smoke (engine pairs), zero request failures
   * TTFT time base (§5-0, two steps; engine pairs only): (a) smoke offset = median(client - server) of sequential requests; (b) in-load
     offset = run mean client TTFT - server histogram mean (delta sum / delta count around the run) of the J2 INSTR_METRICS run (SGLang)
-    and of every VL-stock R1 measurement run.  |b - a| > 20 ms or a factor > 2 -> TTFT_OFFSET_SHIFT -> engine pairs
+    and of every VL-stock R1 measurement run.  |b - a| > 20 ms (absolute only, PREREG rev1.1) -> TTFT_OFFSET_SHIFT -> engine pairs
     "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"; (b) not computable -> TTFT_OFFSET_UNCHECKED -> engine pairs INVALID (fail-closed)
   * tags: CELL_OUT_OF_BAND (steady-state cell R2 (W1) / R3 (W3) attainment: all arms > 0.9 or best < 0.5), SUBSTRATE_SHIFT (refcell vs the identical Job-1 cell
     differs by >= 10 %p; SUBSTRATE_UNCHECKED when Job 1 holds no identical cell), MIX_NOT_FIRED (SG-mix proxy < 50 per run)
@@ -285,8 +285,7 @@ def run_ttft_offset(run):
 
 def offset_shift(load_ms, smoke_ms):
     d = abs(load_ms - smoke_ms)
-    lo, hi = sorted((abs(load_ms), abs(smoke_ms)))
-    return d > SP.TTFT_OFFSET_SHIFT_MS or hi > SP.TTFT_OFFSET_SHIFT_RATIO * lo
+    return d > SP.TTFT_OFFSET_SHIFT_MS
 
 
 def ttft_offset_verdict(smoke, j2):

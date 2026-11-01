@@ -3,7 +3,8 @@
 
 Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
   * ONE image for every arm (rev1, user decision 2026-11-02 option b'): PDMUX_VESSL_IMAGE_SBASE = sglang-runtime@1e0d335b (SGLang side
-    byte-unchanged) + /opt/vllm-venv (pristine vLLM 0.31.0).  Every boot first checks the two pip-freeze sha256 of the image
+    byte-unchanged) + /opt/vllm-venv (pristine vLLM 0.31.0).  Selected at submit time WITHOUT changing launch.sh:
+    PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env scripts/vessl/launch.sh ...  Every boot first checks the two pip-freeze sha256 of the image
     (sb_runner.image_env_check); a mismatch refuses the boot and is stamped.
   * SGLang arms boot through `scripts/vessl/engine_tree.py boot --stamp <json> -- <server cmd>` with PDMUX_ENGINE_TREE chosen per arm
     (pristine for SG-stock/SG-rep/SG-mix; patched for SG-off/PM-ref/PM-ref34 and for the probe instrumentation boots -- the decode probe
@@ -11,7 +12,7 @@ Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.
   * VL-stock = `/opt/vllm-venv/bin/python -m vllm.entrypoints.openai.api_server` defaults + --max-num-seqs 48 + prefix caching OFF + --port,
     env CUDA_HOME / TORCH_CUDA_ARCH_LIST only (no PYTHONPATH, no PDMUX_*), in the same Job and on the same GPU as the SGLang arms.
 Jobs (PREREG §7): J1 ladder (+ definition smoke), J1b sustained cells, J2 steady-state R1/R2 (+ instrumentation boots + the in-load TTFT
-offset boot), J3 = W3 only.  The W1 change trace (LO<->HI) is NOT used: every arm is a fixed configuration, so there is no controller whose
+offset boot), J3 = W3 only (time model ~254 min > the 4 h rule: NOT split, disclosed -- user decision 2026-11-02).  The W1 change trace (LO<->HI) is NOT used: every arm is a fixed configuration, so there is no controller whose
 reaction a load change could show (gate 2 applies to controller comparisons only) -- user decision 2026-11-02, PREREG rev1 §3.
 Rates that depend on earlier Jobs come from an ADDENDUM json (written by sb_analyze.py addendum after the earlier Job); plans that need
 one refuse with ABORT_NO_ADDENDUM.  Path rule: os.path.abspath, never Path.resolve() (job_entry swaps results/ for a volume symlink).
@@ -80,7 +81,7 @@ VLLM_VENV_FREEZE_SHA256 = "adff2ff0828cf3658f9a7d3ca79aab087a2c523871edf4050fcc1
 SGLANG_FREEZE_SHA256 = "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324"      # /opt/pdmux/pip_freeze.txt of sglang-runtime@1e0d335b
 VL_ENV = {"CUDA_HOME": "/usr/local/cuda", "TORCH_CUDA_ARCH_LIST": "8.0"}
 VL_STAMP_KEYS = ("engine_tree", "python", "vllm_venv_freeze_sha256", "sglang_freeze_sha256", "attention_backend", "cudagraph_mode")
-TTFT_OFFSET_SHIFT_MS, TTFT_OFFSET_SHIFT_RATIO = 20.0, 2.0      # §5-0 (b): in-load offset vs smoke offset
+TTFT_OFFSET_SHIFT_MS = 20.0                                   # §5-0 (b), PREREG rev1.1: |in-load offset - smoke offset| > 20 ms only
 
 
 def image_is_sbase(image_ref):

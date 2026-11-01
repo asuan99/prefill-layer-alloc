@@ -6,7 +6,8 @@
 #             --env PDMUX_SB_JOB=J2 --env PDMUX_SB_ADDENDUM=/data/stock/addendum_<sha>.json --env PDMUX_REQUIRE_PRISTINE=1
 #
 # J1 needs no addendum; J1b needs lambda_star_burst + refcell_rate (after J1); J2/J3 need lambda_star_ref (after J1b).
-# Image: every arm runs in ONE image, PDMUX_VESSL_IMAGE_SBASE (launch.sh -i); VL-stock boots /opt/vllm-venv/bin/python inside it.
+# Image: every arm runs in ONE image, PDMUX_VESSL_IMAGE_SBASE; VL-stock boots /opt/vllm-venv/bin/python inside it.  Select it at
+# submit time without changing launch.sh: PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env scripts/vessl/launch.sh ...
 # sb_runner refuses any boot whose image pip-freeze sha256 (SGLang /opt/pdmux, vLLM /opt/vllm-venv) differs from the registered values.
 # rc: 0 ok, 2 setup, 13 ABORT_ENGINE_DIGEST/ABORT_HARNESS_DIGEST/ABORT_DATASET, 15 ABORT_PRISTINE, 16 config/unsealed/substrate,
 #     17 boot failures, 18 raw export, 124/137 hard cap.  Nothing here prints the environment.

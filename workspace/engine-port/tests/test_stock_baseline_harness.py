@@ -675,17 +675,18 @@ class AnalyzeTests(unittest.TestCase):
         v = AN.ttft_offset_verdict(smoke, self._offset_j2(170.0, 195.0))                                                # SG 30 ms
         self.assertEqual(v["status"], "TTFT_OFFSET_SHIFT")
         self.assertAlmostEqual([r for r in v["rows"] if r["engine"] == "sglang"][0]["load_offset_ms"], 30.0)
-        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 187.0))["status"], "TTFT_OFFSET_SHIFT")   # VL 13 ms > 2 x 6
+        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 187.0))["status"], "TTFT_OFFSET_OK")      # VL 13 ms vs 6: no 2x rule
+        self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 170.0))["status"], "TTFT_OFFSET_SHIFT")   # VL 30 ms vs 6
         self.assertEqual(AN.ttft_offset_verdict(smoke, self._offset_j2(197.0, 195.0, vl_count_delta=150))["status"], "TTFT_OFFSET_UNCHECKED")
         self.assertEqual(AN.ttft_offset_verdict({"per_engine": {"sglang": {"median_ms": 4.0}}}, self._offset_j2(197.0, 195.0))["status"],
                          "TTFT_OFFSET_UNCHECKED")
         self.assertEqual(AN.ttft_offset_verdict(smoke, None)["status"], "TTFT_OFFSET_UNCHECKED")
         self.assertTrue(AN.offset_shift(25.0, 4.0))
-        self.assertTrue(AN.offset_shift(9.0, 4.0))
-        self.assertFalse(AN.offset_shift(7.0, 4.0))
+        self.assertFalse(AN.offset_shift(9.0, 4.0))             # factor 2.25 but 5 ms apart: absolute 20 ms rule only (rev1.1)
+        self.assertFalse(AN.offset_shift(23.0, 4.0))            # 19 ms
         self.assertTrue(AN.offset_shift(3.0, 25.0))
-        self.assertTrue(AN.offset_shift(65.0, 40.0))            # 25 ms apart, factor 1.6: the 20 ms rule alone
-        self.assertFalse(AN.offset_shift(55.0, 40.0))           # 15 ms apart, factor 1.4
+        self.assertTrue(AN.offset_shift(65.0, 40.0))
+        self.assertFalse(AN.offset_shift(55.0, 40.0))
 
     def test_smoke_verdict(self):
         def j1(d_sg, d_vl):
