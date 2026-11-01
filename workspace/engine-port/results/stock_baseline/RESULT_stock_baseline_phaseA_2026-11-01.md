@@ -41,6 +41,8 @@ req/s·TTFT p50/95/99·TPOT p50/95(rep 평균) **16셀 모두 반올림 범위 �
 
 ## 2. A4 — M3 J1 (VESSL A100-SXM, Nano-9B-v2-Base, flashinfer, cudagraph ON, N=1 Job)
 
+> ★**정오(2026-11-01, 사용자 지적)**: 이 Job의 `fused`·`fused_sym`은 pristine SGLang이 아니라 **Job 시작 시 설치된 PD-mux 수정 트리(v0.5.10 대비 14파일)에서 플래그 OFF**로 돈 arm이다(`install_runtime.sh`는 모든 Job에서 무조건 실행). "stock SGLang"이라는 라벨은 "수정 트리·PD-mux OFF"로 읽는다. OFF 경로가 upstream과 같다는 근거는 CPU golden stream-trace(implfix C6)뿐이며 GPU 검증은 Phase B `SG-off vs SG-stock`(Q8)이 한다. 아래 표·§5·§7의 "stock" 표현에 같은 정오가 붙는다. KISTI P1-opint `plain`도 같은 종류(KISTI live 트리·플래그 OFF).
+
 현 기판·모델에서 **기본 구조(fused = chunk 8192·overlap ON; fused_sym = chunk −1·overlap OFF)의 유일한 서빙 원자료**다.
 LO 셀만 옮긴다(HI 셀 TTFT는 인용 금지 C:8792, X shape는 `X_CORRECTNESS_FAIL`로 비 미정의).
 

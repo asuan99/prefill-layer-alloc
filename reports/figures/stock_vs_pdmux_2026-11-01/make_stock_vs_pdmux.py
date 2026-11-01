@@ -45,8 +45,8 @@ def load_m3():
     return rows
 
 
-ARMS = [("fused", "stock SGLang (chunk 8192, overlap ON)"),
-        ("fused_sym", "stock SGLang (chunk −1, overlap OFF)"),
+ARMS = [("fused", "SGLang 수정트리·PD-mux OFF (chunk 8192, overlap ON)"),
+        ("fused_sym", "SGLang 수정트리·PD-mux OFF (chunk −1, overlap OFF)"),
         ("agnostic", "PD-mux agnostic"),
         ("d44", "PD-mux static D44")]
 
@@ -82,7 +82,7 @@ def fig_a(c, rows):
                  fontsize=11.5, x=0.01, ha="left")
     style.footer(fig, "현 기판·현 모델에서 stock 구조와 PD-mux가 같은 Job에 있는 유일한 서빙 원자료. 셀당 seed 2, Job 1개 → CI·검정력 없음, "
                       "arm 순위 서술 금지(설계 입력용). HI 셀 TTFT는 인용 금지(C:8792), shape X는 X_CORRECTNESS_FAIL로 미정의. "
-                      "fused는 미조율(SGLang 기본값). 출처: stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md §2, STOCK_METRICS_TABLE.csv.", c)
+                      "fused는 미조율이며 pristine이 아니라 Job 시작 시 설치된 PD-mux 수정 트리에서 플래그 OFF로 돈 arm이다(정오 2026-11-01). 출처: stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md §2, STOCK_METRICS_TABLE.csv.", c)
     fig.tight_layout(rect=(0, 0.1, 1, 0.93))
     return fig
 
@@ -92,7 +92,7 @@ CELLS = {
     # (baseline row, substrate col): (text, kind)
     ("stock SGLang fused\n(미조율 = 기본값)", "KISTI A100\nZamba2-2.7B"): ("n=5 paired\nPD-mux +40.5% / +185.8%\n(rate 2·3, 정본 §1-1)\nZamba 배제 → 인용만", "good"),
     ("stock SGLang fused\n(미조율 = 기본값)", "KISTI A100\nGranite-4.0-h-micro"): ("n=5 paired\nPD-mux +11.7% / +27.0%\n(rate 3·4, 정본 §1-1)", "good"),
-    ("stock SGLang fused\n(미조율 = 기본값)", "VESSL A100\nNano-9B-v2"): ("M3 J1 · N=1 · seed 2\n기술값만, 순위 금지", "warning"),
+    ("stock SGLang fused\n(미조율 = 기본값)", "VESSL A100\nNano-9B-v2"): ("M3 J1 · N=1 · seed 2\n수정트리·플래그 OFF(정오)\n기술값만, 순위 금지", "warning"),
     ("stock SGLang fused\n(조율: chunk·overlap·\nmixed 튜닝)", "KISTI A100\nZamba2-2.7B"): ("없음", "critical"),
     ("stock SGLang fused\n(조율: chunk·overlap·\nmixed 튜닝)", "KISTI A100\nGranite-4.0-h-micro"): ("없음", "critical"),
     ("stock SGLang fused\n(조율: chunk·overlap·\nmixed 튜닝)", "VESSL A100\nNano-9B-v2"): ("없음 → Phase B\n(결정 62, 2차)", "critical"),

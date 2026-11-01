@@ -16,12 +16,17 @@
 | Q5 | mixed-chunk(SG-mix)가 stock SGLang의 ITL 꼬리를 바꾸는가 | (나) | `MIX_vs_SG` |
 | Q6 | stock SGLang의 r_ser(L)·r_mix가 A5 예보(`R_SER_FORECAST_NANO.csv`)와 맞는가 | 계측 boot | 예보 대비 잔차(HIT/MISS 띠는 §8) |
 | Q7 | W3(장문)에서 Q2·Q3의 부호가 유지되는가 | (나) W3 정상상태 셀 1개 | 같은 라벨, W3 접미 |
+| Q8 | 수정 트리·플래그 OFF(`SG-off`)가 pristine stock(`SG-stock`)과 같은가 — implfix C6의 GPU 검증 | (나) | `PATCH_OFF_vs_STOCK` ∈ {EQUIV_WITHIN_3PCT, …} |
 
 **이 Job이 답하지 않는 것(§10 잃는 범위에 재기재)**: 조율한 fused(chunk·overlap·mixed 튜닝) · Llama-8B 참조점 · 동적 PD-mux · Nano에서 static PD-mux의 best D(D44는 다리 arm, 아래 §2) · 과부하 구간.
 
 ## 1. 기판·트리 [결정/코드]
 - VESSL A100 SXM 80GB ×1, 이미지 2종: SGLang = `PDMUX_VESSL_IMAGE`(pristine SGLang v0.5.10, digest 고정) · vLLM = **새 이미지**(§11-1, pristine vLLM, 엔진 코드 미포함). 두 이미지 모두 공개이며 PREREG·결과·엔진 패치를 담지 않는다.
-- SGLang arm은 `install_runtime.sh`로 현재 main 트리 설치. `SG-stock`·`SG-mix`는 PD-mux 경로 미사용(`PDMUX_ENGINE_MODE` 미설정, `--enable-pdmux` 없음). `PM-ref`는 비sticky static D44(결정 49).
+- ★**트리 구분(2026-11-01 사용자 지적으로 정정)**: 공개 이미지는 pristine v0.5.10이지만 Job 시작 시 `install_runtime.sh`가 PD-mux 수정 트리(14파일, +2623/−50)를 editable 설치한다. 따라서 **지금까지의 모든 "fused/OFF" arm(M3 J1 fused 포함)은 "수정 트리·플래그 OFF"였다.** 이 PREREG에서는 boot 단위로 트리를 고른다(`PDMUX_ENGINE_TREE=pristine|patched`, 선행 작업 §11-7):
+  - `SG-stock`·`SG-mix` = **pristine 트리**(install 전 보존본, `PDMUX_*` env 0개, 마커 가드) — 진짜 stock.
+  - `SG-off` = **수정 트리·플래그 OFF**(새 arm) — M3 J1 fused·implfix C6("OFF = main"은 CPU golden만)·CAP/TUNE OFF 참조와 잇는 다리. `SG-off vs SG-stock`이 처음으로 GPU에서 "수정 트리 OFF = stock인가"를 잰다(라벨 `PATCH_OFF_vs_STOCK`, Q8).
+  - `PM-ref` = 수정 트리, 비sticky static D44(결정 49).
+  - 각 boot 메타에 `engine_tree`와 트리 manifest sha256을 기록하고 분석기 스탬프 검사(⑤)에 포함한다.
 - 엔진 digest는 계측 플래그(§5)가 들어간 트리로 1개 고정(봉인 시 `ENGINE_DIGEST.txt`).
 - vLLM 버전: **0.31.0**(pip index 2026-11-01 최신 stable; 결정 62 ① "제출 시점 최신 stable") — 봉인 시점에 더 새 stable이 있으면 그것으로 갱신하고 봉인 문서에 적는다. attention 백엔드·`CUDAGraphMode`·chunked prefill 상태는 서버 로그에서 채취해 결과에 병기(기본값 그대로, 튜닝 0).
 
@@ -33,7 +38,8 @@
 | `SG-rep` | 〃 | `SG-stock` 복제 boot | 플라시보(boot 효과 1회 추출) |
 | `SG-mix` | 〃 | + `--enable-mixed-chunk` | Q5 |
 | `VL-stock` | vLLM 0.31.0 | 기본값(무패치), prefix caching OFF(radix OFF 대응), cudagraph 기본 | Q3·Q4 |
-| `PM-ref` | SGLang + PD-mux | static D44 비sticky, budget 65536, cap 48 | **다리 arm** — CAP/TUNE/implfix 수치와 잇는 arm |
+| `SG-off` | SGLang 수정 트리 | 플래그 OFF(기존 모든 fused/OFF arm과 같은 트리) | Q8 다리 arm (§1 트리 구분) |
+| `PM-ref` | SGLang 수정 트리 + PD-mux | static D44 비sticky, budget 65536, cap 48 | **다리 arm** — CAP/TUNE/implfix 수치와 잇는 arm |
 
 **승계 상수 공시**: `PM-ref`의 D44·cap 48·budget 65536은 KISTI 승계값이며 Nano에서 재결정되지 않았다(R Job: D34–64 goodput 고원 1.5% 안, 순위 미분해). 따라서 Q2·Q4의 라벨은 **"static PD-mux(D44 구성)"** 범위로만 성립하고 "static PD-mux 최적" 범위가 아니다. 최적 D 재결정은 CAP′(HE0 셀 재정의 결정 뒤)의 몫이다. [제안] 예산이 허용하면 `PM-ref34`(D34) 1 arm을 (나)에 추가해 고원 안 두 점으로 범위를 넓힌다 — §13 결정 4.
 
@@ -86,6 +92,7 @@
 4. 부하 창 필터 축약 함수 + 변이 테스트(5-1·5-3).
 5. A5 예보 파일 sha256 봉인.
 6. 하네스 감사 1회(규칙층 반전 시험 + 파이프라인 모집단 층 표).
+7. **pristine 트리 boot 모드**(engine-porter 진행 중): install 전 보존본 + `PDMUX_ENGINE_TREE` 선택 + 마커 가드 + 메타 기록 + CPU mock 테스트. 수정 트리 14파일 중 OFF에서 발화하는 변경 목록(진단 표)을 PREREG 부록으로 봉인.
 
 ## 12. 이 Job이 채우는 COSTMODEL 칸
 CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔차) · CM-1(T_dec 점 추가, stock 경로) · CM-2(r_ser 분자 = EXTEND GPU 시간) · 확장 열 "엔진 대조" 신설 후보.
@@ -96,4 +103,7 @@ CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔�
 3. 판정 셀 rate를 λ\*_ref = min_arm 기준 공통 절대 rate로(권고) / arm별 자기 λ\* 상대 rate.
 4. `PM-ref34` 추가(권고: 고원 안 두 점) / D44만.
 5. Job 분할 3개(권고) / 2개(W3 제외).
-6. 선행 1(vLLM 이미지 + Workspace bring-up 1회) 승인.
+6. 선행 1(vLLM 이미지 + Workspace bring-up 1회) 승인. → **승인·진행 중(2026-11-01)**
+7. `SG-off` arm 추가(권고: Q8은 implfix·M3 J1 수치의 범위를 정하는 데 필요) / 미추가.
+
+확정(2026-11-01): ② vLLM 0.31.0 · ⑤ Job 3분할 · ⑥ 승인.
