@@ -665,3 +665,23 @@ GPU gate prepared, NOT RUN / NOT SUBMITTED: `scripts/vessl/engine_gate_diag.{sh,
     - Tests: 3 new mixin mutants (pool return before resolve, overflow drop uncounted, end flag from start event) killed;
       fake events refuse re-record while pending; `tests/run_diag_tests_with_stub.sh` + `tests/cpu_stub/` reproduce the
       CPU suites without sgl_kernel.
+
+## Decision 62 item 4: decode probe EXTEND forward GPU time, default OFF (2026-11-01, GPU 0)
+
+39. `multiplex/decode_probe.py` <- `src/multiplex/decode_probe.py` (manifest entry 30 only; no new entry, no patch,
+    `devtree_manual_edits.patch` and `src/patches/decode_probe_scheduler_hook.patch` unchanged, scheduler.py bytes
+    unchanged). File sha256 `092e5a10...` -> `5e866e36...`. **ENGINE_DIGEST `65cbb49d...` ->
+    `2836112bd710a712a26a31fb516a685a25c6d893308b2058bb7b5590deda5ed7`** (scratch install by
+    `tests/run_diag_tests_with_stub.sh`; equals the `policy_tune` Job manifest
+    `pdmux-policy-tune-074ffc3-20261029140207` with entry 30 substituted -- the other 29 entries are byte-identical).
+    - `PDMUX_PROBE_EXTEND_TIME=1` (strict unset|0|1; needs `PDMUX_DECODE_PROBE_PATH` and GPU events, else ValueError
+      at install): plain `ForwardMode.EXTEND` forwards (by name; not `is_extend()`, which includes MIXED/SPLIT_PREFILL)
+      get the same CUDA-event pair -> `extend_forward` records (`extend_gpu_ms`, `extend_host_ms`, `extend_tokens`,
+      `n_reqs`, `extend_len_max`, `extend_prefix_tokens`, `stream_key`, shared `seq`, `decode_iter_seq`); own pending
+      deque. ON only: decode/mixed records add `stream_key`, MIXED adds `extend_tokens`/`n_reqs`/`mixed_decode_bs_est`.
+    - `pacing_ratios(records)`: r_ser / r_mix per PLAN_stock_baseline_metrics sec 0-1 (median T_dec of pure DECODE
+      gaps per bs, MIN_BS 5 fallback; same-stream EXTEND sum; seq holes excluded); equals `r_ser_holb.seg_stats`.
+    - OFF byte-identical to the pre-flag probe: `tests/decode_probe_off_golden_2026-11-01.json` (generated from sha
+      `092e5a10...`). Observer cost unmeasured: instrumentation boot only, never a measurement arm.
+    - Fail-closed (intended): every plan sealed on `65cbb49d...` (policy_* `policy_harness/ENGINE_DIGEST.txt`,
+      cap_char HD, lockstep_diag) ABORTs on a tree built from this change; those campaigns run from their own commits.

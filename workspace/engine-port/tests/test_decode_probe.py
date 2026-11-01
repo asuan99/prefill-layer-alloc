@@ -26,6 +26,12 @@ those are GPU gates G-alpha / G-gamma, results/engine_gate/GATE_SPLIT_DESIGN_202
   G. The scheduler hook patch: applies after the admission hook, reverses exactly,
      lands in ``run_scheduler_process``, moves no Scheduler class line; sync wiring
      and manifest entry 30.
+  H. EXTEND timing flag ``PDMUX_PROBE_EXTEND_TIME`` (decision 62 item 4): OFF reproduces
+     the pre-flag probe's records (frozen golden); ON emits ``extend_forward`` records;
+     ``pacing_ratios`` r_ser / r_mix equal hand-computed values and
+     ``results/stock_baseline/r_ser_holb.py``; mutants (mean denominator, MIXED counted
+     as EXTEND, ``is_extend()`` classifier, no same-stream filter, no seq-hole check, ...)
+     each fail.
 """
 
 import ast
@@ -747,6 +753,353 @@ class TestSyncWiring(unittest.TestCase):
         self.assertEqual(rels[27:29], ["sglang/srt/multiplex/admission_probe.py",
                                        "sglang/srt/layers/attention/mamba/causal_conv1d_triton.py"])
 
+
+
+# ---------------------------------------------------------------------------
+# H. EXTEND timing flag (decision 62 item 4, 2026-11-01): OFF golden, ON records,
+#    r_ser / r_mix on synthetic input, mutation (lesson 53).  CPU only: nothing
+#    here says EXTEND events time correctly on a GPU or that the ON boot is cheap.
+# ---------------------------------------------------------------------------
+
+GOLDEN = ENG / "tests" / "decode_probe_off_golden_2026-11-01.json"
+GOLDEN_MASK = ("t_realtime", "t_realtime_end")  # wall clock: the only non-deterministic fields
+
+
+class FMReal(FM):
+    """FM + the v0.5.10 ``is_extend()`` truth table (forward_batch_info.py ForwardMode.is_extend)."""
+
+    def is_extend(self, include_draft_extend_v2=False):
+        return self.name in ("EXTEND", "MIXED", "DRAFT_EXTEND", "TARGET_VERIFY", "SPLIT_PREFILL", "DLLM_EXTEND")
+
+
+def XB(lens, mode="extend", prefix=None):
+    """An EXTEND / MIXED forward batch with the host-side lists the probe reads."""
+    return SimpleNamespace(batch_size=len(lens), forward_mode=FMReal(mode), extend_num_tokens=sum(lens),
+                           extend_seq_lens_cpu=list(lens),
+                           extend_prefix_lens_cpu=list(prefix) if prefix is not None else [0] * len(lens))
+
+
+def DB(bs):
+    return SimpleNamespace(batch_size=bs, forward_mode=FMReal("decode"))
+
+
+# (batch, gpu_ms) in issue order.  Shared by the OFF golden and the ON scenario.
+TRACE = (
+    [(DB(4), 10.0)]                                         # 1  first gap (excluded)
+    + [(DB(4), ms) for ms in (10.0, 12.0, 10.0, 30.0, 10.0)]  # 2-6 pure bs4 (median 10, mean 14.4)
+    + [(DB(8), 20.0)] * 5                                    # 7-11 pure bs8
+    + [(XB([2000]), 105.0),                                  # E
+       (DB(4), 10.0),                                        # gap: r_ser = 105 / T_dec(4)=10
+       (XB([700]), 50.0), (XB([600, 100], prefix=[0, 400]), 60.0),  # E, E
+       (DB(5), 10.0),                                        # gap: bs5 has no pure -> fallback T_all = 20
+       (XB([300, 1, 1, 1, 1], mode="mixed", prefix=[0, 50, 60, 70, 80]), 40.0),  # MIXED, decode part 4
+       (DB(4), 10.0),                                        # pure
+       (SimpleNamespace(batch_size=2, forward_mode=FMReal("split_prefill")), 7.0),  # never timed
+       (SimpleNamespace(batch_size=2, forward_mode=FMReal("idle")), 0.0),
+       (DB(4), 11.0),                                        # pure
+       (DB(60), 25.0)]                                       # eager bs_over_max; pure (fallback)
+)
+# Hand computation: pure gaps = bs4 {10,12,10,30,10,10,11} (median 10, mean 14.71), bs8 {20 x5}, bs60 {25};
+# all 13 sorted -> 7th = 20 (mean 16.77).  T_dec(4)=10, T_dec(8)=20, bs5 / bs60 fall back to 20 (n_fallback 2).
+# r_ser = [105/10, (50+60)/20]; r_mix = (40 - T_dec(4)) / T_dec(4) with the mixed decode part = 4.
+EXPECT_R_SER = [10.5, 110.0 / 20.0]
+EXPECT_R_MIX = [3.0]
+
+
+def run_trace(mod, trace=TRACE, window_s=0.004, **probe_kw):
+    """Deterministic probe run (fake clock / GPU); returns the probe's records."""
+    gpu, clock = FakeGPU(), Clock()
+    gr = FakeGraphRunner()
+    runner = FakeRunner(gpu, clock, gr)
+    probe = mod.DecodeProbe(None, run_id="g", workload_id="g", window_s=window_s,
+                            boot={"capture_bs": list(gr.capture_bs), "disable_cuda_graph_padding": False},
+                            clock=clock, event_factory=lambda: FakeEvent(gpu), **probe_kw)
+    mod.set_probe(probe)
+    mod.install_on_runner(runner)
+    try:
+        for i, (fb, ms) in enumerate(trace):
+            runner.gpu_ms = ms
+            runner.forward(fb)
+            if i % 3 == 2:
+                gpu.complete_all()  # resolution happens at a later entry / flush, as on the GPU
+        gpu.complete_all()
+        probe.close()
+    finally:
+        mod.set_probe(None)
+        mod.uninstall_all()
+    return probe.records
+
+
+def masked(records):
+    return [{k: v for k, v in r.items() if k not in GOLDEN_MASK} for r in records]
+
+
+def run_on(mod=None, trace=TRACE, **kw):
+    mod = mod or dp
+    return run_trace(mod, trace, extend_time=True, stream_key_fn=lambda: 7, **kw)
+
+
+class TestExtendOffGolden(unittest.TestCase):
+    """OFF == the pre-flag probe, byte for byte (records generated from the pre-flag source,
+    sha256 092e5a10..., and frozen in GOLDEN)."""
+
+    def setUp(self):
+        self.golden = json.loads(GOLDEN.read_text(encoding="utf-8"))
+
+    def test_default_matches_golden(self):
+        got = masked(run_trace(dp))
+        self.assertEqual(json.dumps(got, sort_keys=False), json.dumps(self.golden["records"], sort_keys=False))
+
+    def test_explicit_false_matches_golden(self):
+        got = masked(run_trace(dp, extend_time=False, stream_key_fn=lambda: 7))
+        self.assertEqual(got, self.golden["records"])
+
+    def test_golden_counts_extend_only_as_other_mode(self):
+        wins = [r for r in self.golden["records"] if r["event"] == "decode_probe_window"]
+        other = Counter_sum(w["n_other_modes"] for w in wins)
+        self.assertEqual(other, {"extend": 3, "split_prefill": 1, "idle": 1})
+        self.assertFalse(any(r["event"] == dp.EXTEND_EVENT for r in self.golden["records"]))
+
+    def test_golden_detects_an_off_change(self):
+        # the golden is not a tautology: an OFF-path change (stream_key always written) breaks it
+        m = mutate('                if self.extend_time:  # ON only: OFF records stay byte-identical\n'
+                   '                    fields["stream_key"] = skey\n',
+                   '                fields["stream_key"] = None\n                if self.extend_time:\n'
+                   '                    fields["stream_key"] = skey\n')
+        self.assertNotEqual(masked(run_trace(m)), self.golden["records"])
+
+
+def Counter_sum(dicts):
+    out = {}
+    for d in dicts:
+        for k, v in d.items():
+            out[k] = out.get(k, 0) + v
+    return out
+
+
+def extend_failures(mod):
+    """ON scenario + r_ser / r_mix on it; the unmutated module passes, each mutant fails."""
+    fails = []
+
+    def expect(cond, msg):
+        if not cond:
+            fails.append(msg)
+
+    try:
+        recs = run_on(mod)
+        ext = sorted((r for r in recs if r["event"] == mod.EXTEND_EVENT), key=lambda r: r["seq"])
+        expect([r["extend_gpu_ms"] for r in ext] == [105.0, 50.0, 60.0], f"extend gpu ms {[r['extend_gpu_ms'] for r in ext]}")
+        expect([(r["n_reqs"], r["extend_tokens"], r["extend_len_max"], r["extend_prefix_tokens"]) for r in ext]
+               == [(1, 2000, 2000, 0), (1, 700, 700, 0), (2, 700, 600, 400)], f"extend shapes {ext}")
+        expect(all(r["mode"] == "extend" and r["stream_key"] == 7 and mod.validate_record(r) == [] for r in ext),
+               "extend record fields / schema")
+        expect(all(abs(r["extend_host_ms"] - 1.5) < 1e-6 for r in ext), "extend host ms")
+        dec = sorted((r for r in recs if r["event"] == "decode_forward"), key=lambda r: r["seq"])
+        mixed = [r for r in dec if r["mode"] == "mixed"]
+        expect(len(mixed) == 1 and mixed[0].get("mixed_decode_bs_est") == 4 and mixed[0].get("extend_tokens") == 304,
+               f"mixed record {mixed}")
+        expect(all(r.get("stream_key") == 7 for r in dec), "decode stream_key")
+        seqs = sorted(r["seq"] for r in ext + dec)
+        expect(seqs == list(range(1, len(seqs) + 1)), f"seq not contiguous {seqs}")
+        expect(len(seqs) == len(TRACE) - 2, f"timed forwards {len(seqs)} (split_prefill/idle must not be timed)")
+        win = [r for r in recs if r["event"] == "decode_probe_window"]
+        expect(sum(w["n_extend_timed"] for w in win) == 3 and sum(w["n_extend_resolved"] for w in win) == 3,
+               "window extend counters")
+        expect(sum(w["n_decode"] for w in win) == 16 and sum(w["n_mixed"] for w in win) == 1,
+               "decode window counts must not include extend")
+        expect(Counter_sum(w["n_other_modes"] for w in win) == {"extend": 3, "split_prefill": 1, "idle": 1},
+               "n_other_modes meaning unchanged ON")
+        boot = [r for r in recs if r["event"] == "decode_probe_boot"][0]
+        expect(boot.get("extend_time_enabled") is True, "boot flag")
+
+        pr = mod.pacing_ratios(recs)
+        expect(all(abs(a - b) < 1e-9 for a, b in zip(pr["r_ser"], EXPECT_R_SER)) and len(pr["r_ser"]) == 2,
+               f"r_ser {pr['r_ser']} != {EXPECT_R_SER}")
+        expect(len(pr["r_mix"]) == 1 and abs(pr["r_mix"][0] - EXPECT_R_MIX[0]) < 1e-9, f"r_mix {pr['r_mix']}")
+        expect(pr["tdec_by_bs"] == {4: 10.0, 8: 20.0} and pr["tdec_all_ms"] == 20.0,
+               f"T_dec {pr['tdec_by_bs']} {pr['tdec_all_ms']}")
+        expect((pr["n_first"], pr["n_incomplete"], pr["n_fallback"], pr["n_pure"]) == (1, 0, 2, 13),
+               f"counts {pr['n_first'], pr['n_incomplete'], pr['n_fallback'], pr['n_pure']}")
+
+        # direct records: other-stream extend is not a serial stall; a seq hole excludes the gap
+        boot = {"event": "decode_probe_boot", "extend_time_enabled": True}
+
+        def d(seq, ms, bs=4, sk=1, mode="decode"):
+            return {"event": "decode_forward", "seq": seq, "mode": mode, "bs_real": bs, "stream_key": sk,
+                    "decode_fwd_gpu_ms": ms, "t_host_start": float(seq)}
+
+        def e(seq, ms, sk=1):
+            return {"event": "extend_forward", "seq": seq, "mode": "extend", "extend_gpu_ms": ms, "stream_key": sk,
+                    "extend_tokens": 100, "n_reqs": 1, "t_host_start": float(seq)}
+
+        base = [boot] + [d(i, 10.0) for i in range(1, 7)]
+        p2 = mod.pacing_ratios(base + [e(7, 40.0, sk=2), d(8, 10.0)], min_bs=5)
+        expect(p2["r_ser"] == [] and p2["gaps"][-1]["other_stream_ms"] == 40.0, f"other stream counted {p2['r_ser']}")
+        p3 = mod.pacing_ratios(base + [e(8, 40.0), d(9, 10.0)], min_bs=5)  # seq 7 dropped
+        expect(p3["n_incomplete"] == 1 and p3["r_ser"] == [], f"seq hole not excluded {p3['n_incomplete']} {p3['r_ser']}")
+        p4 = mod.pacing_ratios(base + [e(7, 40.0), d(8, 10.0)], min_bs=5, t_window=(2.0, 8.0))
+        expect(p4["r_ser"] == [4.0] and p4["n_first"] == 1 and p4["n_pure"] == 4, f"t_window {p4}")
+        try:
+            mod.pacing_ratios([{"event": "decode_probe_boot"}] + base[1:])
+            fails.append("OFF file accepted by pacing_ratios")
+        except ValueError:
+            pass
+    except BlockingCall as exc:
+        fails.append(f"blocking call: {exc}")
+    except Exception as exc:  # a mutant may crash: that is a detection too
+        fails.append(f"exception {type(exc).__name__}: {exc}")
+    finally:
+        mod.set_probe(None)
+        mod.uninstall_all()
+    return fails
+
+
+class TestExtendOn(unittest.TestCase):
+    def tearDown(self):
+        dp.set_probe(None)
+        dp.uninstall_all()
+
+    def test_unmutated_passes(self):
+        self.assertEqual(extend_failures(dp), [])
+
+    def test_extend_requires_events(self):
+        with self.assertRaises(ValueError):
+            dp.DecodeProbe(None, events_enabled=False, extend_time=True)
+
+    def test_extend_pending_does_not_hold_back_decode(self):
+        # separate deque: an unresolved extend never blocks resolution of decode records
+        gpu, clock = FakeGPU(), Clock()
+        runner = FakeRunner(gpu, clock, FakeGraphRunner())
+        probe = dp.DecodeProbe(None, window_s=1e9, boot={"capture_bs": CAPTURE}, clock=clock,
+                               event_factory=lambda: FakeEvent(gpu), extend_time=True, max_pending=2)
+        dp.set_probe(probe)
+        dp.install_on_runner(runner)
+        for _ in range(3):
+            runner.forward(XB([100]))
+        probe.maybe_flush(force=True)
+        win = [r for r in probe.records if r["event"] == "decode_probe_window"][-1]
+        self.assertEqual((win["n_extend_pending"], win["n_extend_dropped_pending"], win["n_pending"]), (2, 1, 0))
+        self.assertEqual([r for r in probe.records if r["event"] == dp.EXTEND_EVENT], [])
+
+    def test_capture_guard_applies_to_extend(self):
+        recs = run_trace(dp, [(XB([100]), 5.0)], extend_time=True, capturing_fn=lambda: True)
+        self.assertFalse(any(r["event"] == dp.EXTEND_EVENT for r in recs))
+
+    def test_validate_extend_record(self):
+        rec = next(r for r in run_on() if r["event"] == dp.EXTEND_EVENT)
+        self.assertEqual(dp.validate_record(rec), [])
+        self.assertTrue(dp.validate_record({**rec, "mode": "mixed"}))
+        bad = dict(rec)
+        bad.pop("extend_gpu_ms")
+        self.assertTrue(dp.validate_record(bad))
+
+    def test_is_plain_extend_table(self):
+        self.assertTrue(dp.is_plain_extend(FMReal("extend")))
+        for m in ("mixed", "split_prefill", "target_verify", "draft_extend", "dllm_extend", "decode", "idle"):
+            self.assertFalse(dp.is_plain_extend(FMReal(m)), m)
+        self.assertFalse(dp.is_plain_extend(None))
+
+    def test_env_flag(self):
+        fake_torch = types.ModuleType("torch")
+        fake_torch.cuda = SimpleNamespace(Event=lambda enable_timing=True: object(),
+                                          is_current_stream_capturing=lambda: False,
+                                          current_stream=lambda: SimpleNamespace(cuda_stream=11))
+        runner = FakeRunner(FakeGPU(), Clock(), FakeGraphRunner())
+        sched = SimpleNamespace(tp_worker=SimpleNamespace(model_runner=runner))
+        sys.path.insert(0, str(ENG / "src" / "multiplex"))
+        try:
+            with tempfile.TemporaryDirectory() as tmp, mock.patch.dict(sys.modules, {"torch": fake_torch}):
+                env = {"PDMUX_DECODE_PROBE_PATH": str(Path(tmp) / "d.jsonl")}
+                for bad_env in ({dp.EXTEND_ENV: "1", "PDMUX_DECODE_PROBE_PATH": ""},
+                                {**env, dp.EXTEND_ENV: "1", "PDMUX_DECODE_PROBE_GPU_EVENTS": "0"},
+                                {**env, dp.EXTEND_ENV: "yes"}):
+                    with mock.patch.dict(os.environ, bad_env):
+                        with self.assertRaises(ValueError, msg=bad_env):
+                            dp.maybe_install_decode_probe(sched)
+                for val, exp in (("", False), ("0", False), ("1", True)):
+                    with mock.patch.dict(os.environ, {**env, dp.EXTEND_ENV: val, "PDMUX_DECODE_PROBE_GPU_EVENTS": ""}):
+                        p = dp.maybe_install_decode_probe(sched)
+                        self.assertEqual(p.extend_time, exp, val)
+                        if exp:
+                            self.assertEqual(p.stream_key_fn(), 11)
+                        else:
+                            self.assertIsNone(p.stream_key_fn)
+                        p.close()
+                        dp.set_probe(None)
+                        dp.uninstall_all()
+                with mock.patch.dict(os.environ, {"PDMUX_DECODE_PROBE_PATH": "", dp.EXTEND_ENV: "0"}):
+                    self.assertIsNone(dp.maybe_install_decode_probe(sched))
+        finally:
+            sys.path.remove(str(ENG / "src" / "multiplex"))
+
+    def test_docstring_states_instrumentation_boot_only(self):
+        doc = ast.get_docstring(ast.parse(SRC))
+        self.assertIn("INSTRUMENTATION BOOT ONLY", doc)
+        self.assertIn("never goodput / latency", doc)
+
+
+class TestPacingMatchesPhaseA3(unittest.TestCase):
+    """``pacing_ratios`` == the Gate 2 HOLB re-analysis definition (results/stock_baseline/r_ser_holb.py
+    ``seg_stats``, PLAN sec 0-1) on the same gaps, so Phase A3 (KISTI HOLB) and Phase B (this probe) share r_ser."""
+
+    def test_same_values_as_r_ser_holb(self):
+        sb = ENG / "results" / "stock_baseline"
+        if not (sb / "r_ser_holb.py").is_file():
+            self.skipTest("r_ser_holb.py absent")
+        sys.path.insert(0, str(sb))
+        try:
+            spec = importlib.util.spec_from_file_location("r_ser_holb_t", sb / "r_ser_holb.py")
+            rh = importlib.util.module_from_spec(spec)
+            spec.loader.exec_module(rh)
+        finally:
+            sys.path.remove(str(sb))
+        pr = dp.pacing_ratios(run_on())
+        self.assertEqual(rh.MIN_BS, dp.PACING_MIN_BS)
+        holb = [{"gap_class": "first", "decode_mode": "DECODE", "decode_bs": 4, "decode_dur_ms": 10.0,
+                 "n_other_fw": 0, "same_stream_fw_ms": 0.0, "host_ts": 0.0}]
+        holb += [{"gap_class": "strict", "decode_mode": g["mode"].upper(), "decode_bs": g["bs"],
+                  "decode_dur_ms": g["decode_ms"], "n_other_fw": g["n_extend"],
+                  "same_stream_fw_ms": g["same_stream_ms"], "host_ts": float(i + 1)} for i, g in enumerate(pr["gaps"])]
+        st = rh.seg_stats(holb)
+        self.assertEqual(st["_r_ser"], pr["r_ser"])
+        self.assertEqual(st["_r_mix"], pr["r_mix"])
+        self.assertEqual(st["tdec_median_ms"], pr["tdec_all_ms"])
+        self.assertEqual(st["n_pure"], pr["n_pure"])
+
+
+class TestExtendMutants(unittest.TestCase):
+    MUTANTS = {
+        # T_dec denominator = mean instead of median
+        "tdec_mean": ("    tdec_by_bs = {bs: statistics.median(xs) for bs, xs in by_bs.items() if len(xs) >= int(min_bs)}\n",
+                      "    tdec_by_bs = {bs: statistics.mean(xs) for bs, xs in by_bs.items() if len(xs) >= int(min_bs)}\n"),
+        "tdec_all_mean": ('    tdec_all = statistics.median([g["decode_ms"] for g in pure]) if pure else None\n',
+                          '    tdec_all = statistics.mean([g["decode_ms"] for g in pure]) if pure else None\n'),
+        # MIXED counted as EXTEND (analysis side)
+        "mixed_as_extend_rec": ("    return r.get(\"event\") == EXTEND_EVENT\n",
+                                "    return r.get(\"event\") == EXTEND_EVENT or r.get(\"mode\") == MODE_MIXED\n"),
+        # MIXED / SPLIT_PREFILL timed as EXTEND (probe side: the natural is_extend() bug)
+        "classify_is_extend": ("    return forward_mode is not None and mode_name(forward_mode) == MODE_EXTEND\n",
+                               "    return forward_mode is not None and _truth(forward_mode, \"is_extend\")\n"),
+        "mixed_routed_to_extend": ("    if _truth(forward_mode, \"is_mixed\"):\n        return MODE_MIXED\n", ""),
+        "mixed_bs_is_bs_real": ("    if r.get(\"mode\") == MODE_MIXED:\n        return r.get(\"mixed_decode_bs_est\")\n", ""),
+        "no_same_stream_filter": ('                same = [e for e in open_ext if e.get("stream_key") == r.get("stream_key")]\n',
+                                  '                same = list(open_ext)\n'),
+        "no_seq_hole_check": ("            complete = got == expect and r.get(I4_FIELD)", "            complete = True and r.get(I4_FIELD)"),
+        "pure_includes_extend_gaps": ('    pure = [g for g in gaps if g["mode"] == MODE_DECODE and g["n_extend"] == 0]\n',
+                                      '    pure = [g for g in gaps if g["mode"] == MODE_DECODE]\n'),
+        "first_gap_kept": ("        if prev is None:\n            n_first += 1\n        else:\n",
+                           "        if prev is None:\n            n_first += 1\n            prev = {\"seq\": int(r[\"seq\"]) - 1 - len(open_ext)}\n        if True:\n"),
+        "extend_host_time": ("                item.fields[EXT_GPU_FIELD] = gpu_ms\n",
+                             "                item.fields[EXT_GPU_FIELD] = item.fields[EXT_HOST_FIELD]\n"),
+        "off_file_accepted": ('    if not boots or not all(b.get("extend_time_enabled") is True for b in boots):\n',
+                              '    if False:\n'),
+    }
+
+    def test_every_mutant_fails(self):
+        for name, (old, new) in self.MUTANTS.items():
+            with self.subTest(mutant=name):
+                fails = extend_failures(mutate(old, new))
+                self.assertTrue(fails, f"mutant {name} survived the EXTEND scenario")
 
 if __name__ == "__main__":
     unittest.main()

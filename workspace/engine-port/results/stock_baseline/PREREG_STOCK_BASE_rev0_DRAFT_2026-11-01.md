@@ -63,7 +63,7 @@
 
 ## 5. 계측 boot (측정 arm과 분리, C5) + 축약 입력 필터 (규약 필수 항 3)
 - 5-0 **정의 일치 smoke**(첫 boot, 측정 아님): 고정 요청 20개를 SG-stock·VL-stock에 같은 클라이언트(`bench_serving` 호환, vLLM은 `--backend vllm`)로 보내 클라이언트 TTFT − 서버 로그 first-token 시각 차의 중앙값이 두 엔진에서 ±5 ms 안인지. 실패 → `CLIENT_DEF_MISMATCH`, (나) 엔진 간 쌍 전부 INVALID(fail-closed).
-- 5-1 SG-stock 계측 boot: `PDMUX_PROBE_EXTEND_TIME=1`(§11-3, 기본 OFF) + decode_probe, R₂ 부하 60요청 seed 301 → r_ser(L)·r_mix. **입력 필터**: `t ∈ [t_load_start, t_load_end]`(클라이언트 첫 요청 송신 ~ 마지막 완료) ∧ `role=pc` ∧ warmup·smoke 요청 ID 제외. 필터 밖 레코드가 섞이면 r_ser p50이 바뀌는 **변이 테스트** 등록(교훈 53).
+- 5-1 SG-stock 계측 boot: `PDMUX_PROBE_EXTEND_TIME=1`(§11-3 **완료, CPU**: `decode_probe` `extend_forward` 레코드 — `extend_gpu_ms`·`extend_tokens`·`n_reqs`·`stream_key`·`seq`·`decode_iter_seq`; 순수 EXTEND만, MIXED·SPLIT_PREFILL 제외; `pacing_ratios(records, min_bs=5, t_window)`가 r_ser·r_mix를 냄, T_dec = bs별 순수 DECODE 중앙값; OFF 골든 26레코드 바이트 동일, 변이 12종 검출; 엔진 digest `65cbb49d…` → `2836112b…`) + decode_probe, R₂ 부하 60요청 seed 301. **입력 필터**: forward 레코드에는 요청 ID가 없으므로 **시간 창만** — `t_window = [t_load_start, t_load_end]`(프로브 `perf_counter` 시계; boot 레코드의 `t_realtime`/`t_host`로 클라이언트 송신·완료 시각을 사상), warmup·smoke는 창 밖에 두어 제외. 창 밖 레코드를 섞으면 r_ser p50이 바뀌는 **변이 테스트** 등록(교훈 53). GPU 미검증 항목(봉인 전 하네스 감사 공시): EXTEND 이벤트 실측·overlap 경로의 단일 forward stream(`stream_key` 상수)·ON boot 출력 불변·관측자 비용.
 - 5-2 VL-stock 계측 boot: 무패치 원칙 → `/start_profile`~`/stop_profile` torch profiler 창(같은 부하), step별 GPU 시간 + 토큰 수로 r_mix. 관측자 비용은 계측 boot 안에서만 공시.
 - 5-3 PM-ref 계측 boot: implfix `pc_reduce` 정의 재사용하되 **부하 창 필터를 적용한 수정판**(봉인 코드 수정 아님 — 새 함수, 변이 테스트 포함).
 - 라벨별 입력 필터 표(감사자용): `λ*` ← (가) run 클라이언트 요청만 · `goodput` ← (나) 측정 boot 클라이언트 요청만(계측 boot 제외) · `r_ser/r_mix` ← 5-1/5-2 부하 창 · `플라시보` ← SG-rep 측정 boot.

@@ -67,6 +67,42 @@ fields null).  ``PDMUX_DECODE_PROBE_WINDOW_S`` (default 1.0) sets the summary
 window.  Records go through ``AsyncJsonlTelemetry`` (no file I/O on the
 scheduler/worker thread).
 
+EXTEND TIMING (decision 62 item 4, 2026-11-01; default OFF)
+------------------------------------------------------------
+``PDMUX_PROBE_EXTEND_TIME=1`` (strict: unset | 0 | 1; requires
+``PDMUX_DECODE_PROBE_PATH`` and GPU events, else ``ValueError`` at install) also
+brackets every plain ``ForwardMode.EXTEND`` forward with the same CUDA-event pair
+and emits one ``extend_forward`` record: ``extend_gpu_ms``, ``extend_host_ms``,
+``extend_tokens`` (``extend_num_tokens``), ``n_reqs`` (``batch_size``),
+``extend_len_max``, ``extend_prefix_tokens``, ``stream_key``, ``seq``,
+``decode_iter_seq``.  Only the name EXTEND is timed: ``ForwardMode.is_extend()``
+is NOT used because in v0.5.10 it is also True for MIXED / SPLIT_PREFILL /
+TARGET_VERIFY / DRAFT_EXTEND / DLLM_EXTEND (MIXED stays a ``decode_forward``
+record).  With the flag ON, decode/mixed records additionally carry
+``stream_key`` and MIXED records ``extend_tokens``/``n_reqs``/
+``mixed_decode_bs_est`` (trailing extend length 1 run = the running decode
+requests that ``mix_with_running`` appends; an estimate -- a prefill chunk of
+length 1 right before them would be counted too).  ``seq`` is shared by all
+timed kinds, so ON a hole in ``seq`` = a dropped record, which
+``pacing_ratios`` turns into an excluded gap (never a silent under-count).
+Extend pairs use their own pending deque so a long prefill never holds back
+decode resolution.  ``pacing_ratios`` computes r_ser / r_mix
+(PLAN_stock_baseline_metrics_2026-11-01 sec 0-1, same definitions as the Gate 2
+HOLB re-analysis ``results/stock_baseline/r_ser_holb.py``); it is defined for the
+stock single-stream path, NOT for the PD-mux r_span.
+
+OFF (flag unset or 0) is byte-identical to the pre-flag probe: no extend record,
+no new field in any record, extend forwards pass through and are counted in
+``n_other_modes`` exactly as before (pinned by tests/test_decode_probe.py golden).
+
+OBSERVER COST -- INSTRUMENTATION BOOT ONLY.  Turning the flag ON adds two event
+records + one query + one queued dict per EXTEND forward and one
+``current_stream`` call per timed forward.  Its cost is not measured and is not
+claimed to be zero.  It is to be enabled ONLY in a dedicated instrumentation
+boot that is separate from every measurement arm (PC-boot precedent C5);
+numbers from such a boot are r_ser / r_mix inputs, never goodput / latency
+evidence, and measurement arms run with the flag OFF.
+
 The pure part (above ``# ---- engine glue``) imports no torch / sglang, so CPU
 tests load this file loose.
 """
@@ -75,6 +111,7 @@ from __future__ import annotations
 
 import logging
 import os
+import statistics
 import threading
 import time
 from bisect import bisect_left
@@ -104,6 +141,14 @@ I4_FIELD = "decode_fwd_gpu_ms"
 I4_HOST_FIELD = "decode_fwd_host_ms"
 MAX_PENDING_DEFAULT = 4096
 
+# EXTEND timing (decision 62 item 4; default OFF, instrumentation boot only)
+MODE_EXTEND = "extend"
+EXTEND_EVENT = "extend_forward"
+EXT_GPU_FIELD = "extend_gpu_ms"
+EXT_HOST_FIELD = "extend_host_ms"
+EXTEND_ENV = "PDMUX_PROBE_EXTEND_TIME"
+PACING_MIN_BS = 5  # == results/stock_baseline/r_ser_holb.py MIN_BS (per-bs T_dec needs >= 5 pure samples)
+
 
 def _truth(obj: Any, name: str) -> bool:
     fn = getattr(obj, name, None)
@@ -131,6 +176,42 @@ def forward_mode_kind(forward_mode: Any) -> Optional[str]:
 
 def mode_name(forward_mode: Any) -> str:
     return str(getattr(forward_mode, "name", forward_mode)).lower()
+
+
+def is_plain_extend(forward_mode: Any) -> bool:
+    """True only for ``ForwardMode.EXTEND`` (by name).  Deliberately not
+    ``is_extend()``: that is also True for MIXED / SPLIT_PREFILL / TARGET_VERIFY /
+    DRAFT_EXTEND / DLLM_EXTEND in v0.5.10, none of which is a stock prefill forward."""
+    return forward_mode is not None and mode_name(forward_mode) == MODE_EXTEND
+
+
+def _int_list(xs: Any) -> List[int]:
+    if xs is None:
+        return []
+    if hasattr(xs, "tolist"):
+        xs = xs.tolist()
+    return [int(x) for x in xs]
+
+
+def extend_batch_fields(fb: Any, mixed: bool = False) -> Dict[str, Any]:
+    """Host-side batch shape of an EXTEND (or MIXED) forward; reads CPU lists only."""
+    lens = _int_list(getattr(fb, "extend_seq_lens_cpu", None))
+    prefix = _int_list(getattr(fb, "extend_prefix_lens_cpu", None))
+    ent = getattr(fb, "extend_num_tokens", None)
+    out = {
+        "n_reqs": int(getattr(fb, "batch_size", 0) or 0),
+        "extend_tokens": int(ent) if ent is not None else (sum(lens) if lens else None),
+        "extend_len_max": max(lens) if lens else None,
+        "extend_prefix_tokens": sum(prefix) if prefix else (0 if lens else None),
+    }
+    if mixed:
+        k = 0
+        for x in reversed(lens):
+            if x != 1:
+                break
+            k += 1
+        out["mixed_decode_bs_est"] = k if lens else None
+    return out
 
 
 def expected_padded_bs(capture_bs: Sequence[int], raw_bs: int, disable_padding: bool) -> Optional[int]:
@@ -227,6 +308,10 @@ class DecodeAccountant:
     n_dropped_pending: int = 0
     n_skipped_capturing: int = 0
     n_probe_errors: int = 0
+    # EXTEND timing only (written into the window record only when the flag is ON)
+    n_extend_timed: int = 0
+    n_extend_resolved: int = 0
+    n_extend_dropped_pending: int = 0
 
     def reset(self, t: float) -> None:
         self.__init__(t_start=t)  # type: ignore[misc]
@@ -266,7 +351,146 @@ def validate_record(rec: Dict[str, Any]) -> List[str]:
         if rec.get("graph") == GRAPH_HIT and rec.get("bs_padded") is not None and rec.get("bs_real") is not None:
             if int(rec["bs_padded"]) < int(rec["bs_real"]):
                 errs.append("graph hit with bs_padded < bs_real")
+    if rec.get("event") == EXTEND_EVENT:
+        for k in ("seq", "mode", "n_reqs", "extend_tokens", "stream_key", EXT_GPU_FIELD, EXT_HOST_FIELD):
+            if k not in rec:
+                errs.append(f"{EXTEND_EVENT} without {k}")
+        if rec.get("mode") != MODE_EXTEND:
+            errs.append(f"{EXTEND_EVENT} with mode {rec.get('mode')!r}")
     return errs
+
+
+# ---- r_ser / r_mix (PLAN_stock_baseline_metrics_2026-11-01 sec 0-1) -------
+
+def _is_extend_rec(r: Dict[str, Any]) -> bool:
+    return r.get("event") == EXTEND_EVENT
+
+
+def _is_closer(r: Dict[str, Any]) -> bool:
+    """A decode-carrying forward (DECODE or MIXED) closes a gap."""
+    return r.get("event") == "decode_forward" and r.get("mode") in (MODE_DECODE, MODE_MIXED)
+
+
+def _closer_bs(r: Dict[str, Any]) -> Optional[int]:
+    """Decode batch size of a closer: DECODE -> bs_real; MIXED -> the decode part only."""
+    if r.get("mode") == MODE_MIXED:
+        return r.get("mixed_decode_bs_est")
+    return r.get("bs_real")
+
+
+def pacing_ratios(
+    records: Sequence[Dict[str, Any]],
+    min_bs: int = PACING_MIN_BS,
+    t_window: Optional[Tuple[float, float]] = None,
+) -> Dict[str, Any]:
+    """r_ser and r_mix of one probe file (stock SGLang, single forward stream).
+
+    Gap k = the timed forwards strictly between decode-carrying forward D_{k-1}
+    and D_k (``seq`` order = host issue order = stream order on the stock path).
+
+      T_dec(bs)  MEDIAN ``decode_fwd_gpu_ms`` of PURE gaps: D_k is DECODE, the gap
+                 holds no extend forward, it is not the first gap and it is
+                 complete; per ``bs_real`` when that bs has >= ``min_bs`` samples,
+                 else the median over all pure gaps (counted in ``n_fallback``).
+      r_ser(k)   sum of ``extend_gpu_ms`` of gap k's EXTEND forwards on D_k's
+                 stream / T_dec(bs of D_k), for gaps with that sum > 0.
+      r_mix(k)   (``decode_fwd_gpu_ms`` of MIXED D_k - T_dec(b)) / T_dec(b),
+                 b = ``mixed_decode_bs_est`` (decode part of the mixed batch).
+
+    Excluded (counted, never silently merged): the first gap (no D_{k-1}), gaps
+    with a ``seq`` hole (dropped / unresolved record) or a null GPU time.
+    Extend forwards on another stream than D_k are reported in ``other_stream_ms``
+    only.  ``t_window`` (probe host clock, ``t_host_start``) filters records first.
+    Refuses input without an extend-timing boot record: an OFF file has no
+    extend records and would otherwise read as "no stalls".
+    """
+    boots = [r for r in records if r.get("event") == "decode_probe_boot"]
+    if not boots or not all(b.get("extend_time_enabled") is True for b in boots):
+        raise ValueError("pacing_ratios needs a probe file booted with PDMUX_PROBE_EXTEND_TIME=1")
+    fw = [r for r in records if _is_extend_rec(r) or r.get("event") == "decode_forward"]
+    if t_window is not None:
+        lo, hi = float(t_window[0]), float(t_window[1])
+        fw = [r for r in fw if lo <= float(r.get("t_host_start", float("nan"))) <= hi]
+    fw.sort(key=lambda r: int(r["seq"]))
+
+    gaps: List[Dict[str, Any]] = []
+    open_ext: List[Dict[str, Any]] = []
+    prev: Optional[Dict[str, Any]] = None
+    n_first = n_incomplete = n_trailing = 0
+    for r in fw:
+        if _is_extend_rec(r):
+            open_ext.append(r)
+            continue
+        if not _is_closer(r):
+            continue
+        if prev is None:
+            n_first += 1
+        else:
+            expect = list(range(int(prev["seq"]) + 1, int(r["seq"])))
+            got = [int(e["seq"]) for e in open_ext]
+            complete = got == expect and r.get(I4_FIELD) is not None and all(
+                e.get(EXT_GPU_FIELD) is not None for e in open_ext)
+            if not complete:
+                n_incomplete += 1
+            else:
+                same = [e for e in open_ext if e.get("stream_key") == r.get("stream_key")]
+                gaps.append({
+                    "seq": int(r["seq"]),
+                    "mode": r.get("mode"),
+                    "bs": _closer_bs(r),
+                    "decode_ms": float(r[I4_FIELD]),
+                    "n_extend": len(open_ext),
+                    "same_stream_ms": sum(float(e[EXT_GPU_FIELD]) for e in same),
+                    "other_stream_ms": sum(float(e[EXT_GPU_FIELD]) for e in open_ext
+                                           if e.get("stream_key") != r.get("stream_key")),
+                    "extend_tokens": sum(int(e.get("extend_tokens") or 0) for e in same),
+                    "extend_n_reqs": sum(int(e.get("n_reqs") or 0) for e in same),
+                })
+        prev = r
+        open_ext = []
+    n_trailing = len(open_ext)
+
+    pure = [g for g in gaps if g["mode"] == MODE_DECODE and g["n_extend"] == 0]
+    by_bs: Dict[Any, List[float]] = {}
+    for g in pure:
+        by_bs.setdefault(g["bs"], []).append(g["decode_ms"])
+    tdec_all = statistics.median([g["decode_ms"] for g in pure]) if pure else None
+    tdec_by_bs = {bs: statistics.median(xs) for bs, xs in by_bs.items() if len(xs) >= int(min_bs)}
+    n_fallback = 0
+
+    def tdec(bs: Any) -> Optional[float]:
+        nonlocal n_fallback
+        if bs in tdec_by_bs:
+            return tdec_by_bs[bs]
+        n_fallback += 1
+        return tdec_all
+
+    r_ser: List[float] = []
+    r_mix: List[float] = []
+    for g in gaps:
+        t = tdec(g["bs"])
+        g["tdec_ms"] = t
+        g["r_ser"] = g["r_mix"] = None
+        if not t:
+            continue
+        if g["same_stream_ms"] > 0:
+            g["r_ser"] = g["same_stream_ms"] / t
+            r_ser.append(g["r_ser"])
+        if g["mode"] == MODE_MIXED:
+            g["r_mix"] = (g["decode_ms"] - t) / t
+            r_mix.append(g["r_mix"])
+    return {
+        "gaps": gaps,
+        "r_ser": r_ser,
+        "r_mix": r_mix,
+        "tdec_by_bs": tdec_by_bs,
+        "tdec_all_ms": tdec_all,
+        "n_pure": len(pure),
+        "n_fallback": n_fallback,
+        "n_first": n_first,
+        "n_incomplete": n_incomplete,
+        "n_trailing_extend": n_trailing,
+    }
 
 
 class DecodeProbe:
@@ -288,6 +512,8 @@ class DecodeProbe:
         stream_idx_fn: Optional[Callable[[], Optional[int]]] = None,
         max_pending: int = MAX_PENDING_DEFAULT,
         decode_iter_fn: Optional[Callable[[], Optional[int]]] = None,
+        extend_time: bool = False,
+        stream_key_fn: Optional[Callable[[], Any]] = None,
     ) -> None:
         self.boot = dict(boot or {})
         self.window_s = float(window_s)
@@ -297,6 +523,12 @@ class DecodeProbe:
         self.capturing_fn = capturing_fn or (lambda: False)
         self.stream_idx_fn = stream_idx_fn
         self.decode_iter_fn = decode_iter_fn
+        # EXTEND timing: instrumentation boot only (see module docstring, OBSERVER COST)
+        self.extend_time = bool(extend_time)
+        if self.extend_time and not self.events_enabled:
+            raise ValueError(f"{EXTEND_ENV}=1 needs GPU events (PDMUX_DECODE_PROBE_GPU_EVENTS unset or 1)")
+        self.stream_key_fn = stream_key_fn
+        self.ext_pending: Deque[PendingForward] = deque()
         self.max_pending = max(1, int(max_pending))
         self.capture_bs = [int(b) for b in (self.boot.get("capture_bs") or [])]
         self.disable_padding = bool(self.boot.get("disable_cuda_graph_padding", False))
@@ -319,7 +551,8 @@ class DecodeProbe:
         self.acct.reset(self.clock())
         self._emit("decode_probe_boot", schema_version=DECODE_SCHEMA_VERSION,
                    t_realtime=time.time(), t_host=self.clock(),
-                   events_enabled=self.events_enabled, **self.boot)
+                   events_enabled=self.events_enabled, **self.boot,
+                   **({"extend_time_enabled": True} if self.extend_time else {}))
 
     # -- output
     def _emit(self, event: str, **fields: Any) -> None:
@@ -351,6 +584,12 @@ class DecodeProbe:
             self.acct.n_resolved += 1
             self._pool.append((item.start, item.end))
             self._emit("decode_forward", **item.fields)
+        if self.extend_time:
+            for item, gpu_ms in drain_ready(self.ext_pending):
+                item.fields[EXT_GPU_FIELD] = gpu_ms
+                self.acct.n_extend_resolved += 1
+                self._pool.append((item.start, item.end))
+                self._emit(EXTEND_EVENT, **item.fields)
 
     def poll(self) -> None:
         """Non-blocking resolution of completed pairs (also called by flushes)."""
@@ -368,7 +607,9 @@ class DecodeProbe:
             if kind is None:
                 with self._lock:
                     self.acct.n_other_modes[mode_name(fm)] += 1
-                return orig(*args, **kwargs)
+                if not (self.extend_time and is_plain_extend(fm)):
+                    return orig(*args, **kwargs)
+                kind = MODE_EXTEND
             if self.capturing_fn():
                 with self._lock:
                     self.acct.n_skipped_capturing += 1
@@ -378,6 +619,9 @@ class DecodeProbe:
             bs_real = int(getattr(fb, "batch_size", 0) or 0)
             sidx = self.stream_idx_fn() if self.stream_idx_fn is not None else None
             diter = self.decode_iter_fn() if self.decode_iter_fn is not None else None
+            if self.extend_time:
+                skey = self.stream_key_fn() if self.stream_key_fn is not None else None
+                ext = extend_batch_fields(fb, mixed=(kind == MODE_MIXED)) if kind != MODE_DECODE else None
         except Exception as exc:  # probe-side failure: never break the forward
             self._disable(exc)
             return orig(*args, **kwargs)
@@ -389,6 +633,10 @@ class DecodeProbe:
         if pair is not None:
             pair[1].record()
         t1 = self.clock()
+
+        if kind == MODE_EXTEND:
+            self._record_extend(runner, out, pair, ext, skey, sidx, diter, t0, t1)
+            return out
 
         try:
             gr = getattr(runner, "graph_runner", None)
@@ -419,6 +667,10 @@ class DecodeProbe:
                     I4_FIELD: None,
                     "thread": threading.current_thread().name,
                 }
+                if self.extend_time:  # ON only: OFF records stay byte-identical
+                    fields["stream_key"] = skey
+                    if ext is not None:
+                        fields.update(ext)
                 self.acct.n_by_kind[kind] += 1
                 self.acct.n_graph[gf["graph"]] += 1
                 if gf["eager_reason"]:
@@ -441,6 +693,37 @@ class DecodeProbe:
             self._disable(exc)
         return out
 
+    def _record_extend(self, runner: Any, out: Any, pair: Any, ext: Dict[str, Any], skey: Any,
+                       sidx: Any, diter: Any, t0: float, t1: float) -> None:
+        """EXTEND record (flag ON only).  Not counted in the decode/graph window counters."""
+        try:
+            with self._lock:
+                self._seq += 1
+                fields = {
+                    "seq": self._seq,
+                    "forward_pass_id": getattr(runner, "forward_pass_id", None),
+                    "mode": MODE_EXTEND,
+                    **ext,
+                    "graph": GRAPH_HIT if bool(getattr(out, "can_run_graph", False)) else GRAPH_EAGER,
+                    "stream_key": skey,
+                    "pdmux_stream_idx": sidx,
+                    "decode_iter_seq": diter,
+                    "t_host_start": t0,
+                    EXT_HOST_FIELD: (t1 - t0) * 1000.0,
+                    EXT_GPU_FIELD: None,
+                    "thread": threading.current_thread().name,
+                }
+                self.acct.n_extend_timed += 1
+                self.ext_pending.append(PendingForward(fields, pair[0], pair[1]))
+                while len(self.ext_pending) > self.max_pending:
+                    self.ext_pending.popleft()  # never waited for; counted (seq hole -> excluded gap)
+                    self.acct.n_extend_dropped_pending += 1
+            self.maybe_flush()
+        except Exception as exc:
+            with self._lock:
+                self.acct.n_probe_errors += 1
+            self._disable(exc)
+
     def maybe_flush(self, force: bool = False) -> None:
         now = self.clock()
         with self._lock:
@@ -450,13 +733,21 @@ class DecodeProbe:
             rec = self.acct.window_record(now, len(self.pending))
             rec["t_realtime_end"] = time.time()
             rec["probe_disabled"] = self.disabled
+            if self.extend_time:
+                rec.update(n_extend_timed=self.acct.n_extend_timed, n_extend_resolved=self.acct.n_extend_resolved,
+                           n_extend_pending=len(self.ext_pending),
+                           n_extend_dropped_pending=self.acct.n_extend_dropped_pending)
             self._emit("decode_probe_window", **rec)
             self.acct.reset(now)
 
     def close(self) -> None:
         self.maybe_flush(force=True)
         with self._lock:
-            self._emit("decode_probe_close", n_unresolved=len(self.pending))
+            if self.extend_time:
+                self._emit("decode_probe_close", n_unresolved=len(self.pending),
+                           n_extend_unresolved=len(self.ext_pending))
+            else:
+                self._emit("decode_probe_close", n_unresolved=len(self.pending))
         if self._tel is not None:
             self._tel.close()
 
@@ -542,9 +833,14 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
     """Return a probe iff ``PDMUX_DECODE_PROBE_PATH`` is set; otherwise None
     (nothing installed, nothing imported beyond this module)."""
     path_str = (os.environ.get("PDMUX_DECODE_PROBE_PATH", "") or "").strip()
+    extend_time = _env_flag_strict(EXTEND_ENV, False)
     if not path_str:
+        if extend_time:  # fail fast: an instrumentation boot that would silently record nothing
+            raise ValueError(f"{EXTEND_ENV}=1 without PDMUX_DECODE_PROBE_PATH")
         return None
     events = _env_flag_strict("PDMUX_DECODE_PROBE_GPU_EVENTS", True)
+    if extend_time and not events:
+        raise ValueError(f"{EXTEND_ENV}=1 with PDMUX_DECODE_PROBE_GPU_EVENTS=0: EXTEND timing needs CUDA events")
     import torch
 
     runner = scheduler.tp_worker.model_runner
@@ -580,6 +876,8 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
         capturing_fn=torch.cuda.is_current_stream_capturing,
         stream_idx_fn=stream_idx_fn,
         decode_iter_fn=decode_iter_fn,
+        **({"extend_time": True, "stream_key_fn": lambda: int(torch.cuda.current_stream().cuda_stream)}
+           if extend_time else {}),
     )
     set_probe(probe)
     install_on_runner(runner)
@@ -587,4 +885,7 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
         "decode probe ENABLED (I-4 events=%s, I-6; all arms; pdmux=%s capture_bs=%s) -> %s",
         events, boot["arm_enable_pdmux"], boot["capture_bs"], path,
     )
+    if extend_time:
+        logger.warning("decode probe EXTEND timing ON (%s=1): instrumentation boot only, not a measurement arm",
+                       EXTEND_ENV)
     return probe
