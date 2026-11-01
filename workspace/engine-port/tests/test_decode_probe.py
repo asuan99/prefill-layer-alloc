@@ -46,6 +46,9 @@ import tempfile
 import threading
 import types
 import unittest
+import textwrap
+import statistics
+import inspect
 from pathlib import Path
 from types import SimpleNamespace
 from unittest import mock
@@ -1100,6 +1103,54 @@ class TestExtendMutants(unittest.TestCase):
             with self.subTest(mutant=name):
                 fails = extend_failures(mutate(old, new))
                 self.assertTrue(fails, f"mutant {name} survived the EXTEND scenario")
+
+
+class TestLoadWindowContamination(unittest.TestCase):
+    """PREREG STOCK-BASE 5-1 mutation test: records outside the registered load window (warmup / smoke
+    prefills before t_load_start) must not enter r_ser.  The policy_implfix PC reduction read the whole boot
+    telemetry (warmup + guard probes = ~70 % of spans) and its labels did not measure the registered load
+    (result audit r1, 2026-11-01).  Here the same contamination is built on purpose: a long warmup extend
+    before the window would push r_ser p50 up; applying ``t_window`` must remove it, and a mutant that
+    ignores the window (no filtering) must give a different p50 -- otherwise the window is an identity."""
+
+    @staticmethod
+    def _recs():
+        boot = {"event": "decode_probe_boot", "extend_time_enabled": True}
+
+        def d(seq, ms, t, bs=4):
+            return {"event": "decode_forward", "seq": seq, "mode": "decode", "bs_real": bs, "stream_key": 1,
+                    "decode_fwd_gpu_ms": ms, "t_host_start": t}
+
+        def e(seq, ms, t):
+            return {"event": "extend_forward", "seq": seq, "mode": "extend", "extend_gpu_ms": ms, "stream_key": 1,
+                    "extend_tokens": 2048, "n_reqs": 1, "t_host_start": t}
+
+        # warmup (t < 100): decodes + one huge prefill (r = 50); load window [100, 200]: decodes + two prefills (r = 2, 4)
+        recs = [boot] + [d(i, 10.0, float(i)) for i in range(1, 7)] + [e(7, 500.0, 7.0), d(8, 10.0, 8.0)]
+        recs += [d(i, 10.0, 100.0 + i) for i in range(9, 15)] + [e(15, 20.0, 115.0), d(16, 10.0, 116.0),
+                                                                  e(17, 40.0, 117.0), d(18, 10.0, 118.0)]
+        return recs
+
+    def test_window_excludes_warmup_and_is_not_identity(self):
+        recs = self._recs()
+        inside = dp.pacing_ratios(recs, min_bs=5, t_window=(100.0, 200.0))
+        self.assertEqual(sorted(inside["r_ser"]), [2.0, 4.0], inside["r_ser"])
+        whole = dp.pacing_ratios(recs, min_bs=5)            # the mutant behaviour: no window = boot-wide reduce
+        self.assertEqual(sorted(whole["r_ser"]), [2.0, 4.0, 50.0], whole["r_ser"])
+        med = lambda xs: statistics.median(xs)
+        self.assertNotEqual(med(inside["r_ser"]), med(whole["r_ser"]),
+                            "window filter is an identity on this input -- mutation undetectable")
+
+    def test_window_mutant_detected(self):
+        # the same as pc_reduce's defect: filtering silently dropped -> label must change
+        src = inspect.getsource(dp.pacing_ratios)
+        self.assertIn("if t_window is not None:", src)
+        mutated = src.replace("if t_window is not None:", "if False:")
+        ns = dict(vars(dp))
+        exec(textwrap.dedent(mutated), ns)
+        r = ns["pacing_ratios"](self._recs(), min_bs=5, t_window=(100.0, 200.0))
+        self.assertNotEqual(sorted(r["r_ser"]), [2.0, 4.0], "window-ignoring mutant survived")
+
 
 if __name__ == "__main__":
     unittest.main()
