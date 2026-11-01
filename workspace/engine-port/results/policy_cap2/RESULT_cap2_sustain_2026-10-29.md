@@ -1,5 +1,7 @@
 # CAP2(W3 용량) + λ* 지속성 블록 결과 (2026-10-29) — 기술값, 미감사
 
+> ★**정오(2026-11-02, result-analyst `RECHECK_sustain_throughput_2026-11-02.md`)**: 이 문서의 "완료 처리율 120 s 창별 2.74–3.26·평균 2.97–3.12 req/s·마지막 완료 1405–1475 s"는 `audit_r1_sus.py:16`이 `sent_s`를 두 번 더한 단위 오류다(`completion_s`는 이미 run 시작 기준 절대 시각). 올바른 값: 마지막 완료 820–865 s, 완료 처리율 5.06–5.34 req/s(과부하 포화 완료율, goodput 아님), 600 s 안 완료 3053–3225/4377. "7.29는 600 s 동안 지속되지 않는다"는 유효. "5.1–5.4는 첫 토큰 속도" 정정은 틀렸다. 원문은 보존.
+
 Job `pdmux-policy-cap2-e90e233-20261029023336` (job-sg0dtebc3a0i), PREREG rev1.5 §20. stage1 CAP2 rc 0, stage2 ph_sustain rc 0. **아래 수치는 측정 기술값이며 성능 판정이 아니다.** CAP1-R 감사 caveat 1–5 승계.
 
 ## 1. 무결성

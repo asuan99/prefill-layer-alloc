@@ -1,5 +1,7 @@
 # 결과 감사 r1 — CAP2 + 지속성 블록 (2026-10-29)
 
+> ★**정오(2026-11-02, result-analyst `RECHECK_sustain_throughput_2026-11-02.md`)**: 이 문서의 "완료 처리율 120 s 창별 2.74–3.26·평균 2.97–3.12 req/s·마지막 완료 1405–1475 s"는 `audit_r1_sus.py:16`이 `sent_s`를 두 번 더한 단위 오류다(`completion_s`는 이미 run 시작 기준 절대 시각). 올바른 값: 마지막 완료 820–865 s, 완료 처리율 5.06–5.34 req/s(과부하 포화 완료율, goodput 아님), 600 s 안 완료 3053–3225/4377. "7.29는 600 s 동안 지속되지 않는다"는 유효. "5.1–5.4는 첫 토큰 속도" 정정은 틀렸다. 원문은 보존.
+
 - 감사자: claims-auditor(읽기 전용, CPU 재계산; 스크립트 사본 `audit_r1_sens.py`, `audit_r1_sus.py`) · 1/2회
 - **판정: TUNE·HE0 진행 GO-with-caveats(死因 0) · H-D 보류 근거 PLAUSIBLE(수치 축소 필요)**
 - 봉인 하네스로 낸 λ*·floor·셀 attainment는 문서와 일치.
