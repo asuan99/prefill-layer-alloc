@@ -1,6 +1,6 @@
 # PUBLIC stock-baseline image for VESSL Cloud (A100 SXM 80GB, us-west-2): UNMODIFIED vLLM 0.31.0 (pristine).
 # It contains NO project engine code, patches, PREREG or results (public registry; see vessl_operating_model sec 6-2).
-# Used only for the Phase B `VL-stock` arm (results/stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md).
+# Used only for the Phase B `VL-stock` arm (results/stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md).
 #
 # BASE CHOICE (2026-11-01): NOT the quay.io/vessl-ai/torch base used by Dockerfile.sglang-runtime.
 # vllm 0.31.0 wheel metadata pins torch==2.13.0 / torchvision==0.28.0 / torchaudio==2.11.0 /

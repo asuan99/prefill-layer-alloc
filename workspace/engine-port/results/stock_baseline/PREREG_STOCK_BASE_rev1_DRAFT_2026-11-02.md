@@ -1,6 +1,7 @@
-# PREREG STOCK-BASE rev0 (DRAFT, 미봉인) — 기본 서빙 구조(stock SGLang · stock vLLM) 대 static PD-mux, VESSL·Nano (2026-11-01)
+# PREREG STOCK-BASE rev1 (DRAFT, 미봉인; rev0 2026-11-01 → rev1 2026-11-02) — 기본 서빙 구조(stock SGLang · stock vLLM) 대 static PD-mux, VESSL·Nano (2026-11-01)
 
-> 지위: **초안.** 봉인 전 (i) 사용자 결정 §13 (ii) 하네스 감사 1회(규칙층 + 파이프라인 모집단 층) (iii) 선행 작업 §11 완료가 필요하다.
+> 지위: **초안 rev1.** §13 결정은 전부 닫혔다. 봉인 전 남은 것 = 하네스 감사 1회(규칙층 + 파이프라인 모집단 층) + bring-up(A100 용량).
+> **rev0 → rev1 변경(2026-11-02, 사용자 "권고대로 진행")**: ① W1 변화 trace 제거(고정 설정끼리의 비교라 컨트롤러 반응을 볼 대상이 없음; 게이트 2는 동적 arm 비교에 한정 — §3·§10) ② vLLM은 같은 공개 이미지 안 별도 venv(`sglang-vllm-runtime@sha256:a5f9bf0f…`, SGLang 쪽 바이트 불변 검증 완료, Public 확인 2026-11-02)로 같은 Job에서 boot ③ 계획 대체 6건 등록(§5·§3, 아래 "대체 목록") ④ 시간 기준 확인을 2단계로(§5-0) ⑤ 용어: "기준 용량" = 7개 arm 중 가장 낮은 지속 용량(min), "부하 창" = 클라이언트가 요청을 보내기 시작해 마지막 완료까지의 시간 구간 — 사용자 승인. 코드명(D-n·O-n·J1b·R₁ 등)은 문서에서 쓰지 않는다; 코드 식별자는 하네스 안에서만.
 > 결정 62(2026-11-01, "진행") + 2026-11-01 사용자 "진행 그리고 관련 수치들에 대한 확보"로 착수. 계획 원문 `PLAN_stock_baseline_metrics_2026-11-01.md` §3, Phase A 결과 `RESULT_stock_baseline_phaseA_2026-11-01.md`.
 > 2026-11-01 개정 규약(experiment-runner "PREREG 필수 항"·"부하 위치"·"승계 상수"·"처치 발생 횟수"; claims-auditor 파이프라인 모집단 층)을 이 문서가 처음 적용한다.
 > 라벨: [측정]/[유도]/[가정]/[코드]/[결정]/[제안].
@@ -15,13 +16,13 @@
 | Q4 | static PD-mux 대 stock vLLM | (나) | `PM_vs_VL` |
 | Q5 | mixed-chunk(SG-mix)가 stock SGLang의 ITL 꼬리를 바꾸는가 | (나) | `MIX_vs_SG` |
 | Q6 | stock SGLang의 r_ser(L)·r_mix가 A5 예보(`R_SER_FORECAST_NANO.csv`)와 맞는가 | 계측 boot | 예보 대비 잔차(HIT/MISS 띠는 §8) |
-| Q7 | W3(장문)에서 Q2·Q3의 부호가 유지되는가 | (나) W3 정상상태 셀 1개 | 같은 라벨, W3 접미 |
+| Q7 | W3(장문)에서 Q2·Q3의 부호가 유지되는가 | 네 번째 Job W3 정상상태 셀 | 같은 라벨, W3 접미 |
 | Q8 | 수정 트리·플래그 OFF(`SG-off`)가 pristine stock(`SG-stock`)과 같은가 — implfix C6의 GPU 검증 | (나) | `PATCH_OFF_vs_STOCK` ∈ {EQUIV_WITHIN_3PCT, …} |
 
 **이 Job이 답하지 않는 것(§10 잃는 범위에 재기재)**: 조율한 fused(chunk·overlap·mixed 튜닝) · Llama-8B 참조점 · 동적 PD-mux · Nano에서 static PD-mux의 best D(D44는 다리 arm, 아래 §2) · 과부하 구간.
 
 ## 1. 기판·트리 [결정/코드]
-- VESSL A100 SXM 80GB ×1, 이미지 2종: SGLang = `PDMUX_VESSL_IMAGE`(pristine SGLang v0.5.10, digest 고정) · vLLM = **새 이미지**(§11-1, pristine vLLM, 엔진 코드 미포함). 두 이미지 모두 공개이며 PREREG·결과·엔진 패치를 담지 않는다.
+- VESSL A100 SXM 80GB ×1, **이미지 1종**(rev1): `PDMUX_VESSL_IMAGE_SBASE` = `ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f…` — 기존 공개 `sglang-runtime@1e0d335b…`에 `/opt/vllm-python`·`/opt/vllm-venv`(손대지 않은 vLLM 0.31.0, venv freeze sha `adff2ff0…`)만 더한 것. SGLang 쪽 파일 84,274개 해시가 기존 이미지와 동일(`BRINGUP_vllm_0.31.0_2026-11-01.md`). 공개 이미지, PREREG·결과·엔진 패치 없음. boot마다 두 freeze sha를 검사.
 - ★**트리 구분(2026-11-01 사용자 지적으로 정정)**: 공개 이미지는 pristine v0.5.10이지만 Job 시작 시 `install_runtime.sh`가 PD-mux 수정 트리(14파일, +2623/−50)를 editable 설치한다. 따라서 **지금까지의 모든 "fused/OFF" arm(M3 J1 fused 포함)은 "수정 트리·플래그 OFF"였다.** 이 PREREG에서는 boot 단위로 트리를 고른다(`PDMUX_ENGINE_TREE=pristine|patched`, 선행 작업 §11-7):
   - `SG-stock`·`SG-mix` = **pristine 트리**(install 전 보존본, `PDMUX_*` env 0개, 마커 가드) — 진짜 stock.
   - `SG-off` = **수정 트리·플래그 OFF**(새 arm) — M3 J1 fused·implfix C6("OFF = main"은 CPU golden만)·CAP/TUNE OFF 참조와 잇는 다리. `SG-off vs SG-stock`이 처음으로 GPU에서 "수정 트리 OFF = stock인가"를 잰다(라벨 `PATCH_OFF_vs_STOCK`, Q8).
@@ -50,9 +51,9 @@
 - W1 ShareGPT(정책 하네스 `ph_spec` 정의·seed 그대로), W3 arXiv-Sum(7k 평균, `W3_MAX_NEW` 1024). SLO: W1 TTFT 3000 ms ∧ 요청 내부 ITL p95 60 ms; W3 TTFT = 3 × floor(같은 Job 첫 boot에서 측정, N3 규칙).
 - **(가) 용량 사다리** — arm 4개(SG-stock·SG-mix·VL-stock·PM-ref) × W1 10단(5.516 × 1.15^k, k=0..9 — CAP1-R 격자 승계, Nano PD-mux 용량 7.29가 격자 안에 있음을 확인한 격자) × 120요청 × seed {201, 202}. λ\*_arm = attainment ≥ 0.90이 앞에서부터 끊기지 않는 최대 rung(`pick`와 같은 규칙). **동률 규칙 등록**: 동률이면 낮은 rate(보수). 격자 최상단이 통과하면 `LADDER_TOP_PASS`(λ\* 미확정, 한 번의 확장 재실행 등록: 격자 ×1.15^k, k=10..13).
 - **지속 셀**(결정 ①): 각 arm {λ\*_arm(버스트), 0.8·λ\*_arm} × 600 s × seed 201 → 완료 처리율(120 s 창별)·admission 속도 분리 보고(CAP2 감사 (3) 규약). λ\*_arm(지속) = 두 점 중 "120 s 창 완료율이 도착률의 ≥ 0.95이고 마지막 창 TTFT p50이 첫 창의 ≤ 2배"를 만족하는 최대 rate; 둘 다 미달이면 0.5·λ\*_arm 1점 추가(등록 1회). 버스트·지속 둘 다 보고.
-- **(나) 판정 셀** — 공통 절대 rate(결정 ③). λ\*_ref = min over arm {λ\*_arm(**지속** 완료율, 결정 ①; 지속 셀이 Job (가)에서 나오므로 (나)는 (가) 회수 뒤 rate 확정)}. 정상상태 셀 R₁ = 0.5·λ\*_ref, R₂ = 0.8·λ\*_ref, 각 200요청 × seed {1,2,3,4}. 변화 trace: LO = 0.2·λ\*_ref, HI = 0.8·λ\*_ref (HI/LO 4, 결정 44), 구간당 200요청·drain·3라운드 × seed {1,2,3,4}. **부하 위치 예보**: HI에서 best arm attainment 0.6–0.85 [유도, CAP1-R의 7.29 → 8.39 사이 0.7대 하락에서]; 측정 후 HI attainment가 전 arm에서 > 0.9이거나 best arm < 0.5면 `CELL_OUT_OF_BAND` — 라벨은 내되 크기 인용 금지(규약 차단형 게이트 4가 자동 적용).
+- **(나) 판정 셀** — 공통 절대 rate(결정 ③). 기준 용량 = 7개 arm 중 가장 낮은 **지속** 용량(결정 ①; 지속 셀이 두 번째 Job에서 나오므로 판정 셀 rate는 그 회수 뒤 확정). 정상상태 셀 두 개: 기준 용량의 50%와 80%, 각 200요청 × seed {1,2,3,4}. **변화 trace(LO↔HI 반복)는 쓰지 않는다**(rev1: 7개 arm 전부 고정 설정이라 부하 변화에 반응할 컨트롤러가 없고, 저부하·고부하는 두 정상상태 셀이 덮는다; 시간 모형상 trace가 네 번째 Job의 76%를 차지했다). **부하 위치 예보**: 80% 셀에서 best arm attainment 0.6–0.85 [유도]; 측정 후 전 arm > 0.9이거나 best < 0.5면 `CELL_OUT_OF_BAND` — 라벨은 내되 크기 인용 금지.
 - **Job 간 기판 눈금(refcell)**: Job 2·3·(1b) 시작과 끝에 `SG-stock`을 λ\*_ref(지속)에서 120요청·seed 201로 1회씩 돌려 attainment·TTFT p50·throttle 비율을 기록한다. Job 1의 같은 점과 attainment 차가 **10%p 이상**이면 그 Job의 셀에 `SUBSTRATE_SHIFT`를 붙인다 — 라벨은 내되 Job 1의 용량 수치·다른 Job의 goodput 크기와 섞지 않는다. 판정 셀의 `CELL_OUT_OF_BAND` 검사는 Job별로 적용한다(GPU UUID가 Job마다 다르므로, 같은 절대 rate가 다른 상대 부하가 될 수 있다).
-- W3: 정상상태 셀 R₃ = 0.8·λ\*_W3(SG-stock 기준, 사다리 6단 0.1×1.5^k) × 96요청 × seed {1,2,3,4}, arm 4개. W3 사다리는 SG-stock 1 arm만(예산; §10).
+- W3(장문): 네 번째 Job. 시작 boot에서 floor(단일 요청 TTFT 중앙) 측정 → SG-stock W3 용량 사다리(0.1×1.5^k 6단 × 48요청 × seed 2) → 정상상태 셀 = SG-stock W3 용량의 80% × 96요청 × seed {1,2,3,4}, arm 4개(SG-stock·SG-rep·PM-ref·VL-stock). 사다리는 SG-stock 1 arm만(§10).
 
 ## 4. 판정 규칙 (데이터 전 등록; 정책 하네스 `pi_analyze` 규약 승계)
 - 쌍: seed-level paired ln(A/B) goodput, t(3) 95% CI. `EQUIV_WITHIN_3PCT`는 |mean| < ln1.03 ∧ CI ⊂ (−ln1.03, +ln1.03); `A_ABOVE_B`는 CI 하한 > 0 ∧ mean ≥ ln1.03; 반대는 `A_BELOW_B`; 그 외 `UNRESOLVED_INTERVAL`.
@@ -62,20 +63,26 @@
 - 지표: goodput(정본 술어) headline, 병기 TTFT/TPOT/ITL p50/p95/p99 · req/s · out tok/s · E2E(요청별 send/first/finish 시각 기록 — 새 측정은 처음부터) · 요청 내부 ITL p95 중앙.
 
 ## 5. 계측 boot (측정 arm과 분리, C5) + 축약 입력 필터 (규약 필수 항 3)
-- 5-0 **정의 일치 smoke**(첫 boot, 측정 아님): 고정 요청 20개를 SG-stock·VL-stock에 같은 클라이언트(`bench_serving` 호환, vLLM은 `--backend vllm`)로 보내 클라이언트 TTFT − 서버 로그 first-token 시각 차의 중앙값이 두 엔진에서 ±5 ms 안인지. 실패 → `CLIENT_DEF_MISMATCH`, (나) 엔진 간 쌍 전부 INVALID(fail-closed).
+- 5-0 **시간 기준 확인(2단계)**. 목적: SGLang `/generate` 파서와 vLLM `/v1/completions` 파서가 "첫 토큰"을 같은 사건에서 찍는지. 서버는 요청별 첫 토큰 시각을 로그에 남기지 않으므로(SGLang은 `--enable-metrics` 시 `sglang:time_to_first_token_seconds` 히스토그램만, vLLM은 기본 `/metrics` 히스토그램만) 서버 쪽 값은 히스토그램 합계·개수로만 얻는다. (a) **하나씩 20요청**(첫 boot, 측정 아님): 요청 하나가 끝날 때마다 히스토그램 합계 증가분(개수 증가 1인 것만) = 그 요청의 서버 TTFT; 클라이언트 TTFT와의 차(오프셋)가 엔진마다 작은 상수(HTTP 왕복 수 ms)이고 분산이 작은지 본다. 두 엔진의 상수가 같을 필요는 없다(서버 쪽 시작점이 다름: SGLang은 tokenizer manager 수신, vLLM은 프론트엔드 도착). (b) **동시 요청 상태**(rev1 추가): 50% 셀 부하(200요청, seed 301)에서 SGLang은 `--enable-metrics`를 켠 별도 boot(계측 역할, 세 번째 Job), vLLM은 50% 측정 boot 자체의 run 전후 `/metrics` 합계·개수로, run 단위 클라이언트 TTFT 평균 − 서버 TTFT 평균을 (a)의 오프셋과 비교. 차이 > 20 ms 또는 2배면 `TTFT_OFFSET_SHIFT` → 엔진 간 쌍 전부 `INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT`(fail-closed). (a) 실패는 `CLIENT_DEF_MISMATCH`, 같은 처리. 비교는 끝까지 클라이언트 TTFT로만 한다.
 - 5-1 SG-stock 계측 boot: `PDMUX_PROBE_EXTEND_TIME=1`(§11-3 **완료, CPU**: `decode_probe` `extend_forward` 레코드 — `extend_gpu_ms`·`extend_tokens`·`n_reqs`·`stream_key`·`seq`·`decode_iter_seq`; 순수 EXTEND만, MIXED·SPLIT_PREFILL 제외; `pacing_ratios(records, min_bs=5, t_window)`가 r_ser·r_mix를 냄, T_dec = bs별 순수 DECODE 중앙값; OFF 골든 26레코드 바이트 동일, 변이 12종 검출; 엔진 digest `65cbb49d…` → `2836112b…`) + decode_probe, R₂ 부하 60요청 seed 301. **입력 필터**: forward 레코드에는 요청 ID가 없으므로 **시간 창만** — `t_window = [t_load_start, t_load_end]`(프로브 `perf_counter` 시계; boot 레코드의 `t_realtime`/`t_host`로 클라이언트 송신·완료 시각을 사상), warmup·smoke는 창 밖에 두어 제외. 창 밖 레코드를 섞으면 r_ser p50이 바뀌는 **변이 테스트** 등록(교훈 53). GPU 미검증 항목(봉인 전 하네스 감사 공시): EXTEND 이벤트 실측·overlap 경로의 단일 forward stream(`stream_key` 상수)·ON boot 출력 불변·관측자 비용.
 - 5-2 VL-stock 계측 boot: 무패치 원칙 → `/start_profile`~`/stop_profile` torch profiler 창(같은 부하), step별 GPU 시간 + 토큰 수로 r_mix. 관측자 비용은 계측 boot 안에서만 공시.
 - 5-3 PM-ref 계측 boot: implfix `pc_reduce` 정의 재사용하되 **부하 창 필터를 적용한 수정판**(봉인 코드 수정 아님 — 새 함수, 변이 테스트 포함).
 - 라벨별 입력 필터 표(감사자용): `λ*` ← (가) run 클라이언트 요청만 · `goodput` ← (나) 측정 boot 클라이언트 요청만(계측 boot 제외) · `r_ser/r_mix` ← 5-1/5-2 부하 창 · `플라시보` ← SG-rep 측정 boot.
 
+### 계획 대체 목록 (rev1 등록, 2026-11-02 승인) — 초안 문장이 전제한 것이 시스템에 없어 자리를 옮긴 6건
+1. SG-stock의 prefill/decode 시간비(Q6) 타이머는 우리 패치 코드라 손대지 않은 SGLang에 없다 → 타이머 측정 boot만 패치 트리·PD-mux OFF로 돌린다. Q6 결과는 "패치 트리·OFF" 범위. goodput 측정 boot는 손대지 않은 SGLang 그대로.
+2. 서버 로그에 요청별 첫 토큰 시각이 없다 → 5-0의 히스토그램 증가분 방식(위).
+3. 타이머 측정 boot의 부하(기준 용량의 80%)는 두 번째 Job 뒤에 정해진다 → 세 번째 Job으로.
+4. Job 시작·끝 기준 셀을 "지속 용량"에서 돌리려 했으나 첫 번째 Job에는 그 점이 없다 → SG-stock 버스트 사다리 rung(첫 번째 Job에 trace hash까지 같은 셀이 실재)에서 돌린다. 없으면 `SUBSTRATE_UNCHECKED`.
+5. 지속 판정 "완료 ≥ 0.95 × 명목 도착"은 푸아송 도착 변동(창당 ±5%)만으로 건강한 서버가 탈락 → 분모를 **그 창에 실제로 도착한 수**로(명목값 병기). 두 번째 조건(마지막 창 TTFT 중앙 ≤ 첫 창의 2배) 유지.
+6. W3 floor·사다리의 Job 배정이 빠져 있었다 → 네 번째 Job.
+
 ## 6. 처치 발생 횟수 (규약)
 - Q5(SG-mix): MIXED forward가 run당 ≥ 50회여야 유효(`MIX_NOT_FIRED` 아니면). 예보 [유도]: W1 R₂에서 prefill 배치 ≈ 요청 수 200 → 충족.
 - Q6: 계측 boot에서 단일 요청 EXTEND span ≥ 30개(A5 예보 격자 L ∈ {512, 2k, 8k} 각 ≥ 10).
 
-## 7. 예산·Job 분할 [유도, 시간 모형 `pi_spec` 승계: boot 6 min, 120요청 셀 ≈1.6 min, he0 run 7.5 min]
-- (가) 사다리: 사다리 arm 5개(SG-stock·SG-mix·SG-off·VL-stock·PM-ref; PM-ref34는 CAP1-R D34 λ\* 6.343 승계 — 기술값, 사다리 생략) × 10단 × 2 seed × 1.6 = 160 min + 지속 5 arm × 2점 × 10 = 100 + boot 5×6 + smoke/계측 3 boot ≈ 310 min → **Job 1(≈5.2 h, 규약 상한 초과)** → 지속 셀을 Job 1b로 분리(사다리 ≈ 3.5 h / 지속 ≈ 2 h). Job 수 4개.
-- (나) 판정: 7 arm × [정상상태 2 × 4 seed × 2.5 min + trace 4 × 7.5] = 7 × 50 = 350 min + W3 5 × 4 × 5 = 100 + boot ≈ 500 min → **Job 2(정상상태 R₁·R₂)·Job 3(trace + W3) 분할**(각 ≲4 h)(arm을 Job에 교차 배치하지 않고 **셀을 나눈다**: Job 2 = 정상상태 R₁·R₂ 전 arm, Job 3 = 변화 trace + W3 전 arm). 한 쌍의 arm은 항상 같은 Job·같은 GPU(스탬프 검사).
-- 사용률 계산·`$/h`는 dry-run 출력 그대로(과금 서술은 보고에 넣지 않는다).
+## 7. 예산·Job 분할 [유도, 시간 모형 `sb_spec`; 기준 용량 3.0 req/s 가정]
+Job 4개(각 ≲4 h 규약, 하드캡 = 추정 × 1.25): **첫 번째** 시간 기준 확인(a) + 용량 사다리(5 arm × 10단 × seed 2; PM-ref34는 CAP1-R D34 용량 6.343 승계, 기술값) ≈ 160 min · **두 번째** 지속 셀(5 arm × {100%, 80%} × 600 s) + 기준 셀 시작·끝 ≈ 166 min · **세 번째** 정상상태 50%·80% 셀(7 arm × seed 4, ABBA) + 타이머 측정 boot + 시간 기준 확인(b) ≈ 216 min · **네 번째** W3 ≈ 211 min. rev0의 변화 trace(≈659 min)는 제거. 각 쌍의 두 arm은 항상 같은 Job·같은 GPU. 사용률·`$/h`는 dry-run 출력 그대로(과금 서술은 보고에 넣지 않는다).
 
 ## 8. 사전 예측 (봉인 대상; 채점만, 종합 판정 없음)
 - P-1 λ\*_SG-stock(W1, 버스트) ∈ [6, 10] req/s [유도: PD-mux D44 7.29와 M3 J1 A LO req/s 동률에서]. P-2 λ\*_VL-stock / λ\*_SG-stock ∈ [0.8, 1.25]. P-3 R₂에서 PM-ref vs SG-stock goodput ln 비 부호 **+**(KISTI 방향) — 단 M3 J1 shape B 모양(PM TTFT ≫)이 n≥4에서 재현되면 **−** [두 방향 모두 거짓이 될 수 있음 → N3 아님]. P-4 r_ser(L=2k, SG-stock) 예보 = `R_SER_FORECAST_NANO.csv` 해당 셀 ±30%. P-5 SG-mix ITL p95 < SG-stock ITL p95(정지가 MIXED 안으로 옮겨감).
@@ -85,7 +92,7 @@
 - 금지: "PD-mux가 vLLM을 이긴다/진다"(범위 없는 일반화) · "최강 baseline" (조율 arm 없음) · KISTI 행과 섞은 비교 · 계측 boot 수치를 goodput 근거로 · D44 결과를 "static PD-mux 최적" 으로 · 과부하 셀(CELL_OUT_OF_BAND) 크기 인용 · A5 예보를 측정값처럼.
 
 ## 10. 잃는 범위
-조율 fused · Llama-8B · 동적 PD-mux · best D 재결정 · W3 사다리(SG-stock 외 arm) · 과부하 구간 · prefix caching ON · TP>1.
+조율 fused · Llama-8B · 동적 PD-mux · best D 재결정 · W3 사다리(SG-stock 외 arm) · 과부하 구간 · **부하 변화(LO↔HI) 반응** · prefix caching ON · TP>1.
 
 ## 11. 선행 작업 (GPU 전; 전부 끝나야 봉인)
 1. **vLLM 이미지**: `env/docker/Dockerfile.vllm-runtime`(pristine vLLM 0.31.0 + 같은 base) 작성·빌드·push, digest를 `vessl.env`에 `PDMUX_VESSL_IMAGE_VLLM`으로. Workspace bring-up 1회(측정 아님, **비용 행위 → 사용자 승인**): Nano 체크포인트 부팅 + 고정 프롬프트 출력 비교 가드 + 선택된 백엔드/CUDAGraphMode 로그 채취.

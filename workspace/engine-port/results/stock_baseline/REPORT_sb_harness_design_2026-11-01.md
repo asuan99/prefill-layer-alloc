@@ -1,7 +1,7 @@
 # STOCK-BASE Phase B 측정 하네스 — 설계 보고 (2026-11-01, engine-porter 작성 요지를 main 세션이 전사; CPU 전용, 미봉인)
 
 > 지위: 하네스 작성 완료·CPU 테스트 통과. **실제 서버 실행 0, 성능 수치 0, 판정 0.** 봉인 전 사용자 결정 2건(§3 vLLM 배치, §4 O-6 J3 시간) + 하네스 감사 1회 필요.
-> PREREG `PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md`. 엔진 digest `2836112b…`(`ENGINE_DIGEST.txt`, HEAD 트리 scratch 설치로 재계산 일치).
+> PREREG `PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`. 엔진 digest `2836112b…`(`ENGINE_DIGEST.txt`, HEAD 트리 scratch 설치로 재계산 일치).
 
 ## 1. 파일 (`results/stock_baseline/`, 접두사 `sb_`)
 | 파일 | 역할 |
