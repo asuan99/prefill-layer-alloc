@@ -39,7 +39,7 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정 후속** / 4 Job 결과·감사 r1(아래) — 다음 측정은 새 PREREG 필요 / (A) 하네스 결함(PC 축약 부하 창) 수정 + 박자 셀 검출력 확보 + EVAL 셀 플래그 분리(E1만·E2만·E1+E2, 용량 아래 셀) 재측정(권고) · (B) 결과 promote만 하고 측정 중단 · (C) EVAL 셀만 재측정
-- **기준선 Phase B 봉인 전 결정 6건**(사용자 2026-11-01 "진행 그리고 관련 수치들에 대한 확보"로 착수) / PREREG 초안 `stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md` §13: ① 용량 기준량 둘 다(권고) ② vLLM 0.31.0 고정(권고) ③ 판정 셀 = λ*_ref(min arm) 공통 절대 rate(권고) ④ PM-ref34 추가(권고) ⑤ Job 3분할(권고) ⑥ **vLLM 이미지 빌드 + Workspace bring-up 1회 승인(비용 행위)** / 선행 작업: EXTEND 플래그(engine-porter 진행 중)·부하 창 필터·A5 봉인·하네스 감사 1회
+- **기준선 Phase B 봉인 전 결정**(2026-11-01 사용자): ② vLLM 0.31.0 고정 **확정** · ⑤ Job 3분할 **확정** · ⑥ vLLM 이미지 빌드·push + Workspace bring-up 1회 **승인**(experiment-runner 착수) / 남은 것 ① 용량 기준량(버스트 120요청 셀 vs 600 s 지속 완료율 — 설명 후 재질의) ③ 판정 셀 rate 공통 절대 vs arm별 상대(설명 후 재질의) ④ PM-ref34 추가(B3a 2026-10-04 VESSL에서 (74,34) 요청=실현 PASS, 입도 2 SM — 가능, 재질의) / PREREG `stock_baseline/PREREG_STOCK_BASE_rev0_DRAFT_2026-11-01.md` §13 — promote 필요: 예 (결정)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
