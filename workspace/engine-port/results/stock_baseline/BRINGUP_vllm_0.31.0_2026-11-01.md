@@ -15,3 +15,6 @@ Status: BLOCKED before workspace bring-up (see "Blockers"). No performance numbe
 3. The image was built from a dirty recipe; commit the recipe, rebuild, repush before any Job (digest will change; update vessl.env).
 
 ## (a)-(e): not run. Workspaces confirmed standby (none left running).
+
+## Clean rebuild (2026-11-01)
+Recipe label de69d4328c1478d08f62b8308db29efde9bd4620 (clean); ghcr.io/asuan99/vllm-runtime@sha256:57e5e7a9b1a173847648fb3786d4d0a02338c9687114e568688204ce28802c0a (tag 0.31.0-de69d432). Supersedes the dirty digest 4304... above (still private; Workspace create still pending approval).
