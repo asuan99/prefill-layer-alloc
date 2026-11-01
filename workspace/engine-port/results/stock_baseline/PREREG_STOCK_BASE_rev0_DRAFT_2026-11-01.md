@@ -40,16 +40,17 @@
 | `VL-stock` | vLLM 0.31.0 | 기본값(무패치), prefix caching OFF(radix OFF 대응), cudagraph 기본 | Q3·Q4 |
 | `SG-off` | SGLang 수정 트리 | 플래그 OFF(기존 모든 fused/OFF arm과 같은 트리) | Q8 다리 arm (§1 트리 구분) |
 | `PM-ref` | SGLang 수정 트리 + PD-mux | static D44 비sticky, budget 65536, cap 48 | **다리 arm** — CAP/TUNE/implfix 수치와 잇는 arm |
+| `PM-ref34` | 〃 | static D34 비sticky(실현 (74,34) B3a PASS, 입도 2 SM) | 고원 안 두 번째 점(결정 ④) |
 
-**승계 상수 공시**: `PM-ref`의 D44·cap 48·budget 65536은 KISTI 승계값이며 Nano에서 재결정되지 않았다(R Job: D34–64 goodput 고원 1.5% 안, 순위 미분해). 따라서 Q2·Q4의 라벨은 **"static PD-mux(D44 구성)"** 범위로만 성립하고 "static PD-mux 최적" 범위가 아니다. 최적 D 재결정은 CAP′(HE0 셀 재정의 결정 뒤)의 몫이다. [제안] 예산이 허용하면 `PM-ref34`(D34) 1 arm을 (나)에 추가해 고원 안 두 점으로 범위를 넓힌다 — §13 결정 4.
+**승계 상수 공시**: `PM-ref`의 D44·cap 48·budget 65536은 KISTI 승계값이며 Nano에서 재결정되지 않았다(R Job: D34–64 goodput 고원 1.5% 안, 순위 미분해). 따라서 Q2·Q4의 라벨은 **"static PD-mux(D44 구성)"** 범위로만 성립하고 "static PD-mux 최적" 범위가 아니다. 최적 D 재결정은 CAP′(HE0 셀 재정의 결정 뒤)의 몫이다. 결정 ④(2026-11-01): `PM-ref34` 포함 — Q2·Q4 라벨은 D34·D44 두 점으로 보고하며 "고원 안 두 점" 범위.
 
 공통: `--context-length 20480`·`--max-prefill-tokens 16384`(정책 하네스 S7 승계; W3 7k 평균이 들어감) · max_running 48(vLLM `--max-num-seqs 48`) · 출력 길이 trace 고정 · 같은 체크포인트 경로 `/data/hf`.
 
 ## 3. 워크로드·셀 [결정 44·49, 부하 위치 규약]
 - W1 ShareGPT(정책 하네스 `ph_spec` 정의·seed 그대로), W3 arXiv-Sum(7k 평균, `W3_MAX_NEW` 1024). SLO: W1 TTFT 3000 ms ∧ 요청 내부 ITL p95 60 ms; W3 TTFT = 3 × floor(같은 Job 첫 boot에서 측정, N3 규칙).
 - **(가) 용량 사다리** — arm 4개(SG-stock·SG-mix·VL-stock·PM-ref) × W1 10단(5.516 × 1.15^k, k=0..9 — CAP1-R 격자 승계, Nano PD-mux 용량 7.29가 격자 안에 있음을 확인한 격자) × 120요청 × seed {201, 202}. λ\*_arm = attainment ≥ 0.90이 앞에서부터 끊기지 않는 최대 rung(`pick`와 같은 규칙). **동률 규칙 등록**: 동률이면 낮은 rate(보수). 격자 최상단이 통과하면 `LADDER_TOP_PASS`(λ\* 미확정, 한 번의 확장 재실행 등록: 격자 ×1.15^k, k=10..13).
-- **지속 셀**: 각 arm λ\*_arm × 600 s × seed 201 → 완료 처리율(120 s 창별)·admission 속도 분리 보고(CAP2 감사 (3) 규약). (a) "둘 다 보고" [제안, §13 결정 1].
-- **(나) 판정 셀** — 공통 절대 rate. λ\*_ref = min over arm {λ\*_arm(버스트)}. 정상상태 셀 R₁ = 0.5·λ\*_ref, R₂ = 0.8·λ\*_ref, 각 200요청 × seed {1,2,3,4}. 변화 trace: LO = 0.2·λ\*_ref, HI = 0.8·λ\*_ref (HI/LO 4, 결정 44), 구간당 200요청·drain·3라운드 × seed {1,2,3,4}. **부하 위치 예보**: HI에서 best arm attainment 0.6–0.85 [유도, CAP1-R의 7.29 → 8.39 사이 0.7대 하락에서]; 측정 후 HI attainment가 전 arm에서 > 0.9이거나 best arm < 0.5면 `CELL_OUT_OF_BAND` — 라벨은 내되 크기 인용 금지(규약 차단형 게이트 4가 자동 적용).
+- **지속 셀**(결정 ①): 각 arm {λ\*_arm(버스트), 0.8·λ\*_arm} × 600 s × seed 201 → 완료 처리율(120 s 창별)·admission 속도 분리 보고(CAP2 감사 (3) 규약). λ\*_arm(지속) = 두 점 중 "120 s 창 완료율이 도착률의 ≥ 0.95이고 마지막 창 TTFT p50이 첫 창의 ≤ 2배"를 만족하는 최대 rate; 둘 다 미달이면 0.5·λ\*_arm 1점 추가(등록 1회). 버스트·지속 둘 다 보고.
+- **(나) 판정 셀** — 공통 절대 rate(결정 ③). λ\*_ref = min over arm {λ\*_arm(**지속** 완료율, 결정 ①; 지속 셀이 Job (가)에서 나오므로 (나)는 (가) 회수 뒤 rate 확정)}. 정상상태 셀 R₁ = 0.5·λ\*_ref, R₂ = 0.8·λ\*_ref, 각 200요청 × seed {1,2,3,4}. 변화 trace: LO = 0.2·λ\*_ref, HI = 0.8·λ\*_ref (HI/LO 4, 결정 44), 구간당 200요청·drain·3라운드 × seed {1,2,3,4}. **부하 위치 예보**: HI에서 best arm attainment 0.6–0.85 [유도, CAP1-R의 7.29 → 8.39 사이 0.7대 하락에서]; 측정 후 HI attainment가 전 arm에서 > 0.9이거나 best arm < 0.5면 `CELL_OUT_OF_BAND` — 라벨은 내되 크기 인용 금지(규약 차단형 게이트 4가 자동 적용).
 - W3: 정상상태 셀 R₃ = 0.8·λ\*_W3(SG-stock 기준, 사다리 6단 0.1×1.5^k) × 96요청 × seed {1,2,3,4}, arm 4개. W3 사다리는 SG-stock 1 arm만(예산; §10).
 
 ## 4. 판정 규칙 (데이터 전 등록; 정책 하네스 `pi_analyze` 규약 승계)
@@ -71,8 +72,8 @@
 - Q6: 계측 boot에서 단일 요청 EXTEND span ≥ 30개(A5 예보 격자 L ∈ {512, 2k, 8k} 각 ≥ 10).
 
 ## 7. 예산·Job 분할 [유도, 시간 모형 `pi_spec` 승계: boot 6 min, 120요청 셀 ≈1.6 min, he0 run 7.5 min]
-- (가) 사다리: 4 arm × 10단 × 2 seed × 1.6 = 128 min + 지속 4 × 10 = 40 + boot 4×6 + smoke/계측 3 boot ≈ 215 min → **Job 1(≈3.6 h)**, 하드캡 ×1.25.
-- (나) 판정: 5 arm(+rep) × [정상상태 2 × 4 seed × 2.5 min + trace 4 × 7.5] × = 5 × 50 = 250 min + W3 4 × 4 × 5 = 80 + boot ≈ 360 min → **Job 2·Job 3 분할**(arm을 Job에 교차 배치하지 않고 **셀을 나눈다**: Job 2 = 정상상태 R₁·R₂ 전 arm, Job 3 = 변화 trace + W3 전 arm). 한 쌍의 arm은 항상 같은 Job·같은 GPU(스탬프 검사).
+- (가) 사다리: 사다리 arm 5개(SG-stock·SG-mix·SG-off·VL-stock·PM-ref; PM-ref34는 CAP1-R D34 λ\* 6.343 승계 — 기술값, 사다리 생략) × 10단 × 2 seed × 1.6 = 160 min + 지속 5 arm × 2점 × 10 = 100 + boot 5×6 + smoke/계측 3 boot ≈ 310 min → **Job 1(≈5.2 h, 규약 상한 초과)** → 지속 셀을 Job 1b로 분리(사다리 ≈ 3.5 h / 지속 ≈ 2 h). Job 수 4개.
+- (나) 판정: 7 arm × [정상상태 2 × 4 seed × 2.5 min + trace 4 × 7.5] = 7 × 50 = 350 min + W3 5 × 4 × 5 = 100 + boot ≈ 500 min → **Job 2(정상상태 R₁·R₂)·Job 3(trace + W3) 분할**(각 ≲4 h)(arm을 Job에 교차 배치하지 않고 **셀을 나눈다**: Job 2 = 정상상태 R₁·R₂ 전 arm, Job 3 = 변화 trace + W3 전 arm). 한 쌍의 arm은 항상 같은 Job·같은 GPU(스탬프 검사).
 - 사용률 계산·`$/h`는 dry-run 출력 그대로(과금 서술은 보고에 넣지 않는다).
 
 ## 8. 사전 예측 (봉인 대상; 채점만, 종합 판정 없음)
@@ -106,4 +107,4 @@ CM-6(대기열·TTFT: stock 구조의 정지 r_ser(L) 실측, 예보 대비 잔�
 6. 선행 1(vLLM 이미지 + Workspace bring-up 1회) 승인. → **승인·진행 중(2026-11-01)**
 7. `SG-off` arm 추가(권고: Q8은 implfix·M3 J1 수치의 범위를 정하는 데 필요) / 미추가.
 
-확정(2026-11-01): ② vLLM 0.31.0 · ⑤ Job 3분할 · ⑥ 승인.
+확정(2026-11-01, 사용자 "진행" = 권고 채택): ① 둘 다 보고·판정 셀 rate는 **지속 기준** · ② vLLM 0.31.0 · ③ 공통 절대 rate · ④ `PM-ref34` 추가 · ⑤ Job 3분할 · ⑥ 승인(Workspace create 재시도 허용) · ⑦ `SG-off` 추가. → §13은 닫혔고 남은 봉인 조건은 §11 선행 작업 + 하네스 감사 1회.
