@@ -1,2 +1,3 @@
 submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
 2026-11-02T06:58:08Z	pdmux-stock-quick-1649840-20261102065758	164984009409ed569e8eb864251dbd1223117bb3	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_quick/sq_job.sh		no
+2026-11-02T07:11:39Z	pdmux-stock-quick-6dfe05d-20261102071129	6dfe05d0aad1ebeddae308c11066bd8d4e014ebf	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_quick/sq_job.sh		yes
