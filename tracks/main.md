@@ -29,7 +29,7 @@
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
 3. promote 7차 후보 정리: 결정 43–58·60·60i–64i, 정책 캠페인 결과·감사 r1 4건, 구조 검증(`7a7a2c08`, 감사 필요), 두 메모(감사 필요)
 ## 사용자 결정 대기
-- **Phase B 봉인 방식** / 감사 NO-GO 수정 5건 반영됨 / (a) 재감사 없이 봉인 · (b) diff 제한 재감사 1회(권고) · (c) 재설계 · + 계측 boot 합성 프롬프트 추가 여부
+- **Phase B bring-up·제출** / 봉인 완료, A100 용량 대기 / 용량 열리면 Workspace create 1회(승인 유효) → dry-run → 제출 승인 요청
 - **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md` · ★2026-11-01 규약 개정(REPORT 위)이 이 결정에 걸려 있음 — 결정 전까지 정책 판정 셀 Job 제출 금지(승계 상수 규약)
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
@@ -40,7 +40,7 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정 후속** / 4 Job 결과·감사 r1(아래) — 다음 측정은 새 PREREG 필요 / (A) 하네스 결함(PC 축약 부하 창) 수정 + 박자 셀 검출력 확보 + EVAL 셀 플래그 분리(E1만·E2만·E1+E2, 용량 아래 셀) 재측정(권고) · (B) 결과 promote만 하고 측정 중단 · (C) EVAL 셀만 재측정
-- **기준선 Phase B**(2026-11-02): 하네스 감사 r1 **NO-GO**(`stock_baseline/AUDIT_harness_stock_base_r1_2026-11-02.md`: 지속 판정 규칙이 정상 서버를 탈락시킴·용량 아래 goodput 쌍 항등식·mixed/P-4 정의역·문언≠코드) → 차단 수정 5건 반영 완료(PREREG rev2 DRAFT, 테스트 78·변이 79/79). ★정오: "지속 완료율 ≈3.0"은 CAP2 감사 스크립트 단위 오류, 올바른 포화 완료율 5.06–5.34(`policy_cap2/RECHECK_sustain_throughput_2026-11-02.md`). **사용자 결정 대기**: 봉인 방식 (a) 재감사 없이 / (b) 제한 재감사 1회(권고) / (c) 재설계 · 계측 boot 합성 프롬프트(512·2k 각 10개) 추가 여부. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. bring-up은 A100 용량 대기 — promote 필요: 예 (결정·정오·감사)
+- **기준선 Phase B — 봉인(2026-11-02)**: 사전등록 rev2.1 `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명은 하네스 참조 때문에 유지) + `HARNESS_DIGEST.txt`(digest `9b4a30f9…`, 핀 12·재사용 21·plan 4) + `ENGINE_DIGEST.txt` `2836112b…`. 감사 r1 NO-GO→수정 5건, 재감사 r2 NO-GO 1건→결정 (a) 반영, 재감사 없이 봉인. 테스트 83·변이 84/84. 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`(P-1…P-5 등록) 봉인 포함. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. **다음**: A100 용량 열리면 Workspace bring-up(vLLM venv 부팅·pristine 보존·EXTEND 이벤트·server_args 패턴) → `PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env launch.sh` dry-run → 제출 승인(첫 번째 Job부터 순차 4개). ★정오: 지속 완료율 3.0→5.06–5.34(RECHECK) — promote 필요: 예 (결정·정오·감사 2건·봉인)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`

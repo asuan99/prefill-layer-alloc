@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job runner of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED; sb_job.sh gates it).
+"""Job runner of PREREG_STOCK_BASE rev2.1 (SEALED 2026-11-02; sb_job.sh gates on HARNESS_DIGEST.txt + PDMUX_SB_SEALED=1).
 
   sb_runner.py plan --job J2 [--addendum ADD.json]
   sb_runner.py run  --job J2 --out RAW --w1-lengths L.json [--w3-tokens F.bin] [--addendum ADD.json] [--resume]

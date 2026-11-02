@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED).  CPU only; starts no server.
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev2.1 (SEALED 2026-11-02 via HARNESS_DIGEST.txt).  CPU only; starts no server.
 
 Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
   * ONE image for every arm (rev1, user decision 2026-11-02 option b'): PDMUX_VESSL_IMAGE_SBASE = sglang-runtime@1e0d335b (SGLang side

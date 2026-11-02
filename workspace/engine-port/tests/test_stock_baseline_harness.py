@@ -1192,6 +1192,17 @@ class ReportTests(unittest.TestCase):
         self.assertEqual(P["P-4"]["score"], "HIT")
         self.assertEqual(P["P-5"]["score"], "HIT")
 
+    def test_p3_unscorable_when_both_saturated(self):
+        """rev2.1 (re-audit r2 (a)): a BOTH_SATURATED 80 % cell pair is never sign-scored, even with a CI clear of 0 (drain sign only)."""
+        sat = {"n": 4, "mean": 0.006, "lo": 0.001, "hi": 0.011, "raw_label": "UNRESOLVED_INTERVAL", "label": "BOTH_SATURATED",
+               "both_saturated": True}
+        for r2 in (sat, dict(sat, lo=-0.011, hi=-0.001, mean=-0.006)):
+            P = AN.score_predictions({}, {"R2": {"pairs": {"Q2:PM-ref_vs_SG-stock": r2}}}, {})["P-3"]
+            self.assertEqual(P["score"], "UNSCORABLE")
+            self.assertEqual(P["why"], "BOTH_SATURATED")
+        unsat = dict(sat, label="UNRESOLVED_INTERVAL", both_saturated=False)
+        self.assertEqual(AN.score_predictions({}, {"R2": {"pairs": {"Q2:PM-ref_vs_SG-stock": unsat}}}, {})["P-3"]["score"], "HIT(+)")
+
 
 class LoadgenTests(unittest.TestCase):
     def test_openai_stream_counts_usage(self):
@@ -1253,6 +1264,10 @@ class DigestAndJobShellTests(unittest.TestCase):
         self.assertIn("results/stock_baseline/sb_analyze.py", d["files"])
         self.assertIn("src/multiplex/decode_probe.py", d["reused"])
         self.assertNotIn("results/stock_baseline/sb_mutants.py", d["files"])
+        for f in ("sb_job.sh", "ENGINE_DIGEST.txt", "R_SER_FORECAST_NANO.csv", "PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md",
+                  "PREDICTION_phaseB_expected_effects_2026-11-02.md", "AUDIT_harness_stock_base_r1_2026-11-02.md",
+                  "AUDIT_harness_stock_base_r2_2026-11-02.md"):          # rev2.1: sealed documents are pinned (re-audit r2 (a))
+            self.assertIn(f"results/stock_baseline/{f}", d["files"])
         self.assertEqual(set(d["plans_sha"]), set(SP.JOBS))
 
     def _job(self, env):

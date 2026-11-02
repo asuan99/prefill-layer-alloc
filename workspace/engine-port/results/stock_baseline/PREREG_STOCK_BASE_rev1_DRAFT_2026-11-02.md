@@ -1,6 +1,8 @@
-# PREREG STOCK-BASE rev2 (DRAFT, 미봉인; rev0 2026-11-01 → rev1 2026-11-02 → rev2 2026-11-02) — 기본 서빙 구조(stock SGLang · stock vLLM) 대 static PD-mux, VESSL·Nano (2026-11-01)
+# PREREG STOCK-BASE rev2.1 (봉인 2026-11-02, `HARNESS_DIGEST.txt`; rev0 2026-11-01 → rev1 2026-11-02 → rev2 2026-11-02 → rev2.1 2026-11-02) — 기본 서빙 구조(stock SGLang · stock vLLM) 대 static PD-mux, VESSL·Nano (2026-11-01)
 
-> 지위: **초안 rev2.** §13 결정은 전부 닫혔다. 하네스 감사 r1(`AUDIT_harness_stock_base_r1_2026-11-02.md`, NO-GO)의 차단 수정 5건을 반영했다. 봉인 전 남은 것 = 감사 r1 "사용자 결정 필요"(a)/(b)/(c) 중 선택 + bring-up(A100 용량). 파일 이름은 하네스 참조(`sb_spec.PREREG`) 때문에 rev1 그대로 둔다.
+> 지위: **봉인(2026-11-02)**. §13 결정 전부 닫힘, 하네스 감사 r1(NO-GO, 차단 수정 5건 반영) + 제한 재감사 r2(NO-GO 1건 → 사용자 결정 (a): P-3 포화 UNSCORABLE 반영, 재감사 없음). 봉인 = `HARNESS_DIGEST.txt`(핀 12 + 재사용 21 + plan sha 4) + `ENGINE_DIGEST.txt`(`2836112b…`) + `PDMUX_SB_SEALED=1`. 봉인 뒤 변경은 새 rev + 재봉인. 남은 것 = bring-up(A100 용량) → dry-run → 제출 승인. 파일 이름은 하네스 참조(`sb_spec.PREREG`) 때문에 rev1 그대로 둔다.
+>
+> **rev2 → rev2.1(2026-11-02, 재감사 r2 (a))**: 80 % 셀 PM-ref 대 SG-stock 쌍이 `BOTH_SATURATED`이면 P-3 = `UNSCORABLE`(사유 `BOTH_SATURATED`)(§8(i), 변이 1개) · §8(iii) P-4 채점 조건 정정 · §9 재감사 인용 금지 문장 6–9 추가.
 >
 > **rev1 → rev2 변경 요약(2026-11-02, 하네스 감사 r1 차단 수정 5건; 전부 CPU, 변이 테스트 포함)**
 > 1. **지속 판정 교체**(§3): 도착 120 s 창별로 "600 s 안에 도착한 요청 중 E2E ≤ 60 s로 완료된 비율 ≥ 0.95" + 600 s 이후 도착 제외 + 마지막 창 TTFT 중앙 ≤ 첫 창의 2배(유지). rev1 규칙(창 안 완료 ÷ 창 안 도착, 600 s 이후 도착은 마지막 창에 합침)은 정상 서버를 구조적으로 탈락시켰다(감사 모형 통과 확률 0.013–0.037; CAP1-R D44 E2E 분포 모사 합성 run에서 재현).
@@ -116,7 +118,7 @@ Job 4개(각 ≲4 h 규약, 하드캡 = 추정 × 1.25, 5분 올림). `python3 s
 
 ## 8. 사전 예측 (봉인 대상; 채점만, 종합 판정 없음)
 - P-1 λ\*_SG-stock(W1, 버스트) ∈ [6, 10] req/s [유도: PD-mux D44 7.29와 M3 J1 A LO req/s 동률에서]. P-2 λ\*_VL-stock / λ\*_SG-stock ∈ [0.8, 1.25]. P-3 R₂에서 PM-ref vs SG-stock goodput ln 비 부호 **+**(KISTI 방향) — 단 M3 J1 shape B 모양(PM TTFT ≫)이 n≥4에서 재현되면 **−** [두 방향 모두 거짓이 될 수 있음 → N3 아님]. P-4 r_ser(L=2k, SG-stock) 예보 = `R_SER_FORECAST_NANO.csv` 해당 셀 ±30% [2026-11-02: 계측 boot 합성 창의 단일 요청 2k span으로 채점, 셀 = 그 span들의 decode bs(설계상 ≈ 1) — §6]. P-5 SG-mix ITL p95 < SG-stock ITL p95(정지가 MIXED 안으로 옮겨감).
-- **rev2 추가 예측(채점 아님, 결과 해석의 사전 고지)**: (i) 80 % 셀에서도 best arm attainment ≈ 1.0이 가능하다(CAP1-R 5.516·6.343에서 PD-mux attainment 1.00) → 50 %·80 % 두 셀 모두에서 **`BOTH_SATURATED`가 예상 결과일 수 있다**. 그 경우 Q2–Q4의 goodput 라벨은 나오지 않으며 이것은 실패가 아니라 "기준 용량 아래에서는 goodput으로 갈리지 않는다"는 결과다; Q8·Q5는 지연 공동 지표로 읽는다. P-3은 그 셀 쌍의 ln 비 부호로만 채점되고 크기는 인용하지 않는다. (ii) 같은 이유로 80 % 셀의 `CELL_OUT_OF_BAND`(전 arm > 0.9)도 예상 가능하다. (iii) P-4는 현 계측 boot 설계로 `UNSCORABLE`이 예상 결과다(§6).
+- **rev2 추가 예측(채점 아님, 결과 해석의 사전 고지)**: (i) 80 % 셀에서도 best arm attainment ≈ 1.0이 가능하다(CAP1-R 5.516·6.343에서 PD-mux attainment 1.00) → 50 %·80 % 두 셀 모두에서 **`BOTH_SATURATED`가 예상 결과일 수 있다**. 그 경우 Q2–Q4의 goodput 라벨은 나오지 않으며 이것은 실패가 아니라 "기준 용량 아래에서는 goodput으로 갈리지 않는다"는 결과다; Q8·Q5는 지연 공동 지표로 읽는다. 80 % 셀의 PM-ref 대 SG-stock 쌍이 `BOTH_SATURATED`이면 P-3은 `UNSCORABLE`(사유 `BOTH_SATURATED`)이다 — 포화 셀의 ln 비는 drain 차이뿐이라 부호로 채점하지 않는다(재감사 r2, 사전 예측 문서 §5와 같은 판정). (ii) 같은 이유로 80 % 셀의 `CELL_OUT_OF_BAND`(전 arm > 0.9)도 예상 가능하다. (iii) P-4는 계측 boot 합성 창의 512·2k 각 10개로 채점 가능하다; 채점 대상인 2k 단일 요청 span이 10개에서 하나라도 빠지면 `UNSCORABLE`이다(여유 0; 512는 기술값이라 512가 빠지면 Q6 상태만 `Q6_FEW_SPANS`, §6).
 
 ## 9. 허용/금지 문언
 - 허용 형식: "VESSL A100 ×1 · Nano-9B-v2 · 이 Job에서, 셀 R(절대 rate x) arm A 대 B의 seed 4쌍 goodput ln 비는 평균 m, 95% CI [lo, hi], 라벨 L(유효성 사슬 통과/사유)."
@@ -126,6 +128,11 @@ Job 4개(각 ≲4 h 규약, 하드캡 = 추정 × 1.25, 5분 올림). `python3 s
   3. "두 엔진의 TTFT 시간 기준은 저부하 셀에서만 확인됐고 ITL 측정의 동등성은 확인되지 않았다. 엔진 간 쌍의 EQUIV는 n=4에서 사실상 도달 불가다(sd 예보 0.02 > 0.0186)."
   4. "Q8 결과는 이 셀의 goodput·지연 범위에서만 성립하며, 수정 트리 OFF가 커널 수준에서 upstream과 같다는 근거가 아니다(causal_conv1d int64는 코드상 다름)."
   5. "W3 셀 rate는 SG-stock 용량만으로 정했으므로, PD-mux arm이 그 rate에서 용량 위였다면 W3 라벨은 부호만 인용하고 크기는 인용하지 않는다. r_ser·T_dec는 수정 트리·플래그 OFF 계측 boot 범위다."
+- **인용 금지 문장(하네스 재감사 r2, 결과 문서에 문자 그대로 승계)**:
+  6. "지속 용량은 'E2E ≤ 60 s 완료 ≥ 0.95 ∧ TTFT 중앙 증가 ≤ 2배'로 정한 안정성 경계이며 SLO goodput 용량이 아니다. 이 규칙은 용량 아래 모형과 명백한 과부하 raw 두 극에서만 검증됐고, 지속 격자 {1.0, 0.8, 0.5} 위의 값만 가질 수 있다."
+  7. "어느 seed든 attainment 0.971–0.98에서 나온 EQUIV_WITHIN_3PCT는 attainment 차가 3% 안에 묶여 거의 구조적으로 나오므로 동등성 근거가 아니다."
+  8. "지연 공동 지표 라벨에는 지연 플라시보가 적용되지 않았다. boot 간 지연 잡음의 크기는 판정에 들어가지 않는다."
+  9. "사전 예측 문서에서 P-1–P-5 밖의 행은 추정량과 arm이 등록되지 않은 사후 채점이므로 사전등록 적중으로 인용하지 않는다."
   - Q4 caveat 5개 = 상한. 하나 더 붙으면 Q4는 정본에 올리지 않고 설계 재작성(감사 r1).
 - 금지: "PD-mux가 vLLM을 이긴다/진다"(범위 없는 일반화) · "최강 baseline" (조율 arm 없음) · KISTI 행과 섞은 비교 · 계측 boot 수치를 goodput 근거로 · D44 결과를 "static PD-mux 최적" 으로 · 과부하 셀(CELL_OUT_OF_BAND) 크기 인용 · A5 예보를 측정값처럼 · `BOTH_SATURATED` 쌍의 `raw_label`·ln 비를 동등성 근거로 · "mixing 기회 수"를 mixed-chunk 발화 횟수로.
 

@@ -135,6 +135,9 @@ MUTANTS = [
     ("M79 DONE.json status not reported", "sb_analyze.py", "        out += boot_status_rows(name, j)", "        pass"),
     ("M80 reference-capacity None reason not reported", "sb_analyze.py", "    out += ref_capacity_rows(add)", "    pass"),
     ("M81 J3 R3 budget guard removed", "sb_runner.py", 'ctx["r3_budget_skip"] = ctx["r3_budget"]["skip"]', 'ctx["r3_budget_skip"] = False'),
+    # --- rev2.1 (re-audit r2 (a), user decision 2026-11-02) ---
+    ("M86 P-3 sign-scored in a BOTH_SATURATED 80 % cell", "sb_analyze.py",
+     'sat3 = bool(r2) and (r2.get("both_saturated") is True or r2.get("label") == "BOTH_SATURATED")', "sat3 = False"),
 ]
 
 

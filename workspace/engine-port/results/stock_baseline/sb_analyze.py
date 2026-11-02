@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev2 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev2.1 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
   sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job (after J1 / after J1b)
   sb_analyze.py report   --j1 RAW --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]    # labels, predictions, "not measured" section
@@ -20,10 +20,12 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
     and of every VL-stock R1 measurement run.  |b - a| > 20 ms (absolute only, PREREG rev1.1) -> TTFT_OFFSET_SHIFT -> engine pairs
     "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT"; (b) not computable -> TTFT_OFFSET_UNCHECKED -> engine pairs INVALID (fail-closed)
   * tags: CELL_OUT_OF_BAND (steady-state cell R2 (W1) / R3 (W3) attainment: all arms > 0.9 or best < 0.5), SUBSTRATE_SHIFT (refcell vs the identical Job-1 cell
-    differs by >= 10 %p; SUBSTRATE_UNCHECKED when Job 1 holds no identical cell), MIX_NOT_FIRED (SG-mix proxy < 50 per run)
+    differs by >= 10 %p; SUBSTRATE_UNCHECKED when Job 1 holds no identical cell), MIX_NOT_FIRED (rev2: SG-mix server_args lack
+    enable_mixed_chunk=True with chunked_prefill_size > 0 on any run; the rev1 "proxy < 50" rule is retired)
   * rev2 (audit r1): BOTH_SATURATED (both arms >= 0.98 attainment on all 4 seeds -> no goodput label, every cell); latency co-metrics for
     Q5/Q8 (seed-level paired ln TPOT mean / TTFT p50 / median request-internal ITL p95, same 3 % + t(3) rule, suffix _TPOT/_TTFT/_ITL);
     SG-mix firing from server_args; Q6 grid {512, 2k}, P-4 UNSCORABLE at n < 10, Q6 INVALID on any other-stream extend; forced Q1-Q8 rows
+  * rev2.1 (re-audit r2 (a), 2026-11-02): P-3 = UNSCORABLE (why BOTH_SATURATED) when the 80 % cell PM-ref vs SG-stock pair is saturated
   * r_ser / r_mix: decode_probe.pacing_ratios on the load window ONLY (t_load_start/end mapped to the probe clock through the probe's
     boot record), and SEPARATELY on the synthetic single-request window of the SG probe run (t_synth_start/end; 10 x 512 + 10 x 2k prompts,
     2026-11-02): the two windows are never pooled; P-4 = single-request (n_reqs == 1) 2k spans of the synthetic window only (512 descriptive);
@@ -658,11 +660,20 @@ def score_predictions(add, cells, instr):
     P["P-2"] = {"value": (vl / sg) if sg and vl else None, "band": [0.8, 1.25],
                 "score": None if not (sg and vl) else ("HIT" if 0.8 <= vl / sg <= 1.25 else "MISS")}
     r2 = (cells.get("R2") or {}).get("pairs", {}).get("Q2:PM-ref_vs_SG-stock")
-    if r2 and r2.get("n", 0) >= 4:
+    sat3 = bool(r2) and (r2.get("both_saturated") is True or r2.get("label") == "BOTH_SATURATED")
+    if sat3:        # rev2.1 (re-audit r2 (a)): saturated pair -> the ln ratio is a drain difference only, no sign score (prediction doc §5)
+        sc = "UNSCORABLE"
+    elif r2 and str(r2.get("label", "")).split(":")[0] in ("INVALID", "INVALID/UNRESOLVED", "BOOT_NOISE"):
+        sc = "UNSCORABLE"                                   # seal fix: an invalid or boot-noise pair carries no sign evidence either
+    elif r2 and r2.get("n", 0) >= 4:
         sc = "HIT(+)" if r2["lo"] > 0 else "MISS(-)" if r2["hi"] < 0 else "NEITHER"
     else:
         sc = None
     P["P-3"] = {"value": None if not r2 else r2.get("mean"), "predicted": "+", "score": sc, "label": None if not r2 else r2.get("label")}
+    if sat3:
+        P["P-3"]["why"] = "BOTH_SATURATED"
+    elif sc == "UNSCORABLE":
+        P["P-3"]["why"] = "PAIR_INVALID"
     sgi = (instr or {}).get("SG") or {}
     syn = (sgi.get("windows") or {}).get("SYNTH") or {}      # P-4 reads the synthetic single-request window ONLY (§6, 2026-11-02)
     b2 = (syn.get("by_L") or {}).get(2048)

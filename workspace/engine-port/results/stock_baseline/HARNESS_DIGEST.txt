@@ -1,0 +1,46 @@
+{
+ "digest": "9b4a30f9ac69d2c1116c4cf63e54f74a93bfc204e91cf2c1b7b5026797578b3d",
+ "files": {
+  "results/stock_baseline/AUDIT_harness_stock_base_r1_2026-11-02.md": "9dcdc49f0ef00277fe5625e997133978febc6bbc6e5c34a840581f48f51baf7a",
+  "results/stock_baseline/AUDIT_harness_stock_base_r2_2026-11-02.md": "624b9e693ac130902351124e0aa53f2d3774a9b36d2b794a8fa3251447b30bfc",
+  "results/stock_baseline/ENGINE_DIGEST.txt": "7095f78d6d4b226e521ca56fb6967866f544922dd1248979582d214fa6e89afa",
+  "results/stock_baseline/PREDICTION_phaseB_expected_effects_2026-11-02.md": "5923a533b6c8de74f38fd1204d945c97493abfd417a72678d9451fc7b2c663e8",
+  "results/stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md": "b2126bd93af297566848e58bdc7ebaa057ac9dcd4811a17732b4260c181bd46e",
+  "results/stock_baseline/R_SER_FORECAST_NANO.csv": "a1c84906840ec62b9b549d34225057f3fc024a867fe39572a694f3df96387b14",
+  "results/stock_baseline/sb_analyze.py": "ed7bfa4aa3a76fc6699d4e272d9b5f2d85d673736f980b7514a880bd48f2e99e",
+  "results/stock_baseline/sb_digest.py": "c0a35b96285e1a3705e4d2979cd09e49f227ace93dff1277ec6d128f7fc1755b",
+  "results/stock_baseline/sb_job.sh": "7cb4e6a0c83488fd7ef21b8ba8adc720ce6d182631adb8ffc30372047b298293",
+  "results/stock_baseline/sb_loadgen.py": "1fe2acb01b2c7d06776192c0528de7f3928a355f69d9f8b82a96fddfd290dc7f",
+  "results/stock_baseline/sb_runner.py": "cfee69fc6844e9b9e0aebea57a1790fe673a8701fba0bc05187e66785e614ca0",
+  "results/stock_baseline/sb_spec.py": "17fa514ec112fd91da0e562daacd26d40a5090d4fa047e498c88ed8f3072703a"
+ },
+ "plans_sha": {
+  "J1": "1482de03733538e050324c6c0576cac3893ae8f4ba29518bb05aa8353fdeb4f9",
+  "J1b": "de3636b459e4c2b4b147f0d39fd145ca8df99952beb267070a7c27d12099669c",
+  "J2": "27d0cf7b1bfc276a9251db5099665d61151c2ce9fa278e4653d8666b26a743f5",
+  "J3": "13091f23820614e7197ecf95226891c480e28ef6c35a73bae71294ed67861d5b"
+ },
+ "reused": {
+  "benchmarks/pdmux_eval/abs_mono_loadgen.py": "69f3ee194aabb4f114c1b7c1716261dad4e2f2678b24a206b01cc5c052a373b9",
+  "benchmarks/pdmux_eval/analyze.py": "1be495110ea67c95f275b6c8ab7e7af25d0778c2910bf6a830170dbc078aeaa2",
+  "benchmarks/pdmux_eval/trace_loadgen.py": "8da9157416ecb687534595be8580e8dcef2f53e820ef353cdc5ae0dc86bdcce6",
+  "env/sglang_v0.5.10_python_tree.sha256": "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3",
+  "results/cap_char/costterms_harness/ct_client.py": "ad5f0a05bfc4721dfe5c6deed43384e253bebf4e57cf8f7a57439ec1a7530f6a",
+  "results/cap_char/costterms_harness/ct_extract.py": "8bf5b373d88bf35c0b356f3bee50f65229e23a3ee6e3f664faacae1be06ebb21",
+  "results/cap_char/costterms_harness/ct_fit.py": "46c97f22126e2b34544823da99611b4b0ea725c095dfa488297d331a0cb80304",
+  "results/cap_char/costterms_harness/ct_runner.py": "24d85451da342e455642522f3e0cf20330191c215d9c0fedabfc956bf70bbc65",
+  "results/cap_char/costterms_harness/ct_spec.py": "3d9c6084de15045f81c877aab73d1343d961908b76cff78593f09fd24ad91592",
+  "results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml": "478cf543523c1b308d79e3e865cf6d6b8808435be66f54569beb8af106025586",
+  "results/cap_char/policy_harness/ph_loadgen.py": "c0c34bbcae901e9453f33bc44ec7407ba50eccdca16039167d0be3608393e470",
+  "results/cap_char/policy_harness/ph_runner.py": "30986c097d8b068427350c13fcf237b4c325e79382ce6f476488e4eb7830ab29",
+  "results/cap_char/policy_harness/ph_spec.py": "4c62188f8679eb16b988e78213a006609362ba8551fa09843298850d07ab422c",
+  "results/cap_char/policy_harness/ph_trace.py": "b1c34ebb6077a269e7ad8e66b106f583b150e805e69236771e9fa0c57f47d014",
+  "results/cap_char/policy_harness/ph_verdict.py": "036386f5af4a28739f241cf57206bce1cfc0778cee29c6b0c582919557e4b5d0",
+  "scripts/bootstrap/engine_digest.py": "542ac75fc5fcb57eb7d75f1deda26f07e375515c5c51f30b861429f16e87cbac",
+  "scripts/multigpu/mg_x_pretokenize.py": "afa7946d12445b8a093b8a1b2e6a09f4444ef016263f361abd1d585917633c74",
+  "scripts/vessl/engine_tree.py": "8151d72a7d556174b2feea148fe56fb12e0ebb2865656d3f54ea8c88d0aa102d",
+  "scripts/vessl/install_runtime.sh": "9e2e1977f950bad9d3ac80a9dab53894a30775b0e800c12d46178924e593316b",
+  "scripts/vessl/job_entry.sh": "ac1f9e0b9cd34890e628e23602d979b4ba53117531c25e11add10af60f4c1b27",
+  "src/multiplex/decode_probe.py": "5e866e3623b65685d5f06c0172a60fdd6e80345bf95e0a21f1b61233c6644c45"
+ }
+}
