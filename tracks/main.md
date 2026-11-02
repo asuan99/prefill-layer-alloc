@@ -47,9 +47,8 @@
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
 ## 최근 로그
+- 2026-11-01~02(기준선 세션): 결정 62 · 기본 구조 기준선 Phase A CPU 재집계(`stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md`, 감사 r1 반영·재계산 일치, `a5129eff`) · Phase B는 다른 세션 소관 확인(PREREG rev2.1 작업 중)
 - 2026-11-01(오후): 그림 8개 설명 · 설계 결함 S1–S12·패턴 P1–P6 정리 · 에이전트 규약 3파일 개정(`reports/audit/2026-11-01_design_defects/`)
 - 2026-10-28~11-01(impl 세션): 구현 결함 Phase 0·범위 감사·7차 promote(부분) · 엔진 수정 E1–E3·E5(브랜치) · GPU 정확성 gate 2회 · 통합 정책 측정 4 Job·결과 감사 r1 · 축 지도 §6b(시스템 동작·r 정의)
 - 2026-10-28~30(정책 캠페인 세션): 진단·정책 PREREG(감사 r1/r2), gate+smoke·CAP1·CAP1-R·CAP2+지속성·TUNE 6 Job 측정·회수·결과 감사, 결정 43–58·60, raw 반출, implfix 영향·HE0 셀 재정의 메모
 - 2026-10-27 오후: catch-up · 외부 비판 문서 대조 · C 감사 r1·학회 검토 · HyMux 구조 대조 · lockstep 정지 진단(CPU) · 방향 재정리(제안)
-- 2026-10-26~27: 비용 항 6 Job 측정·회수·분석·결과 감사 r1·promote 5차 · 결정 31–38(측정 우선) · HyMux 원고·계획 검수 · multi-GPU·변화 trace 검토 · DP 라우팅 설계(감사 2회)
-- 2026-10-25: roofline·스케일링 그림 묶음 + prefill 관측 대 이상 대조(감사 r1) + T1 비교 틀
