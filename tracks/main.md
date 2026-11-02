@@ -43,6 +43,7 @@
 - **기준선 Phase B — 봉인(2026-11-02)**: 사전등록 rev2.1 `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명은 하네스 참조 때문에 유지) + `HARNESS_DIGEST.txt`(digest `9b4a30f9…`, 핀 12·재사용 21·plan 4) + `ENGINE_DIGEST.txt` `2836112b…`. 감사 r1 NO-GO→수정 5건, 재감사 r2 NO-GO 1건→결정 (a) 반영, 재감사 없이 봉인. 테스트 83·변이 84/84. 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`(P-1…P-5 등록) 봉인 포함. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. **다음**: A100 용량 열리면 Workspace bring-up(vLLM venv 부팅·pristine 보존·EXTEND 이벤트·server_args 패턴) → `PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env launch.sh` dry-run → 제출 승인(첫 번째 Job부터 순차 4개). ★정오: 지속 완료율 3.0→5.06–5.34(RECHECK) — promote 필요: 예 (결정·정오·감사 2건·봉인)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
+- **실행 중**: `pdmux-stock-baseline-7899d1b-20261102085423`(job-4ma8ia5u8cfx, Phase B 첫 번째 Job = W1 용량 사다리 5 arm + smoke, 하드캡 260 min, 제출 2026-11-02 08:54Z, 사용자 승인) — 회수 `scripts/vessl/fetch.sh stock_baseline <name>`, 분석 `sb_analyze.py addendum` → 두 번째 Job rate 입력
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
