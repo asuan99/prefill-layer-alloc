@@ -7,9 +7,9 @@ trace, runner); the sealed sb_job.sh is not used because its Job list is fixed.
   sq_plan.py plan --arms SG-stock[,VL-stock]
   sq_plan.py run  --arms ... --out DIR --w1-lengths F --w3-tokens F [--resume]
 """
-import argparse, json, sys
+import argparse, json, os, sys
 from pathlib import Path
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent   # not resolve(): in a Job results/ is a symlink out of the checkout, and the harness finds scripts/ through this path
 SB = HERE.parent / "stock_baseline"
 sys.path.insert(0, str(SB))
 import sb_spec as S      # noqa: E402
