@@ -289,6 +289,14 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
 .frac > span:first-child{border-bottom:1px solid var(--fg);padding:0 4px 1px}
 .frac > span:last-child{padding:1px 4px 0}
 @media (prefers-reduced-motion:no-preference){.sc-tl g.sc-b{transition:opacity .15s}}
+/* §6b 기대 효과 — 판정 칩 + 한 줄 요약 */
+.v-gain{background:var(--ok-t);color:var(--ok)} .v-cond{background:var(--warn-t);color:var(--warn)}
+.v-none{background:var(--neu-t);color:var(--muted)} .v-cost{background:var(--bad-t);color:var(--bad)}
+.v-unk{background:var(--sunk);color:var(--muted);border:1px dashed var(--line)}
+.sc-gain{background:var(--surface);border:1px solid var(--line);border-left:3px solid var(--accent);border-radius:8px;padding:10px 14px;display:flex;flex-direction:column;gap:6px;font-size:.88rem;max-width:none}
+.sc-gain .gh{display:flex;gap:8px;align-items:baseline;flex-wrap:wrap}
+.sc-gain ul{margin:0;padding-left:1.05rem;display:flex;flex-direction:column;gap:3px;font-size:.84rem;color:var(--muted)}
+#sc-gsum td{font-size:.84rem} #sc-gsum td.n{font-variant-numeric:tabular-nums;min-width:16ch} #sc-gsum td:first-child{min-width:10ch}
 </style>
 
 <div class="wrap">
@@ -464,6 +472,19 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   <h2>시스템 동작 — 루프·stream·SM이 하는 일 <span class="sec">§6b · 개념도, 측정 아님</span></h2>
   <p class="lede">요청 흐름이 아니라 엔진 안쪽을 봅니다. 하나의 Scheduler 스레드(<code>event_loop_pdmux</code>)가 두 CUDA stream에 일을 넣고, 각 stream은 사전 생성된 green context를 통해 SM 일부에 묶이며, host는 정해진 지점에서만 GPU를 기다립니다. 아래 구성 요소 지도와 시간축은 그 관계를 그린 개념도입니다. 시간축 가로 한 칸은 동거 중 decode step 1개이고 길이는 코드 구조와 정본 수식 비율을 따랐습니다. <b>구현 변경</b>을 고르면 그 변경이 바로 바꾸는 구성 요소·막대는 <span class="sc-key sc-key-d">직접</span>, 결과로 달라지는 것은 <span class="sc-key sc-key-i">부가</span>로 표시됩니다. 코드 위치는 main <code>multiplexing_mixin.py</code> @3858f129, 변경 E1–E3·E5는 브랜치 <code>impl-defects-e123</code>에 기본 OFF로만 있습니다(GPU 0).</p>
 
+  <h3>무엇이 빨라지나 — 변경별 기대 효과 <span class="chip g-derived">derived</span></h3>
+  <p class="lede" style="font-size:.88rem">흐름이 바뀌는 것과 시간이 줄어드는 것은 다릅니다. 아래 표는 각 변경이 <b>어떤 지표를, 어떤 상황에서, 몇 ms</b> 바꾸는지를 비용 항(T1·T2′·ρ)과 Phase 0 재집계로 유도한 값입니다. 측정이 아니고, B2 지속은 상한이라 실제 절감은 이보다 작을 수 있습니다. 기준은 Nano-9B-v2·D44(prefill 64 SM)·8k 프롬프트(prefill 1,536 ms, span 7개 × 219 ms)입니다.</p>
+  <div class="tbl"><table id="sc-gsum"><thead><tr><th>변경</th><th>판정</th><th>줄어드는 것 · 상황</th><th>크기</th><th>대가</th></tr></thead><tbody>
+    <tr><td><b>E2 발행 깊이 k=2</b></td><td><span class="chip v-gain">이득 (조건부)</span></td><td>decode가 prefill 도중 빈 그 prefill의 TTFT. N3 저부하 8k에서 span의 45%</td><td class="n">−175 ms (p50) · −454 ms (p95)<br>그 prefill 시간의 11–30%</td><td>decode가 바쁠 때 0 (k=1이면 prefill당 약 +86 ms). ITL 영향 0. 동거 부하(N2-EA)에선 B2가 2.9%·≤0.6 ms라 ≈0</td></tr>
+    <tr><td><b>E1 시간 기준 span</b></td><td><span class="chip v-cost">손해 (static)</span></td><td>지연 이득 없음. 동적 컨트롤러가 prefill 도중 결정할 지점이 생김</td><td class="n">factor 1: prefill ×1.40 (2k, step 20 ms) · ×1.45 (8k, step 40 ms)<br>factor 5: ×1.00</td><td>span이 decode step보다 짧아 P SM이 반복마다 놂</td></tr>
+    <tr><td><b>E1 층 종류 반영</b></td><td><span class="chip v-unk">미지</span></td><td>span 경계 위치만 바뀜. 정본이 '미시험'으로 둔 질문을 재는 도구</td><td class="n">지연 이득 근거 없음</td><td>E1과 같은 비용 구조</td></tr>
+    <tr><td><b>E3 handoff</b></td><td><span class="chip v-cond">동적에서만</span></td><td>static: 0. 동적: prefill 도중 분할 전환 때 host 차단 → decode 공백 제거</td><td class="n">static 0<br>동적: 전환당 ≤ 489–538 ms (HE0 상한), 영향 HI 요청 ≤0.72% (bind+GATE) · 10–11% (slo)</td><td>과도기 green ctx 중첩 간섭(미측정). VESSL에서 prefill 도중 전환은 아직 0건</td></tr>
+    <tr><td><b>E5 계측 v2</b></td><td><span class="chip v-none">이득 아님</span></td><td>위 표의 '상한'을 실측으로 바꾸는 계측</td><td class="n">—</td><td>관측자 비용(gate G5 보고)</td></tr>
+    <tr><td><b>예산 512 (M1 셀)</b></td><td><span class="chip v-cost">측정 셀</span></td><td>박자 영역을 재기 위한 설정. 개선이 아님</td><td class="n">2k prefill 397 → 1,320 ms (×3.3)</td><td>TTFT 증가</td></tr>
+    <tr><td><b>E4 층 경계 선점</b></td><td><span class="chip v-unk">미지 · 미구현</span></td><td>긴 prefill 뒤에 막힌 짧은 요청의 TTFT. 지연을 크게 줄일 수 있는 유일한 후보</td><td class="n">요청당 최대 1,536 ms (8k) · 3,094 ms (16k) 대기 제거</td><td>빈도(M5) 미측정, KV·mamba 슬롯 두 배치분</td></tr>
+  </tbody></table></div>
+  <p class="note"><b>정리.</b> 지금 기본값(static D44) 기준으로 지연이 확실히 줄어드는 변경은 <b>E2 하나</b>이고, 그것도 decode가 prefill 도중 비는 저부하·긴 문맥에서 TTFT만 줄입니다. E1·E3의 가치는 지연 단축이 아니라 동적 제어의 전제(결정 지점, 즉시 전환)와 비교 편향 제거(B1은 동적 arm만 벌함)이고, 동적이 static을 이긴다는 근거는 아직 없습니다. 큰 지연 이득 후보는 미구현 E4입니다. 근거 <code>workspace/engine-port/results/impl_defects/expected_gain.py</code> → <code>expected_gain.json</code>, <code>phase0_c1_c2.md</code> 표 C1-3·C2-B.</p>
+
   <div class="sc-ctl">
     <div class="sc-row"><span class="eyebrow">구현 변경</span><div class="sc-chips" id="sc-chg" role="group" aria-label="구현 변경 선택"></div></div>
   </div>
@@ -500,6 +521,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   </div>
   <div class="sc-grid" id="sc-grid"></div>
   <p class="sc-read" id="sc-read"></p>
+  <div class="sc-gain" id="sc-gain"></div>
 
   <div class="sc-legend" aria-label="범례">
     <span><i class="sw sw-h"></i>host: 발행·결정·결과 처리</span>
@@ -517,7 +539,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
   </div>
 
   <h3 style="margin-top:8px">구현 변경별 영향 범위</h3>
-  <div class="tbl"><table id="sc-tbl"><thead><tr><th>변경</th><th>상태</th><th>직접 영향 (바뀌는 구성 요소·코드)</th><th>부가 영향 (결과로 달라지는 시스템 상태)</th></tr></thead><tbody></tbody></table></div>
+  <div class="tbl"><table id="sc-tbl"><thead><tr><th>변경</th><th>상태</th><th>직접 영향 (바뀌는 구성 요소·코드)</th><th>부가 영향 (결과로 달라지는 시스템 상태)</th><th>기대 효과 (유도)</th></tr></thead><tbody></tbody></table></div>
   <p class="lede" style="font-size:.84rem">근거: <code>workspace/engine-port/results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md</code>, <code>…/AUDIT_scope_loop_dependence_r1_2026-10-29.md</code>, <code>impl-defects-e123:reports/hymux_review/IMPL_FIX_E1_E3_2026-10-29.md</code>, MuxWise §3.2.3·§3.4.2, Bullet §3.3–3.4. 층 종류 비율은 <code>analytic_terms.py</code> FLOPs 비 [유도]이며 시간 비가 아닙니다.</p>
 </section>
 
@@ -556,6 +578,30 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
      d:['update_split_prefill_batch의 단일 슬롯 제약(:1218) 해제','KV·mamba 슬롯·split 상태를 두 배치분 유지'],
      i:['입장 슬롯이 긴 prefill에 묶이는 시간 감소','선점된 배치의 prefill stream 작업 재개·재정렬 경로 필요(MuxWise는 재귀 선점 금지)']}
   ];
+  /* 기대 효과 [유도] — results/impl_defects/expected_gain.json (D44·8k·ρ 1.16), phase0_c1_c2.md C1-3·C2-B */
+  var VL={gain:['v-gain','이득 (조건부)'],cond:['v-cond','동적에서만'],none:['v-none','이득 아님'],cost:['v-cost','손해'],unk:['v-unk','미지'],na:['v-none','기존 코드']};
+  var GAIN={
+    none:{v:'na',h:'기준선입니다. 아래 변경의 효과는 이 상태 대비입니다.',x:[]},
+    E2:{v:'gain',h:'decode가 prefill 도중 빈 그 prefill의 TTFT −175 ms (p50) ~ −454 ms (p95), k=2. N3 저부하 8k span의 45%에서.',x:['남은 층이 64 SM 대신 108 SM에서 돌아 그만큼 짧아짐(그 prefill 시간의 11–30%)','decode가 바쁠 때 비용 0(k=2). k=1이면 span마다 다음 발행을 한 반복 기다려 prefill당 약 +86 ms','ITL 영향 0(그 구간엔 decode가 없음). 동거 부하(N2-EA)에선 B2가 2.9%·≤0.6 ms라 ≈0','B2 지속은 상한이라 실제 절감은 이보다 작을 수 있음']},
+    E1:{v:'cost',h:'static 기본값에는 지연 이득 없음. factor 1이면 prefill ×1.40 (2k, step 20 ms) · ×1.45 (8k, step 40 ms) 느려짐, factor 5면 ×1.00.',x:['이득은 지연이 아니라 결정 지점: 동적 컨트롤러가 prefill 도중 분할을 바꿀 기회','쌓임 감소 효과는 E2가 비용 없이 냄']},
+    E1T:{v:'unk',h:'span 경계 위치만 바뀌고 지연 이득 근거는 없음. 정본이 미시험으로 둔 질문(층 종류 시간 맞춤 span)을 재는 도구.',x:['비용 구조는 E1 time과 같음']},
+    E3:{v:'cond',h:'static에선 0. 동적에서 prefill 도중 전환 때 host 차단(HE0 상한 전환당 ≤489–538 ms)과 그만큼의 decode 공백을 없앰.',x:['static B2의 98%+는 모든 span 발행 뒤라 옮길 층이 없고, 그동안 decode·입장도 멈춰 host가 풀려도 할 일이 없음','영향 받는 HI 요청 상한: bind+GATE ≤0.72%, slo 10–11%(HE0, 다른 기판)','대가: 과도기 green ctx 중첩 간섭(미측정). VESSL에서 prefill 도중 전환 0건 관측']},
+    E5:{v:'none',h:'지연 이득 없음. 위 수치들의 상한을 실측으로 바꾸는 계측입니다.',x:['관측자 비용은 gate G5에서 보고']},
+    B512:{v:'cost',h:'개선이 아닌 측정 셀. 2k prefill 397 → 1,320 ms (×3.3).',x:['박자 영역(span < decode step)을 재기 위해서만 씀']},
+    DYN:{v:'na',h:'기존 정책. HE0에서 best-static을 넘지 못함. E3가 붙어야 prefill 도중 결정이 즉시 적용됨.',x:[]},
+    STK:{v:'none',h:'개선이 아니라 측정 손잡이. decode-only 구간에서도 D SM만 써 오히려 느려질 수 있음.',x:['decode-heavy static 기본값의 편향을 드러내는 용도']},
+    E4:{v:'unk',h:'긴 prefill 뒤에 막힌 짧은 요청의 TTFT를 요청당 최대 1,536 ms (8k) · 3,094 ms (16k) 줄일 수 있는 유일한 후보. 구현 0.',x:['빈도(M5: prefill 중 도착 요청의 입장 대기) 미측정','대가: KV·mamba 슬롯 두 배치분, 선점된 배치 완료 지연']}
+  };
+  var SCG={
+    iter:{v:'none',t:'이 상황만으로는 시간이 줄지 않습니다. E2는 stream에 쌓이는 양만 줄이고, 효과는 decode가 빌 때("decode stream이 비었을 때" 탭) 나타납니다.'},
+    pile:{v:'cost',t:'쌓임을 줄여도 prefill 총시간은 같습니다(GPU가 계속 일함). E2 k=2는 대가 0, k=1은 prefill당 약 +86 ms, E1 factor 1은 8k·step 40 ms에서 1,536 → 2,227 ms로 손해입니다.'},
+    empty:{v:'gain',t:'여기서 이득이 납니다. E2 k=2면 이 prefill의 TTFT가 −175 ms (p50) ~ −454 ms (p95) 줄고, N3 저부하 8k에서 span의 45%가 이 상황입니다. E3만으로는 줄지 않습니다.'},
+    'switch':{v:'cond',t:'동적 컨트롤러에서만 이득입니다. 전환당 decode 공백 최대 489–538 ms(HE0 상한)가 사라집니다. static arm에는 이 상황이 생기지 않습니다.'},
+    slot:{v:'unk',t:'E4가 구현되면 짧은 요청 TTFT를 요청당 최대 1.5 s (8k) ~ 3.1 s (16k) 줄일 수 있습니다. 얼마나 자주 일어나는지는 미측정입니다.'},
+    regime:{v:'none',t:'영역 자체는 변경이 아닙니다. 예산 512는 2k prefill을 397 → 1,320 ms로 늘리는 측정 셀입니다.'},
+    ltype:{v:'unk',t:'time_typed는 span 경계만 옮깁니다. 지연 이득 근거는 없고, factor 1이면 time과 같은 비용이 듭니다.'}
+  };
+  function vchip(v){var sp=document.createElement('span');sp.className='chip '+VL[v][0];sp.textContent=VL[v][1];return sp;}
 
   /* ---------- 구성 요소 지도 ---------- */
   var COMP=[
@@ -760,6 +806,8 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     var two=document.createElement('div');two.className='sc-icols';
     [[cur==='none'?'현재 구조':'직접 영향','d',c.d],[cur==='none'?'그 결과':'부가 영향','i',c.i]].forEach(function(z){var d=document.createElement('div');var t=document.createElement('div');t.className='sc-key sc-key-'+z[1];t.textContent=z[0];d.appendChild(t);var ul=document.createElement('ul');z[2].forEach(function(x){var li=document.createElement('li');li.textContent=x;ul.appendChild(li);});d.appendChild(ul);two.appendChild(d);});
     box.appendChild(two);
+    var G=GAIN[cur];if(G){var gb=document.createElement('div');gb.className='sc-gain';var gh=document.createElement('div');gh.className='gh';var gt=document.createElement('b');gt.textContent='기대 효과';gh.appendChild(gt);gh.appendChild(vchip(G.v));var gs=document.createElement('span');gs.textContent=G.h;gh.appendChild(gs);gb.appendChild(gh);
+      if(G.x.length){var gu=document.createElement('ul');G.x.forEach(function(x){var li=document.createElement('li');li.textContent=x;gu.appendChild(li);});gb.appendChild(gu);}box.appendChild(gb);}
     if(cur!=='none'&&!grid.querySelector('.fx-d,.fx-i')){var p=document.createElement('p');p.className='sc-none';p.textContent='지금 고른 상황에는 이 변경이 바꾸는 막대가 없습니다. 위 구성 요소 지도나 다른 상황을 보세요.';box.appendChild(p);}
   }
   function show(i){
@@ -767,6 +815,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     tabs.querySelectorAll('button').forEach(function(bt,j){bt.setAttribute('aria-selected',String(j===i));});
     document.getElementById('sc-tag').textContent=s.tag;document.getElementById('sc-name').textContent=s.name;
     document.getElementById('sc-setup').textContent=s.setup;document.getElementById('sc-read').textContent=s.read;
+    var sg=document.getElementById('sc-gain');sg.textContent='';var q=SCG[s.id];if(q){var hh=document.createElement('div');hh.className='gh';var bb=document.createElement('b');bb.textContent='그래서 빨라지는 것';hh.appendChild(bb);hh.appendChild(vchip(q.v));sg.appendChild(hh);var pp=document.createElement('div');pp.textContent=q.t;sg.appendChild(pp);sg.hidden=false;}else{sg.hidden=true;}
     grid.textContent='';
     s.panels.forEach(function(p){
       var d=document.createElement('div');d.className='sc-panel';var ph=document.createElement('div');ph.className='sc-ph';var h=document.createElement('h4');h.textContent=p.title;ph.appendChild(h);
@@ -787,6 +836,7 @@ footer{border-top:1px solid var(--line);padding-top:18px;color:var(--muted);font
     var a=document.createElement('td');var bb=document.createElement('b');bb.textContent=c.n;a.appendChild(bb);var cd=document.createElement('div');cd.className='sc-flag';cd.textContent=c.flag;a.appendChild(cd);tr.appendChild(a);
     var s=document.createElement('td');var sp=document.createElement('span');sp.className='chip '+c.stc;sp.textContent=c.st;s.appendChild(sp);tr.appendChild(s);
     [c.d,c.i].forEach(function(L){var td=document.createElement('td');var ul=document.createElement('ul');ul.className='sc-ul';L.forEach(function(x){var li=document.createElement('li');li.textContent=x;ul.appendChild(li);});td.appendChild(ul);tr.appendChild(td);});
+    var gd=document.createElement('td');var G2=GAIN[c.k];if(G2){gd.appendChild(vchip(G2.v));var gp=document.createElement('div');gp.style.fontSize='.82rem';gp.style.marginTop='4px';gp.textContent=G2.h;gd.appendChild(gp);}tr.appendChild(gd);
     tb.appendChild(tr);});
   var si=0,sk='none';try{var a=localStorage.getItem('axes-scen2');SC.forEach(function(s,i){if(s.id===a)si=i;});var c=localStorage.getItem('axes-chg');CHG.forEach(function(x){if(x.k===c)sk=c;});}catch(e){}
   show(si);setChg(sk);

@@ -1,0 +1,297 @@
+{
+ "setup": {
+  "D": 44,
+  "P": 64,
+  "rho": 1.16,
+  "model": "Nemotron-Nano-9B-v2",
+  "substrate": "VESSL A100 (cost terms)",
+  "co_located_decode_step_ms": {
+   "b1_c2048": 20.327538893000003,
+   "b1_c8192": 20.4088940546,
+   "b8_c2048": 23.8648591214,
+   "b8_c8192": 24.5157004142,
+   "b32_c2048": 37.786250147000004,
+   "b32_c8192": 40.3896153182
+  }
+ },
+ "E2_on_B2": {
+  "L": 8192,
+  "W_ms": 1536.317803063692,
+  "n_spans": 7,
+  "span_ms": 219.47397186624173,
+  "cases": [
+   {
+    "B2_remaining_ms": 868.5,
+    "pct": "p50",
+    "k": 1,
+    "saved_ms": 264.41801146190153,
+    "saved_share_of_prefill": 0.172111532480197
+   },
+   {
+    "B2_remaining_ms": 868.5,
+    "pct": "p50",
+    "k": 2,
+    "saved_ms": 175.0026895904697,
+    "saved_share_of_prefill": 0.1139104742791388
+   },
+   {
+    "B2_remaining_ms": 1554.0,
+    "pct": "p95",
+    "k": 1,
+    "saved_ms": 543.6957892396794,
+    "saved_share_of_prefill": 0.3538953907553846
+   },
+   {
+    "B2_remaining_ms": 1554.0,
+    "pct": "p95",
+    "k": 2,
+    "saved_ms": 454.2804673682475,
+    "saved_share_of_prefill": 0.2956943325543264
+   }
+  ],
+  "busy_cost_k1_ms": 85.82868003849998,
+  "busy_cost_k2_ms": 0.0,
+  "busy_step_ms": 24.522480010999995
+ },
+ "E1_time": [
+  {
+   "L": 256,
+   "step_ms": 20.0,
+   "factor": 1.0,
+   "W_ms": 68.76445735661098,
+   "layer_ms": 1.2279367385109103,
+   "layers_per_span": 16,
+   "iterations": 4,
+   "prefill_ms_E1": 79.64698781617457,
+   "prefill_ms_budget": 68.76445735661098,
+   "ratio": 1.1582580722352978
+  },
+  {
+   "L": 256,
+   "step_ms": 40.0,
+   "factor": 1.0,
+   "W_ms": 68.76445735661098,
+   "layer_ms": 1.2279367385109103,
+   "layers_per_span": 32,
+   "iterations": 2,
+   "prefill_ms_E1": 79.29397563234913,
+   "prefill_ms_budget": 68.76445735661098,
+   "ratio": 1.1531244291092462
+  },
+  {
+   "L": 2048,
+   "step_ms": 20.0,
+   "factor": 1.0,
+   "W_ms": 396.5578920095421,
+   "layer_ms": 7.081390928741824,
+   "layers_per_span": 2,
+   "iterations": 28,
+   "prefill_ms_E1": 554.1627818574837,
+   "prefill_ms_budget": 396.5578920095421,
+   "ratio": 1.397432236310529
+  },
+  {
+   "L": 2048,
+   "step_ms": 40.0,
+   "factor": 1.0,
+   "W_ms": 396.5578920095421,
+   "layer_ms": 7.081390928741824,
+   "layers_per_span": 5,
+   "iterations": 12,
+   "prefill_ms_E1": 475.4069546437091,
+   "prefill_ms_budget": 396.5578920095421,
+   "ratio": 1.1988336740308014
+  },
+  {
+   "L": 8192,
+   "step_ms": 20.0,
+   "factor": 1.0,
+   "W_ms": 1536.317803063692,
+   "layer_ms": 27.434246483280216,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 1536.317803063692,
+   "prefill_ms_budget": 1536.317803063692,
+   "ratio": 1.0
+  },
+  {
+   "L": 8192,
+   "step_ms": 40.0,
+   "factor": 1.0,
+   "W_ms": 1536.317803063692,
+   "layer_ms": 27.434246483280216,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 2227.4342464832803,
+   "prefill_ms_budget": 1536.317803063692,
+   "ratio": 1.4498525253312684
+  },
+  {
+   "L": 32768,
+   "step_ms": 20.0,
+   "factor": 1.0,
+   "W_ms": 6341.5,
+   "layer_ms": 113.24107142857143,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 6341.5,
+   "prefill_ms_budget": 6341.5,
+   "ratio": 1.0
+  },
+  {
+   "L": 32768,
+   "step_ms": 40.0,
+   "factor": 1.0,
+   "W_ms": 6341.5,
+   "layer_ms": 113.24107142857143,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 6341.5,
+   "prefill_ms_budget": 6341.5,
+   "ratio": 1.0
+  },
+  {
+   "L": 256,
+   "step_ms": 20.0,
+   "factor": 5.0,
+   "W_ms": 68.76445735661098,
+   "layer_ms": 1.2279367385109103,
+   "layers_per_span": 56,
+   "iterations": 1,
+   "prefill_ms_E1": 68.76445735661098,
+   "prefill_ms_budget": 68.76445735661098,
+   "ratio": 1.0
+  },
+  {
+   "L": 256,
+   "step_ms": 40.0,
+   "factor": 5.0,
+   "W_ms": 68.76445735661098,
+   "layer_ms": 1.2279367385109103,
+   "layers_per_span": 56,
+   "iterations": 1,
+   "prefill_ms_E1": 68.76445735661098,
+   "prefill_ms_budget": 68.76445735661098,
+   "ratio": 1.0
+  },
+  {
+   "L": 2048,
+   "step_ms": 20.0,
+   "factor": 5.0,
+   "W_ms": 396.5578920095421,
+   "layer_ms": 7.081390928741824,
+   "layers_per_span": 14,
+   "iterations": 4,
+   "prefill_ms_E1": 396.5578920095421,
+   "prefill_ms_budget": 396.5578920095421,
+   "ratio": 1.0
+  },
+  {
+   "L": 2048,
+   "step_ms": 40.0,
+   "factor": 5.0,
+   "W_ms": 396.5578920095421,
+   "layer_ms": 7.081390928741824,
+   "layers_per_span": 28,
+   "iterations": 2,
+   "prefill_ms_E1": 396.5578920095421,
+   "prefill_ms_budget": 396.5578920095421,
+   "ratio": 1.0
+  },
+  {
+   "L": 8192,
+   "step_ms": 20.0,
+   "factor": 5.0,
+   "W_ms": 1536.317803063692,
+   "layer_ms": 27.434246483280216,
+   "layers_per_span": 3,
+   "iterations": 19,
+   "prefill_ms_E1": 1536.317803063692,
+   "prefill_ms_budget": 1536.317803063692,
+   "ratio": 1.0
+  },
+  {
+   "L": 8192,
+   "step_ms": 40.0,
+   "factor": 5.0,
+   "W_ms": 1536.317803063692,
+   "layer_ms": 27.434246483280216,
+   "layers_per_span": 7,
+   "iterations": 8,
+   "prefill_ms_E1": 1536.317803063692,
+   "prefill_ms_budget": 1536.317803063692,
+   "ratio": 1.0
+  },
+  {
+   "L": 32768,
+   "step_ms": 20.0,
+   "factor": 5.0,
+   "W_ms": 6341.5,
+   "layer_ms": 113.24107142857143,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 6341.5,
+   "prefill_ms_budget": 6341.5,
+   "ratio": 1.0
+  },
+  {
+   "L": 32768,
+   "step_ms": 40.0,
+   "factor": 5.0,
+   "W_ms": 6341.5,
+   "layer_ms": 113.24107142857143,
+   "layers_per_span": 1,
+   "iterations": 56,
+   "prefill_ms_E1": 6341.5,
+   "prefill_ms_budget": 6341.5,
+   "ratio": 1.0
+  }
+ ],
+ "budget512_2k": {
+  "L": 2048,
+  "step_ms": 23.8716387182,
+  "W_ms": 396.5578920095421,
+  "prefill_ms": 1320.0215204297417,
+  "ratio": 3.328698147300972
+ },
+ "E4_hol_wait_upper_ms": {
+  "8192": 1536.317803063692,
+  "16384": 3094.2865260034014
+ },
+ "B2_source": {
+  "N3": {
+   "freq_of_spans": [
+    0.448,
+    0.458
+   ],
+   "dur_ms_p50": [
+    849,
+    888
+   ],
+   "dur_ms_p95": [
+    1549,
+    1559
+   ]
+  },
+  "N2-EA": {
+   "freq_of_spans": [
+    0.029,
+    0.029
+   ],
+   "dur_ms_max": 0.61
+  }
+ },
+ "B1_source": {
+  "bind+GATE": {
+   "W_max_ms": 489,
+   "HI_req_share_upper": 0.0072
+  },
+  "slo": {
+   "W_max_ms": 538,
+   "HI_req_share_upper": [
+    0.102,
+    0.112
+   ]
+  }
+ }
+}
