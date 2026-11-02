@@ -25,7 +25,9 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
     Q5/Q8 (seed-level paired ln TPOT mean / TTFT p50 / median request-internal ITL p95, same 3 % + t(3) rule, suffix _TPOT/_TTFT/_ITL);
     SG-mix firing from server_args; Q6 grid {512, 2k}, P-4 UNSCORABLE at n < 10, Q6 INVALID on any other-stream extend; forced Q1-Q8 rows
   * r_ser / r_mix: decode_probe.pacing_ratios on the load window ONLY (t_load_start/end mapped to the probe clock through the probe's
-    boot record); PM-ref r_span = implfix pc_reduce definition + the same window filter (new function, implfix file untouched)
+    boot record), and SEPARATELY on the synthetic single-request window of the SG probe run (t_synth_start/end; 10 x 512 + 10 x 2k prompts,
+    2026-11-02): the two windows are never pooled; P-4 = single-request (n_reqs == 1) 2k spans of the synthetic window only (512 descriptive);
+    PM-ref r_span = implfix pc_reduce definition + the same window filter (new function, implfix file untouched)
 """
 from __future__ import annotations
 
@@ -532,32 +534,59 @@ def probe_window(records, t0_epoch, t1_epoch):
     return (b["t_host"] + (t0_epoch - b["t_realtime"]), b["t_host"] + (t1_epoch - b["t_realtime"]))
 
 
-def r_ser_from_instr(records, run):
-    dp = decode_probe_module()
-    win = probe_window(records, run["t_load_start_epoch"], run["t_load_end_epoch"])
+def _is_single(g):
+    """A gap whose same-stream extend work is exactly ONE request (one EXTEND forward, n_reqs = 1) and that yields an r_ser."""
+    return g.get("r_ser") is not None and g.get("extend_n_reqs") == 1
+
+
+def _q(xs, p):
+    xs = sorted(xs)
+    return xs[min(len(xs) - 1, int(p * len(xs)))] if xs else None
+
+
+def _window_stats(dp, records, win):
+    """pacing_ratios on ONE window (probe clock) -> r_ser / r_mix distribution, single-request spans and the {512, 2k} bins of them."""
     res = dp.pacing_ratios(records, min_bs=dp.PACING_MIN_BS, t_window=win)
+    single = [g for g in res["gaps"] if _is_single(g)]
     by_L = {}
-    for g in res["gaps"]:
-        if g.get("r_ser") is None or g.get("extend_n_reqs") != 1:
-            continue
+    for g in single:
         for L in SP.Q6_L_GRID:
             if abs(g["extend_tokens"] - L) <= SP.Q6_L_BAND * L:
                 by_L.setdefault(L, []).append(g)
-    single = [g for g in res["gaps"] if g.get("r_ser") is not None and g.get("extend_n_reqs") == 1]
     other = [g for g in res["gaps"] if (g.get("other_stream_ms") or 0.0) > 0.0]
-    if other:
-        q6 = "Q6_INVALID:OTHER_STREAM_EXTEND"          # rev2 (audit r1): a non-stock stream shape, fail-closed
-    elif len(single) >= SP.Q6_MIN_SPANS and all(len(by_L.get(L, [])) >= SP.Q6_MIN_PER_L for L in SP.Q6_L_GRID):
-        q6 = "Q6_OK"
-    else:
-        q6 = "Q6_FEW_SPANS"
     return {"window_probe_clock": win, "n_r_ser": len(res["r_ser"]), "n_r_mix": len(res["r_mix"]),
             "r_ser_p50": statistics.median(res["r_ser"]) if res["r_ser"] else None,
+            "r_ser_p10": _q(res["r_ser"], 0.1), "r_ser_p90": _q(res["r_ser"], 0.9),
             "r_mix_p50": statistics.median(res["r_mix"]) if res["r_mix"] else None,
-            "n_single_request_spans": len(single), "q6_status": q6, "n_other_stream_gaps": len(other),
+            "n_single_request_spans": len(single), "n_other_stream_gaps": len(other),
             "by_L": {L: {"n": len(v), "r_ser_p50": statistics.median(x["r_ser"] for x in v), "bs_p50": statistics.median(x["bs"] for x in v)}
                      for L, v in sorted(by_L.items()) if v},
             "excluded": {k: res[k] for k in ("n_first", "n_incomplete", "n_trailing_extend", "n_fallback")}}
+
+
+def r_ser_from_instr(records, run):
+    """§5-1: the W1 load window and the synthetic single-request window are reduced SEPARATELY (never one pooled window).
+    W1 window = [t_load_start, t_load_end] (r_ser / r_mix distribution, descriptive); synthetic window = [t_synth_start, t_synth_end]
+    (the P-4 source: single-request 2k spans; 512 descriptive).  Q6_OK iff no other-stream extend in either window, the synthetic window
+    holds >= 10 single-request spans for every L of the grid, and the two windows together hold >= 30 single-request spans (counted per
+    window, reported per window)."""
+    dp = decode_probe_module()
+    w1 = _window_stats(dp, records, probe_window(records, run["t_load_start_epoch"], run["t_load_end_epoch"]))
+    syn = None
+    if run.get("t_synth_start_epoch") is not None and run.get("t_synth_end_epoch") is not None:
+        syn = _window_stats(dp, records, probe_window(records, run["t_synth_start_epoch"], run["t_synth_end_epoch"]))
+    n_other = w1["n_other_stream_gaps"] + (syn["n_other_stream_gaps"] if syn else 0)
+    n_single = {"W1": w1["n_single_request_spans"], "SYNTH": syn["n_single_request_spans"] if syn else 0}
+    syn_L = (syn or {}).get("by_L") or {}
+    if n_other:
+        q6 = "Q6_INVALID:OTHER_STREAM_EXTEND"          # rev2 (audit r1): a non-stock stream shape, fail-closed
+    elif syn is None:
+        q6 = "Q6_NO_SYNTH_WINDOW"
+    elif sum(n_single.values()) >= SP.Q6_MIN_SPANS and all(syn_L.get(L, {}).get("n", 0) >= SP.Q6_MIN_PER_L for L in SP.Q6_L_GRID):
+        q6 = "Q6_OK"
+    else:
+        q6 = "Q6_FEW_SPANS"
+    return {"q6_status": q6, "n_other_stream_gaps": n_other, "n_single_request_spans": n_single, "windows": {"W1": w1, "SYNTH": syn}}
 
 
 def pc_reduce_windowed(tel_lines, probe_lines, window):
@@ -635,16 +664,22 @@ def score_predictions(add, cells, instr):
         sc = None
     P["P-3"] = {"value": None if not r2 else r2.get("mean"), "predicted": "+", "score": sc, "label": None if not r2 else r2.get("label")}
     sgi = (instr or {}).get("SG") or {}
-    b2 = (sgi.get("by_L") or {}).get(2048)
+    syn = (sgi.get("windows") or {}).get("SYNTH") or {}      # P-4 reads the synthetic single-request window ONLY (§6, 2026-11-02)
+    b2 = (syn.get("by_L") or {}).get(2048)
     if str(sgi.get("q6_status", "")).startswith("Q6_INVALID"):
         P["P-4"] = {"value": None, "score": "UNSCORABLE", "why": sgi.get("q6_status")}
     elif not b2 or b2["n"] < SP.Q6_MIN_PER_L:
         P["P-4"] = {"value": None, "n": 0 if not b2 else b2["n"], "score": "UNSCORABLE",
-                    "why": f"single-request L~2k spans n < {SP.Q6_MIN_PER_L} (rev2: no score below n = 10)"}
+                    "why": f"single-request L~2k spans of the synthetic window n < {SP.Q6_MIN_PER_L} (rev2: no score below n = 10)"}
     else:
         f, bsel = forecast_r_ser(2048, b2["bs_p50"])
         P["P-4"] = {"value": b2["r_ser_p50"], "forecast": f, "forecast_cell": {"L": 2048, "bs": bsel, "ctx": 2048}, "n": b2["n"],
-                    "score": None if f is None else ("HIT" if abs(b2["r_ser_p50"] - f) <= 0.30 * f else "MISS")}
+                    "source": "SYNTH", "score": None if f is None else ("HIT" if abs(b2["r_ser_p50"] - f) <= 0.30 * f else "MISS")}
+    b5 = (syn.get("by_L") or {}).get(512)
+    if b5 and not str(sgi.get("q6_status", "")).startswith("Q6_INVALID"):
+        f5, bs5 = forecast_r_ser(512, b5["bs_p50"])
+        P["P-4"]["descriptive_512"] = {"value": b5["r_ser_p50"], "n": b5["n"], "forecast": f5,
+                                       "forecast_cell": {"L": 512, "bs": bs5, "ctx": 2048}, "score": "NOT_SCORED"}
     g = (cells.get("R2") or {}).get("gate5", {})
     if "SG-mix" in g and "SG-stock" in g:
         a, b = g["SG-mix"]["itl_ms"]["p95"], g["SG-stock"]["itl_ms"]["p95"]
@@ -700,8 +735,10 @@ def question_rows(add, cells, instr):
         rows["Q6"] = {"status": "NOT_MEASURED", "detail": {}, "why": ["SG 계측 요약 없음"]}
     else:
         st = sg.get("q6_status") or sg.get("error")
+        wins = sg.get("windows") or {}
         rows["Q6"] = {"status": "MEASURED" if st == "Q6_OK" else "NOT_MEASURED", "detail": {"q6_status": st,
-                      "by_L_n": {L: v["n"] for L, v in (sg.get("by_L") or {}).items()}}, "why": [] if st == "Q6_OK" else [str(st)]}
+                      "by_L_n": {w: {L: v["n"] for L, v in ((wins.get(w) or {}).get("by_L") or {}).items()} for w in ("W1", "SYNTH")}},
+                      "why": [] if st == "Q6_OK" else [str(st)]}
     return {q: rows[q] for q in SP.QUESTIONS}
 
 

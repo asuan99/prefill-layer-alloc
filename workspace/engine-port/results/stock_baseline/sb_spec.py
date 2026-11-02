@@ -194,6 +194,43 @@ MEAS_ARMS = SG_ARMS + ("VL-stock",)
 # without --enable-mixed-chunk, v0.5.10 scheduler_metrics_mixin.py:389-394) and is reported for SG-mix AND SG-stock (negative control).
 MIX_OPPORTUNITY_ARMS = ("SG-mix", "SG-stock")
 Q6_MIN_SPANS, Q6_MIN_PER_L, Q6_L_GRID, Q6_L_BAND = 30, 10, (512, 2048), 0.25   # rev2: 8k removed (W1 has ~0 % of its requests there)
+# §5-1 synthetic single-request prefill window (user decision 2026-11-02): the SG instrumentation run appends, AFTER its W1 segment has
+# finished, one lead-in request + 10 x 512 + 10 x 2048 random-id prompts (output 64, ignore_eos), one every 2 s, so each of them is prefilled
+# ALONE (one EXTEND forward with n_reqs = 1).  The lead-in (64 tokens, outside both length bands) exists only so that the first counted prompt
+# has a decode before it inside the synthetic window (pacing_ratios drops the first gap of a window).  The window is recorded apart from the
+# W1 load window (t_synth_start/end); the instrumentation boot is never a goodput arm, so goodput is unaffected.
+SYNTH_PHASE = "SYNTH"
+SYNTH_LENGTHS, SYNTH_PER_LENGTH, SYNTH_GAP_S, SYNTH_OUT = (512, 2048), 10, 2.0, 64
+SYNTH_LEAD_IN_TOKENS = 64
+SYNTH_TOKEN_RANGE = (1000, 32000)                   # random token ids, [lo, hi): inside every Nano / Llama-class vocabulary, above specials
+SYNTH_DRAIN_MIN = 0.3                            # tail after the last prompt (64 tokens at bs 1 ~ 1 s) + slack
+
+
+def synth_spec():
+    return {"lengths": list(SYNTH_LENGTHS), "per_length": SYNTH_PER_LENGTH, "gap_s": SYNTH_GAP_S, "output_tokens": SYNTH_OUT,
+            "lead_in_tokens": SYNTH_LEAD_IN_TOKENS, "token_range": list(SYNTH_TOKEN_RANGE), "phase": SYNTH_PHASE}
+
+
+def synth_requests(seed, prefix, spec=None):
+    """Deterministic synthetic segment (seed -> length order and token ids).  Request 0 = lead-in; then one prompt every gap_s.  Each request
+    carries its own input_ids and their sha256 (input_ids are excluded from the trace hash, the sha is not)."""
+    spec = spec or synth_spec()
+    rng = _rng("synth", seed)
+    order = [L for L in spec["lengths"] for _ in range(spec["per_length"])]
+    rng.shuffle(order)
+    lo, hi = spec["token_range"]
+    out = []
+    for k, L in enumerate([spec["lead_in_tokens"]] + order):
+        ids = [rng.randrange(lo, hi) for _ in range(L)]
+        out.append({"record": "request", "request_id": f"{prefix}-synth-{k:05d}", "phase": spec["phase"], "arrival_s": round(k * spec["gap_s"], 6),
+                    "input_tokens": L, "output_tokens": spec["output_tokens"], "ignore_eos": True, "input_ids": ids,
+                    "input_ids_sha256": hashlib.sha256(json.dumps(ids, separators=(",", ":")).encode()).hexdigest(),
+                    "synth_role": "lead_in" if k == 0 else "prompt"})
+    return out
+
+
+def synth_est_min(spec):
+    return (len(spec["lengths"]) * spec["per_length"]) * spec["gap_s"] / 60.0 + SYNTH_DRAIN_MIN
 
 # ---- pairs / labels (PREREG §0, §4) ------------------------------------------------------------------------------------
 # (question, A, B, label tokens (A, B)); label = A_ABOVE_B / EQUIV_WITHIN_3PCT / A_BELOW_B / UNRESOLVED_INTERVAL
@@ -339,8 +376,9 @@ def plan_J2(addendum):
     instr = []
     for k in ("SG", "PM"):
         a = instr_arm(k)
+        kw = {"synth": synth_spec()} if k == "SG" else {}        # §5-1: synthetic single-request prefill window, SG probe boot only
         instr.append(boot(f"{job}_instr_{k}", a, [cap_run(f"{job}_INSTR_{k}", "W1", rates["R2"], INSTR_SEED, INSTR_N, kind="instr",
-                                                          cell="INSTR")], role="instr"))
+                                                          cell="INSTR", **kw)], role="instr"))
     instr.append(boot(f"{job}_instr_METRICS", instr_arm("METRICS"),
                       [cap_run(f"{job}_INSTR_METRICS", "W1", rates[METRICS_CELL], INSTR_SEED, METRICS_N, kind="instr", cell="INSTR_METRICS")],
                       role="instr_metrics"))
@@ -394,7 +432,7 @@ def run_est_min(run, lam=PLAN_LAMBDA):
         return CAP_CELL_MIN
     rate = run.get("rate") or (W3_R3_FACTOR * lam["W3"])
     drain = W3_DRAIN_MIN if run["workload"] == "W3" else DRAIN_MIN
-    return run["n_requests"] / rate / 60.0 + drain
+    return run["n_requests"] / rate / 60.0 + drain + (synth_est_min(run["synth"]) if run.get("synth") else 0.0)
 
 
 def boot_est_min(b):
@@ -446,6 +484,8 @@ def plan_problems(plan):
                 out.append(f"{b['boot_id']}: static PD-mux arm must be non-sticky (decision 49)")
         if b["role"] == "meas" and a["env"].get("PDMUX_DECODE_PROBE_PATH"):
             out.append(f"{b['boot_id']}: instrumentation env in a measurement boot (C5)")
+        if any(r.get("synth") for r in b["runs"]) and not (b["role"] == "instr" and a["env"].get("PDMUX_PROBE_EXTEND_TIME") == "1"):
+            out.append(f"{b['boot_id']}: synthetic prefill window outside the EXTEND-timing instrumentation boot (§5-1)")
     if plan["kind"] not in PLAN_KINDS:
         out.append(f"plan kind {plan['kind']} not in {PLAN_KINDS}")
     meas = [b for b in plan["boots"] if b["role"] == "meas" and plan["kind"] in ("STEADY", "W3")]

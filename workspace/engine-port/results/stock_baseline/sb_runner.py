@@ -14,7 +14,8 @@ finish stamps (t_sent_mono, token_t_mono[0], t_finished_mono).  Boot-specific st
   sustain  (J1b) : after the boot's two points, the registered 0.5 x lambda* point runs in the same boot iff neither point passed
   refcell        : first and last boot of J1b/J2/J3 (J3 start boot also measures the W3 floor)
   w3ladder (J3)  : SG-stock W3 ladder; lambda*_W3 (pick rule, in-Job) fills the R3 rate of the stage-gated R3 boots
-  instr    (J2)  : instrumentation boots after every measurement boot (C5); raw probe / telemetry files gzipped, reduced by sb_analyze
+  instr    (J2)  : instrumentation boots after every measurement boot (C5); raw probe / telemetry files gzipped, reduced by sb_analyze;
+                   the SG probe run adds a synthetic single-request segment after its W1 segment (t_synth_start/end, PREREG §5-1)
   instr_metrics (J2) / every vLLM run : server TTFT histogram (sum, count) scraped right before and right after the run (§5-0 (b))
 Resume: a run whose record exists is skipped.  A dead / invalid boot makes the exit code non-zero (17).
 """
@@ -300,7 +301,12 @@ def build_segments(run, w1_pool, w3_pool):
     if run.get("rate") is None:
         raise RuntimeError(f"ABORT_RATE_UNFILLED: {run['run_id']}")
     pool = w1_pool if run["workload"] == "W1" else w3_pool
-    return T.cap_trace(run["workload"], pool, run["rate"], run["seed"], run["n_requests"], run["run_id"])
+    segs = T.cap_trace(run["workload"], pool, run["rate"], run["seed"], run["n_requests"], run["run_id"])
+    if run.get("synth"):
+        # §5-1: separate segment AFTER the load segment has finished (replay returns once every request is done) -> its own time window
+        segs.append({"segment_id": f"{run['run_id']}_SYNTH", "phase": SP.SYNTH_PHASE, "round": 0,
+                     "requests": SP.synth_requests(run["seed"], run["run_id"], run["synth"])})
+    return segs
 
 
 def scrape_ttft(metrics_fn, base_url):
@@ -327,10 +333,18 @@ def execute_run(run, b, srv, replay_fn, w1_pool, w3_pool, out, w3_tokens=None, m
     m0 = scrape_ttft(metrics_fn, srv.base_url) if scrape else None
     for s in segs:
         rec["segments"].append(replay_segment(replay_fn, a["api"], srv.base_url, s, Path(out) / "segments" / run["run_id"], w3_tokens))
-    rec["t_load_start_epoch"] = rec["segments"][0]["t_load_start_epoch"]
-    rec["t_load_end_epoch"] = rec["segments"][-1]["t_load_end_epoch"]
-    rec["t_load_start_mono"] = rec["segments"][0]["t_load_start_mono"]
-    rec["t_load_end_mono"] = rec["segments"][-1]["t_load_end_mono"]
+    load = [x for x in rec["segments"] if x["phase"] != SP.SYNTH_PHASE]
+    syn = [x for x in rec["segments"] if x["phase"] == SP.SYNTH_PHASE]
+    rec["t_load_start_epoch"] = load[0]["t_load_start_epoch"]
+    rec["t_load_end_epoch"] = load[-1]["t_load_end_epoch"]
+    rec["t_load_start_mono"] = load[0]["t_load_start_mono"]
+    rec["t_load_end_mono"] = load[-1]["t_load_end_mono"]
+    if syn:                                                     # §5-1 synthetic window, recorded apart from the W1 load window
+        rec["t_synth_start_epoch"], rec["t_synth_end_epoch"] = syn[0]["t_load_start_epoch"], syn[-1]["t_load_end_epoch"]
+        rec["t_synth_start_mono"], rec["t_synth_end_mono"] = syn[0]["t_load_start_mono"], syn[-1]["t_load_end_mono"]
+        sq = [q for x in segs if x["phase"] == SP.SYNTH_PHASE for q in x["requests"]]
+        rec["synth"] = {"n_requests": len(sq), "lengths": [q["input_tokens"] for q in sq],
+                        "input_ids_sha256": [q["input_ids_sha256"] for q in sq]}
     if scrape:
         rec["server_ttft_metric"] = {"before": m0, "after": scrape_ttft(metrics_fn, srv.base_url)}
     if a["name"] in SP.MIX_OPPORTUNITY_ARMS:

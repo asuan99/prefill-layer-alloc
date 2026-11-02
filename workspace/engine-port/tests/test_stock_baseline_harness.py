@@ -286,6 +286,34 @@ class SpecTests(unittest.TestCase):
         self.assertAlmostEqual(p["est_min"], sum(SP.boot_est_min(b) for b in p["boots"]), places=6)
         self.assertLess(p["est_min"], 400)                  # rev0 (trace + W3) was ~670 min
 
+    def test_synth_requests_and_plan(self):
+        """§5-1 (2026-11-02): lead-in + 10 x 512 + 10 x 2k random-id prompts, output 64, ignore_eos, 2 s apart, seed 301, SG probe boot only."""
+        self.assertEqual(SP.SYNTH_LENGTHS, SP.Q6_L_GRID)
+        q = SP.synth_requests(SP.INSTR_SEED, "x")
+        self.assertEqual(q, SP.synth_requests(SP.INSTR_SEED, "x"))
+        self.assertNotEqual([r["input_ids"] for r in q], [r["input_ids"] for r in SP.synth_requests(SP.INSTR_SEED + 1, "x")])
+        self.assertEqual(len(q), 21)
+        self.assertEqual((q[0]["synth_role"], q[0]["input_tokens"]), ("lead_in", SP.SYNTH_LEAD_IN_TOKENS))
+        body = q[1:]
+        self.assertEqual(sorted(r["input_tokens"] for r in body), [512] * 10 + [2048] * 10)
+        self.assertEqual([r["arrival_s"] for r in q], [2.0 * k for k in range(21)])
+        for r in q:
+            self.assertEqual((r["output_tokens"], r["ignore_eos"], r["phase"]), (64, True, SP.SYNTH_PHASE))
+            self.assertEqual(len(r["input_ids"]), r["input_tokens"])
+            self.assertTrue(all(SP.SYNTH_TOKEN_RANGE[0] <= t < SP.SYNTH_TOKEN_RANGE[1] for t in r["input_ids"]))
+        self.assertFalse(any(abs(SP.SYNTH_LEAD_IN_TOKENS - L) <= SP.Q6_L_BAND * L for L in SP.Q6_L_GRID))
+        p = SP.make_plan("J2", ADD)
+        ins = {b["boot_id"]: b for b in p["boots"] if b["role"] == "instr"}
+        sg, pm = ins["J2_instr_SG"]["runs"][0], ins["J2_instr_PM"]["runs"][0]
+        self.assertEqual((sg["seed"], sg["n_requests"], sg["synth"]), (SP.INSTR_SEED, SP.INSTR_N, SP.synth_spec()))
+        self.assertNotIn("synth", pm)
+        self.assertFalse(any(r.get("synth") for b in p["boots"] if b["role"] != "instr" for r in b["runs"]))
+        self.assertAlmostEqual(SP.run_est_min(sg) - SP.run_est_min(pm), SP.synth_est_min(SP.synth_spec()), places=6)
+        bad = json.loads(json.dumps(p))
+        m = [b for b in bad["boots"] if b["role"] == "meas"][0]
+        m["runs"][0]["synth"] = SP.synth_spec()
+        self.assertTrue(any("synthetic prefill window" in x for x in SP.plan_problems(bad)))
+
 
 # ============================================================================================================== runner
 class RunnerEnvTests(unittest.TestCase):
@@ -501,6 +529,23 @@ class RunnerJobTests(unittest.TestCase):
                 self.assertEqual(st["engine_tree"], "vllm")
                 self.assertEqual(st["vllm_venv_freeze_sha256"], SP.VLLM_VENV_FREEZE_SHA256)
                 self.assertEqual((st["attention_backend"], st["cudagraph_mode"]), ("FLASHINFER", "FULL_AND_PIECEWISE"))
+
+    def test_J2_synth_window_recorded_apart(self):
+        """The SG probe run records the W1 load window and the synthetic window separately (W1 window ends before the synthetic one)."""
+        with tempfile.TemporaryDirectory() as td:
+            plan, out, res = run_fake_job(td, "J2", ADD)
+            r = json.loads((out / "runs" / "J2_INSTR_SG.json").read_text())
+            self.assertEqual([s["phase"] for s in r["segments"]], ["W1", SP.SYNTH_PHASE])
+            self.assertEqual(len(r["segments"][1]["requests"]), 21)
+            self.assertEqual(r["synth"]["n_requests"], 21)
+            self.assertEqual(r["t_load_end_epoch"], r["segments"][0]["t_load_end_epoch"])
+            self.assertLessEqual(r["t_load_end_epoch"], r["t_synth_start_epoch"])
+            self.assertLessEqual(r["t_load_end_mono"], r["t_synth_start_mono"])
+            self.assertLess(r["t_synth_start_epoch"], r["t_synth_end_epoch"])
+            for other in ("J2_INSTR_PM", "J2_INSTR_METRICS"):
+                o = json.loads((out / "runs" / f"{other}.json").read_text())
+                self.assertNotIn("t_synth_start_epoch", o)
+                self.assertEqual([s["phase"] for s in o["segments"]], ["W1"])
 
     def test_image_mismatch_refuses_boot(self):
         with tempfile.TemporaryDirectory() as td:
@@ -940,7 +985,7 @@ class InstrTests(unittest.TestCase):
 
     def test_r_ser_uses_load_window_only(self):
         run = {"t_load_start_epoch": 1100.0, "t_load_end_epoch": 1200.0}
-        res = AN.r_ser_from_instr(self.probe(), run)
+        res = AN.r_ser_from_instr(self.probe(), run)["windows"]["W1"]
         self.assertEqual(res["window_probe_clock"], (150.0, 250.0))
         self.assertEqual(res["n_r_ser"], 2)
         self.assertAlmostEqual(res["r_ser_p50"], 3.0)
@@ -975,7 +1020,7 @@ class InstrTests(unittest.TestCase):
         """rev2 (audit r1 C): grid {512, 2k} (8k removed); one gap with an extend on another stream -> Q6 INVALID."""
         self.assertEqual(SP.Q6_L_GRID, (512, 2048))
         run = {"t_load_start_epoch": 1100.0, "t_load_end_epoch": 1200.0}
-        self.assertEqual(AN.r_ser_from_instr(self.probe(), run)["q6_status"], "Q6_FEW_SPANS")
+        self.assertEqual(AN.r_ser_from_instr(self.probe(), run)["q6_status"], "Q6_NO_SYNTH_WINDOW")
         recs = self.probe()
         recs.append({"event": "extend_forward", "seq": 19, "mode": "extend", "extend_gpu_ms": 5.0, "stream_key": 2, "extend_tokens": 512,
                      "n_reqs": 1, "t_host_start": 169.0})
@@ -984,16 +1029,85 @@ class InstrTests(unittest.TestCase):
         res = AN.r_ser_from_instr(recs, run)
         self.assertEqual(res["q6_status"], "Q6_INVALID:OTHER_STREAM_EXTEND")
         self.assertEqual(res["n_other_stream_gaps"], 1)
-        P = AN.score_predictions({}, {}, {"SG": dict(res, by_L={2048: {"n": 12, "r_ser_p50": 15.0, "bs_p50": 1}})})
+        P = AN.score_predictions({}, {}, {"SG": dict(res, windows={"SYNTH": {"by_L": {2048: {"n": 12, "r_ser_p50": 15.0, "bs_p50": 1}}}})})
         self.assertEqual(P["P-4"]["score"], "UNSCORABLE")
 
     def test_p4_unscorable_below_10(self):
-        P = AN.score_predictions({}, {}, {"SG": {"q6_status": "Q6_FEW_SPANS", "by_L": {2048: {"n": 9, "r_ser_p50": 15.0, "bs_p50": 1}}}})
+        sg = lambda n: {"q6_status": "Q6_FEW_SPANS", "windows": {"SYNTH": {"by_L": {2048: {"n": n, "r_ser_p50": 15.0, "bs_p50": 1}}}}}
+        P = AN.score_predictions({}, {}, {"SG": sg(9)})
         self.assertEqual(P["P-4"]["score"], "UNSCORABLE")
         self.assertIsNone(P["P-4"]["value"])
-        P = AN.score_predictions({}, {}, {"SG": {"q6_status": "Q6_FEW_SPANS", "by_L": {2048: {"n": 10, "r_ser_p50": 15.0, "bs_p50": 1}}}})
+        P = AN.score_predictions({}, {}, {"SG": sg(10)})
         self.assertIn(P["P-4"]["score"], ("HIT", "MISS"))
         self.assertEqual(AN.score_predictions({}, {}, {})["P-4"]["score"], "UNSCORABLE")
+
+    @staticmethod
+    def two_window_probe(n512=10, n2k=10, multi2k=0, w1_single=10):
+        """W1 window = host [150, 250] (epoch [1100, 1200]): bs-4 decodes at 10 ms, w1_single single-request 2k extends at 30 ms (r_ser 3).
+        Synthetic window = host [350, 450] (epoch [1300, 1400]): lead-in extend (64 tok, first gap -> dropped), bs-1 decodes at 5 ms, single
+        512 extends at 25 ms (r_ser 5), single 2k extends at 75 ms (r_ser 15), multi-request 2k extends (n_reqs 2) at 75 ms."""
+        recs = [{"event": "decode_probe_boot", "extend_time_enabled": True, "t_realtime": 1000.0, "t_host": 50.0}]
+        st = {"seq": 0}
+
+        def add(ev, t, **kw):
+            st["seq"] += 1
+            base = {"event": ev, "seq": st["seq"], "stream_key": 1, "t_host_start": t}
+            base.update({"mode": "decode", "decode_iter_seq": st["seq"]} if ev == "decode_forward" else {"mode": "extend"})
+            base.update(kw)
+            recs.append(base)
+
+        def decodes(t, bs, ms, n=6):
+            for i in range(n):
+                add("decode_forward", t + 0.01 * i, bs_real=bs, decode_fwd_gpu_ms=ms)
+        t = 151.0
+        decodes(t, 4, 10.0)
+        for _ in range(w1_single):
+            t += 0.5
+            add("extend_forward", t, extend_gpu_ms=30.0, extend_tokens=2048, n_reqs=1)
+            decodes(t + 0.05, 4, 10.0)
+        t = 351.0
+        add("extend_forward", t, extend_gpu_ms=4.0, extend_tokens=64, n_reqs=1)
+        decodes(t + 0.05, 1, 5.0)
+        for L, ms, nr, n in ((512, 25.0, 1, n512), (2048, 75.0, 1, n2k), (2048, 75.0, 2, multi2k)):
+            for _ in range(n):
+                t += 2.0
+                add("extend_forward", t, extend_gpu_ms=ms, extend_tokens=L, n_reqs=nr)
+                decodes(t + 0.05, 1, 5.0)
+        return recs
+
+    RUN2 = {"t_load_start_epoch": 1100.0, "t_load_end_epoch": 1200.0, "t_synth_start_epoch": 1300.0, "t_synth_end_epoch": 1400.0}
+
+    def test_synth_window_reduced_apart_from_w1(self):
+        """§5-1 (2026-11-02): W1 and synthetic windows are reduced separately; P-4 = synthetic 2k single-request spans only; 512 descriptive."""
+        res = AN.r_ser_from_instr(self.two_window_probe(), self.RUN2)
+        w1, sy = res["windows"]["W1"], res["windows"]["SYNTH"]
+        self.assertEqual((w1["window_probe_clock"], sy["window_probe_clock"]), ((150.0, 250.0), (350.0, 450.0)))
+        self.assertAlmostEqual(w1["r_ser_p50"], 3.0)                    # pooled windows would move this (W1 3.0 + synth 5 / 15)
+        self.assertEqual(w1["by_L"], {2048: {"n": 10, "r_ser_p50": 3.0, "bs_p50": 4}})
+        self.assertEqual(sy["by_L"][512], {"n": 10, "r_ser_p50": 5.0, "bs_p50": 1})
+        self.assertEqual(sy["by_L"][2048], {"n": 10, "r_ser_p50": 15.0, "bs_p50": 1})
+        self.assertEqual(sy["excluded"]["n_first"], 1)                  # the lead-in's gap, never counted
+        self.assertEqual(res["n_single_request_spans"], {"W1": 10, "SYNTH": 20})
+        self.assertEqual(res["q6_status"], "Q6_OK")
+        P = AN.score_predictions({}, {}, {"SG": res})["P-4"]
+        self.assertEqual((P["source"], P["value"], P["n"], P["forecast_cell"]), ("SYNTH", 15.0, 10, {"L": 2048, "bs": 1, "ctx": 2048}))
+        self.assertEqual(P["score"], "HIT")                              # forecast 17.53, |15 - 17.53| <= 0.3 x 17.53
+        self.assertEqual((P["descriptive_512"]["value"], P["descriptive_512"]["score"]), (5.0, "NOT_SCORED"))
+        # W1 window alone never scores P-4, even with >= 10 single-request 2k spans in it
+        P = AN.score_predictions({}, {}, {"SG": dict(res, windows={"W1": w1, "SYNTH": None})})["P-4"]
+        self.assertEqual(P["score"], "UNSCORABLE")
+        few = AN.r_ser_from_instr(self.two_window_probe(w1_single=9), self.RUN2)
+        self.assertEqual(few["q6_status"], "Q6_FEW_SPANS")                # 9 + 20 < 30
+
+    def test_multi_request_prefill_is_not_single(self):
+        """A 2k-token EXTEND that carries 2 requests is not a single-request span: 9 single + 2 multi -> n = 9 -> P-4 UNSCORABLE."""
+        res = AN.r_ser_from_instr(self.two_window_probe(n2k=9, multi2k=2), self.RUN2)
+        sy = res["windows"]["SYNTH"]
+        self.assertEqual(sy["by_L"][2048]["n"], 9)
+        self.assertEqual(sy["n_single_request_spans"], 19)
+        self.assertEqual(res["q6_status"], "Q6_FEW_SPANS")
+        self.assertEqual(AN.score_predictions({}, {}, {"SG": res})["P-4"]["score"], "UNSCORABLE")
+        self.assertGreater(sy["n_r_ser"], sy["n_single_request_spans"])  # the multi-request spans exist and yield r_ser, just not counted
 
     def test_probe_window_needs_boot_clock(self):
         with self.assertRaises(ValueError):
@@ -1069,7 +1183,7 @@ class ReportTests(unittest.TestCase):
         add = {"lambda_star_burst": {"SG-stock": 7.0, "VL-stock": 9.5}}
         cells = {"R2": {"pairs": {"Q2:PM-ref_vs_SG-stock": {"n": 4, "mean": 0.05, "lo": 0.01, "hi": 0.09, "label": "PM_ABOVE_SG"}},
                         "gate5": {"SG-mix": {"itl_ms": {"p95": 30.0}}, "SG-stock": {"itl_ms": {"p95": 40.0}}}}}
-        instr = {"SG": {"by_L": {2048: {"n": 12, "r_ser_p50": 15.0, "bs_p50": 1}}}}
+        instr = {"SG": {"windows": {"SYNTH": {"by_L": {2048: {"n": 12, "r_ser_p50": 15.0, "bs_p50": 1}}}}}}
         P = AN.score_predictions(add, cells, instr)
         self.assertEqual(P["P-1"]["score"], "HIT")
         self.assertEqual(P["P-2"]["score"], "MISS")
