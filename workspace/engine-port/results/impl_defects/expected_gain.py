@@ -88,6 +88,18 @@ def budget512(L=2048, step_ms=None):
     return {"L": L, "step_ms": step_ms, "W_ms": W, "prefill_ms": t, "ratio": t / W}
 
 
+def p_decode_empty(lam, R, ctx):
+    """How often the decode batch is empty: decode occupancy ~ Poisson(b_mean) (M/G/inf), b_mean = lam * E[R] * T_dec
+    (fixed point on the 108-SM decode step). B2 -- and with it every E2 gain -- needs decode to be empty while a prefill
+    is in flight, so its weight scales with ~exp(-b_mean)."""
+    T = dm.t_dec("108u", 1, ctx)
+    b = 0.0
+    for _ in range(200):
+        b = 0.5 * b + 0.5 * lam * R * T / 1e3
+        T = dm.t_dec("108u", max(b, 1.0), ctx)
+    return {"lam": lam, "ER": R, "ctx": ctx, "b_mean": b, "p_empty": math.exp(-b)}
+
+
 def main(argv=None):
     ap = argparse.ArgumentParser(description=__doc__.splitlines()[0])
     ap.add_argument("--out", required=True)
@@ -101,6 +113,11 @@ def main(argv=None):
         "budget512_2k": budget512(2048),
         "E4_hol_wait_upper_ms": {str(L): dm.s_pre(L, D) for L in (8192, 16384)},
         "B2_source": B2, "B1_source": B1,
+        "p_decode_empty": {"N3_shapeB_r0.10": p_decode_empty(0.10, 64, 8224),
+                           "N3_shapeB_r0.77": p_decode_empty(0.77, 64, 8224),
+                           "W1_LO_2.7356": p_decode_empty(2.7356, 286, 373),
+                           "W1_1.0": p_decode_empty(1.0, 286, 373),
+                           "W3_lamstar_0.3375": p_decode_empty(0.3375, 1007, 7609)},
     }
     json.dump(res, open(a.out, "w"), indent=1)
     e2 = res["E2_on_B2"]
@@ -110,6 +127,8 @@ def main(argv=None):
               f"({100*c['saved_share_of_prefill']:.0f}% of prefill)")
     print(f"  E2 busy cost: k=1 ~{e2['busy_cost_k1_ms']:.0f} ms/prefill (step {e2['busy_step_ms']:.1f}), k=2 0")
     print("  E4 HOL wait upper (remaining long prefill):", {k: round(v) for k, v in res['E4_hol_wait_upper_ms'].items()})
+    for k, v in res["p_decode_empty"].items():
+        print(f"  P(decode empty) {k}: b_mean {v['b_mean']:.2f} -> {v['p_empty']:.3g}")
     print("co-located decode step (D44, rho 1.16):", {k: round(v, 1) for k, v in steps.items()})
     for r in res["E1_time"]:
         print(f"  E1 f={r['factor']:.0f} L={r['L']:>5} step={r['step_ms']:.0f}: layers/span {r['layers_per_span']:>2} "
