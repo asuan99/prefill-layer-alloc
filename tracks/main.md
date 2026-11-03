@@ -29,7 +29,7 @@
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
 3. promote 7차 후보 정리: 결정 43–58·60·60i–64i, 정책 캠페인 결과·감사 r1 4건, 구조 검증(`7a7a2c08`, 감사 필요), 두 메모(감사 필요)
 ## 사용자 결정 대기
-- **Phase B rev3.2 봉인(2026-11-04)** / 감사 rev3 r1·r2(NO-GO 2건 수정) 뒤 사용자 결정으로 재봉인(`HARNESS_DIGEST` `0515bd1a…`, 핀 14·재사용 21·plan 5; 결정: Q2 부호 전용, PM-rep 플라시보 R1·R2만, 아래쪽 사다리 Job, 기준 용량 = min{vLLM, PD-mux}, refcell PM-ref 7.29) / **제출 승인 대기**: 아래쪽 사다리 Job(SG 3 arm, ≈56 min)·두 번째 Job(지속 용량 vLLM·PD-mux, ≈91 min; addendum `runs/…7899d1b…/ADDENDUM_J1_rev3.json`) — 세 번째·네 번째는 두 번째 결과 뒤 결정(재감사 예보: Q4 BOTH_SATURATED, 정본 goodput 라벨 ≈0; 용량 근처 셀 재설계 권고)
+- **Phase B 세 번째·네 번째 Job 여부** / 아래쪽 사다리·두 번째 Job 완료: 손대지 않은 SGLang 버스트 3.154(ITL 절벽 confounded), 지속 용량 PD-mux 3.647·vLLM 4.195(버스트의 0.5), 기준 용량 3.647 → 세 번째 Job 셀 1.82·2.92 req/s, 시간 267 min(캡 335). 예보: Q4 포화 확실, 50% 셀은 SGLang 쌍도 포화 가능, 80% 셀 SG 플라시보는 절벽(3.15의 0.93배) / 선택지: (가) 세 번째 Job 그대로(goodput 라벨 ≈0, 지연 지표가 산출물) (나) 용량 근처 셀(각 arm 자기 지속 용량의 0.9–1.0 또는 공통 3.0–3.5) 재설계 rev4 (다) Phase B를 용량 단계에서 종결하고 결과 promote
 - **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md` · ★2026-11-01 규약 개정(REPORT 위)이 이 결정에 걸려 있음 — 결정 전까지 정책 판정 셀 Job 제출 금지(승계 상수 규약)
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
@@ -43,7 +43,7 @@
 - **기준선 Phase B — 봉인(2026-11-02)**: 사전등록 rev2.1 `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명은 하네스 참조 때문에 유지) + `HARNESS_DIGEST.txt`(digest `9b4a30f9…`, 핀 12·재사용 21·plan 4) + `ENGINE_DIGEST.txt` `2836112b…`. 감사 r1 NO-GO→수정 5건, 재감사 r2 NO-GO 1건→결정 (a) 반영, 재감사 없이 봉인. 테스트 83·변이 84/84. 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`(P-1…P-5 등록) 봉인 포함. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. **다음**: A100 용량 열리면 Workspace bring-up(vLLM venv 부팅·pristine 보존·EXTEND 이벤트·server_args 패턴) → `PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env launch.sh` dry-run → 제출 승인(첫 번째 Job부터 순차 4개). ★정오: 지속 완료율 3.0→5.06–5.34(RECHECK) — promote 필요: 예 (결정·정오·감사 2건·봉인)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- **실행 중**: 아래쪽 사다리 `pdmux-stock-baseline-0e9c967-20261103192557`(J1-down, 캡 75 min) · 두 번째 Job `pdmux-stock-baseline-6481369-20261103192607`(J1b, 캡 115 min) — 둘 다 2026-11-04 제출(사용자 승인 "둘 다 제출"), 회수 `fetch.sh stock_baseline <name>` → `sb_analyze.py addendum --j1 … --j1down … --j1b …`
+- 회수 완료(2026-11-04): 아래쪽 사다리·두 번째 Job — 결과 `stock_baseline/RESULT_phaseB_J1down_J1b_2026-11-04.md`, addendum `runs/ADDENDUM_after_J1b.json`(기준 용량 3.647)
 - 회수 완료: Phase B 첫 번째 Job `pdmux-stock-baseline-7899d1b-20261102085423`(exit 0, 75.8 min, raw sha OK, digest match, pristine OK) — 결과 `stock_baseline/RESULT_phaseB_J1_2026-11-03.md`, 진단 `DIAG_sglang_default_itl_2026-11-03.md`
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
 ## 금지 서술 (링크만)
