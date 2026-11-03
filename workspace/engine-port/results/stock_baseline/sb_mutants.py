@@ -165,9 +165,17 @@ MUTANTS = [
     ("M99 PM-rep argv differs from PM-ref", "sb_spec.py",
      '        return dict(arm(REPLICA_OF[name]), name=name, replica_of=REPLICA_OF[name])',
      '        return dict(arm(REPLICA_OF[name]), name=name, replica_of=REPLICA_OF[name], cmd=arm(REPLICA_OF[name])["cmd"] + ["--random-seed", "2"])'),
-    ("M100 plan check: PM-rep presence not required", "sb_spec.py", "        if PLACEBO_PM[0] not in by:", "        if False:"),
+    ("M100 plan check: PM-rep presence not required", "sb_spec.py", "        if c in PLACEBO_PM_CELLS and PLACEBO_PM[0] not in by:",
+     "        if False:"),
     ("M101 Q2 back to the registered goodput labels (not sign-only)", "sb_spec.py",
      'SIGN_ONLY_QUESTIONS = ("Q2", "Q3", "Q5", "Q8")', 'SIGN_ONLY_QUESTIONS = ("Q3", "Q5", "Q8")'),
+    # --- rev3.2 (harness re-audit rev3 r2, user decision 2026-11-04) ---
+    ("M102 cell reduction ignores the cell (50 % cell overwritten by the 80 % runs of the same arm / seed)", "sb_analyze.py",
+     'if r.get("cell") == cell and r.get("boot_role") == "meas":', 'if r.get("boot_role") == "meas":'),
+    ("M103 cell reduction ignores boot_role (refcell / instrumentation runs under the cell name enter the cell)", "sb_analyze.py",
+     'if r.get("cell") == cell and r.get("boot_role") == "meas":', 'if r.get("cell") == cell:'),
+    ("M104 PM placebo required in R3 (W3 cell has no PM-rep -> R3 Q2 always BOOT_NOISE)", "sb_spec.py",
+     'PLACEBO_PM_CELLS = ("R1", "R2")', 'PLACEBO_PM_CELLS = ("R1", "R2", "R3")'),
 ]
 
 

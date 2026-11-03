@@ -1,24 +1,27 @@
 {
- "digest": "9b4a30f9ac69d2c1116c4cf63e54f74a93bfc204e91cf2c1b7b5026797578b3d",
+ "digest": "0515bd1a233a5679a743ee5bd629da70953520b6f8a048046b7c380c6625766e",
  "files": {
   "results/stock_baseline/AUDIT_harness_stock_base_r1_2026-11-02.md": "9dcdc49f0ef00277fe5625e997133978febc6bbc6e5c34a840581f48f51baf7a",
   "results/stock_baseline/AUDIT_harness_stock_base_r2_2026-11-02.md": "624b9e693ac130902351124e0aa53f2d3774a9b36d2b794a8fa3251447b30bfc",
+  "results/stock_baseline/AUDIT_harness_stock_base_rev3_r1_2026-11-04.md": "778da8d1f12caff9437fb649c3032cd1750f581f76469884ed49500765c0f28d",
+  "results/stock_baseline/AUDIT_harness_stock_base_rev3_r2_2026-11-04.md": "d1901820121430e944020417e50b22beb84508cf629af991afc0e12ab0bfa719",
   "results/stock_baseline/ENGINE_DIGEST.txt": "7095f78d6d4b226e521ca56fb6967866f544922dd1248979582d214fa6e89afa",
   "results/stock_baseline/PREDICTION_phaseB_expected_effects_2026-11-02.md": "5923a533b6c8de74f38fd1204d945c97493abfd417a72678d9451fc7b2c663e8",
-  "results/stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md": "b2126bd93af297566848e58bdc7ebaa057ac9dcd4811a17732b4260c181bd46e",
+  "results/stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md": "042514e02916f9f0b0a6cbd846583344b3c138fd3924dc5014888c604ef74631",
   "results/stock_baseline/R_SER_FORECAST_NANO.csv": "a1c84906840ec62b9b549d34225057f3fc024a867fe39572a694f3df96387b14",
-  "results/stock_baseline/sb_analyze.py": "ed7bfa4aa3a76fc6699d4e272d9b5f2d85d673736f980b7514a880bd48f2e99e",
-  "results/stock_baseline/sb_digest.py": "c0a35b96285e1a3705e4d2979cd09e49f227ace93dff1277ec6d128f7fc1755b",
-  "results/stock_baseline/sb_job.sh": "7cb4e6a0c83488fd7ef21b8ba8adc720ce6d182631adb8ffc30372047b298293",
+  "results/stock_baseline/sb_analyze.py": "b5f0d2fc949dd388425ec32a58298bf3c65e41c28f6dc47b8f27cc137cbbc6f1",
+  "results/stock_baseline/sb_digest.py": "175f53cc87fa39b280b7c3463e2831ca366643bef31a7bb32147a54ffb50b239",
+  "results/stock_baseline/sb_job.sh": "67847aa8d4dc7a26e984b28eb8b851a6dfb54652515a7dcada9f1e8ffd049031",
   "results/stock_baseline/sb_loadgen.py": "1fe2acb01b2c7d06776192c0528de7f3928a355f69d9f8b82a96fddfd290dc7f",
-  "results/stock_baseline/sb_runner.py": "cfee69fc6844e9b9e0aebea57a1790fe673a8701fba0bc05187e66785e614ca0",
-  "results/stock_baseline/sb_spec.py": "17fa514ec112fd91da0e562daacd26d40a5090d4fa047e498c88ed8f3072703a"
+  "results/stock_baseline/sb_runner.py": "9b2ad9f42461c6a2c5c86bd6de9b41ec887ae4d0e4fa52fa82dcda33ec609659",
+  "results/stock_baseline/sb_spec.py": "1a22365b5a4e594ec37580be0f0992758e2d431f2ee843f450c7497ff63fba80"
  },
  "plans_sha": {
   "J1": "1482de03733538e050324c6c0576cac3893ae8f4ba29518bb05aa8353fdeb4f9",
-  "J1b": "de3636b459e4c2b4b147f0d39fd145ca8df99952beb267070a7c27d12099669c",
-  "J2": "27d0cf7b1bfc276a9251db5099665d61151c2ce9fa278e4653d8666b26a743f5",
-  "J3": "13091f23820614e7197ecf95226891c480e28ef6c35a73bae71294ed67861d5b"
+  "J1-down": "c3b473d01709c5ba0faebc54b4dd68f08de22e25f500cc4d2d14c61ed4c6e45f",
+  "J1b": "b015ab389077c9271a2098495ebbdcc35fc3620e695ef9fba025c154fd3ddb4d",
+  "J2": "52c936220bca2620d18c4e215d8b7def39730f0687f4cc00a931f4837d13f864",
+  "J3": "9c314e087af485da4ff73a1b8d77f61b1bce43fc6821a8d40f5f3be155875183"
  },
  "reused": {
   "benchmarks/pdmux_eval/abs_mono_loadgen.py": "69f3ee194aabb4f114c1b7c1716261dad4e2f2678b24a206b01cc5c052a373b9",

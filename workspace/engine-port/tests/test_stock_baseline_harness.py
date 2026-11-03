@@ -1,4 +1,4 @@
-"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev3.1, 2026-11-04).  No GPU, no server.
+"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev3.2, 2026-11-04).  No GPU, no server.
 SB_DIR (env) points the tests at a copy of the harness -- sb_mutants.py uses it: every registered rule must make a test FAIL when it is
 reverted (lesson 53)."""
 import gzip
@@ -137,7 +137,8 @@ class SpecTests(unittest.TestCase):
         self.assertEqual(SP.arm("SG-rep")["cmd"], SP.arm("SG-stock")["cmd"])
         self.assertNotIn("PM-rep", SP.LADDER_ARMS + SP.REF_ARMS)                 # no ladder, no sustained cell
         self.assertIn("PM-rep", SP.MEAS_ARMS)
-        self.assertIn("PM-rep", SP.W3_ARMS)
+        self.assertNotIn("PM-rep", SP.W3_ARMS)                                   # rev3.2: no PD-mux placebo replica in the W3 cell
+        self.assertEqual(SP.W3_ARMS, ("SG-stock", "SG-rep", "PM-ref", "VL-stock"))
 
     def test_stock_argv_defaults(self):
         st, mix, off = SP.arm("SG-stock")["cmd"], SP.arm("SG-mix")["cmd"], SP.arm("SG-off")["cmd"]
@@ -333,16 +334,18 @@ class SpecTests(unittest.TestCase):
         p = SP.make_plan("J2", ADD)
         p["boots"] = [x for x in p["boots"] if x["arm"] != "SG-rep"]
         self.assertTrue(any("placebo" in x for x in SP.plan_problems(p)))
-        for j in ("J2", "J3"):                                               # rev3.1: PD-mux placebo replica present + PM-ref bytes
-            p = SP.make_plan(j, ADD)
-            cells = {r["cell"] for b in p["boots"] if b["arm"] == "PM-rep" and b["role"] == "meas" for r in b["runs"]}
-            self.assertEqual(cells, {"R1", "R2"} if j == "J2" else {"R3"})
-            p["boots"] = [x for x in p["boots"] if x["arm"] != "PM-rep"]
-            self.assertTrue(any("placebo arm PM-rep missing" in x for x in SP.plan_problems(p)), j)
-            p = SP.make_plan(j, ADD)
-            b = [x for x in p["boots"] if x["arm"] == "PM-rep"][0]
-            b["arm_def"]["cmd"] = b["arm_def"]["cmd"] + ["--random-seed", "2"]
-            self.assertTrue(any("replica PM-rep" in x for x in SP.plan_problems(p)), j)
+        p = SP.make_plan("J2", ADD)                                          # rev3.1: PD-mux placebo replica present + PM-ref bytes
+        cells = {r["cell"] for b in p["boots"] if b["arm"] == "PM-rep" and b["role"] == "meas" for r in b["runs"]}
+        self.assertEqual(cells, {"R1", "R2"})
+        p["boots"] = [x for x in p["boots"] if x["arm"] != "PM-rep"]
+        self.assertTrue(any("placebo arm PM-rep missing" in x for x in SP.plan_problems(p)))
+        p = SP.make_plan("J2", ADD)
+        b = [x for x in p["boots"] if x["arm"] == "PM-rep"][0]
+        b["arm_def"]["cmd"] = b["arm_def"]["cmd"] + ["--random-seed", "2"]
+        self.assertTrue(any("replica PM-rep" in x for x in SP.plan_problems(p)))
+        p = SP.make_plan("J3", ADD)                                          # rev3.2: the W3 cell has no PM-rep and needs none
+        self.assertNotIn("PM-rep", {b["arm"] for b in p["boots"]})
+        self.assertEqual(SP.plan_problems(p), [])
         for j in ("J1", "J1-down", "J1b"):
             self.assertNotIn("PM-rep", {b["arm"] for b in SP.make_plan(j, ADD if j == "J1b" else None)["boots"]})
 
@@ -832,6 +835,46 @@ class AnalyzeTests(unittest.TestCase):
         c = AN.analyze_cell(job_of(g, jitter=JIT), "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
         self.assertEqual(c["pairs"]["Q4:PM-ref_vs_VL-stock"]["label"], "BOOT_NOISE")
         self.assertEqual(c["pairs"]["Q8:SG-off_vs_SG-stock"]["label"], "SIGN_UNRESOLVED")
+
+    def test_r3_needs_no_pm_placebo(self):
+        """rev3.2: R3 (W3 cell) has no PM-rep -> the PM placebo is not required there; R3 Q2 (a Q7 key) needs the SG placebo only."""
+        self.assertEqual(SP.pair_placebos("PM-ref", "SG-stock", "R3"), ["SG"])
+        self.assertEqual(SP.pair_placebos("PM-ref", "SG-stock", "R2"), ["PM", "SG"])
+        g = {a: EQ[a] for a in SP.W3_ARMS}
+        c = AN.analyze_cell(job_of(g, cell="R3", jitter=JIT, phases=("W3",)), "R3", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertIsNone(c["placebo_pm_invalid"])
+        p = c["pairs"]["Q2:PM-ref_vs_SG-stock"]
+        self.assertEqual(p["placebos"], {"SG": "OK"})
+        self.assertEqual(p["label"], "SIGN_UNRESOLVED", p)
+        c = AN.analyze_cell(job_of(dict(g, **{"SG-rep": 86}), cell="R3", jitter=JIT, phases=("W3",)), "R3", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["label"], "BOOT_NOISE")
+
+    def test_cells_kept_apart(self):
+        """rev3.2 (re-audit rev3 r2): the 50 % and 80 % cells of one Job carry the same arms and seeds (1-4); the cell reduction must keep
+        them apart, and must take measurement runs only (a refcell / instrumentation run filed under the cell name stays out)."""
+        def renamed(job, tag):
+            for r in job["runs"]:
+                r["run_id"] = f"{tag}_{r['run_id']}"
+            return job
+        r1 = renamed(job_of(EQ, cell="R1", jitter=JIT), "R1")
+        r2 = renamed(job_of(dict(EQ, **{"PM-ref": 92, "PM-rep": 92}), cell="R2", jitter=JIT), "R2")
+        both = {"runs": r1["runs"] + r2["runs"], "boots": r1["boots"], "plan": {"pending": []}}
+        c1 = AN.analyze_cell(both, "R1", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        c2 = AN.analyze_cell(both, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual({r["cell"] for v in AN.cell_runs(both, "R1").values() for r in v.values()}, {"R1"})
+        self.assertEqual(c1["goodput_mean"], AN.analyze_cell(r1, "R1", None, SMOKE_OK, 3000.0, OFFSET_OK)["goodput_mean"])
+        self.assertEqual(c2["goodput_mean"], AN.analyze_cell(r2, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)["goodput_mean"])
+        self.assertNotEqual(c1["goodput_mean"]["PM-ref"], c2["goodput_mean"]["PM-ref"])
+        self.assertEqual(c1["pairs"]["Q4:PM-ref_vs_VL-stock"]["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(c2["pairs"]["Q4:PM-ref_vs_VL-stock"]["label"], "PM_ABOVE_VL")
+        clean = job_of(EQ, cell="R2", jitter=JIT)
+        dirty = job_of(EQ, cell="R2", jitter=JIT)
+        for s in SP.EVAL_SEEDS:                                            # same cell name, same arm / seed, not a measurement boot
+            dirty["runs"].append(mk_run(f"ref_{s}", "PM-ref", s, "R2", [seg("W1", 40, 60, 100.0)], extra={"boot_role": "refcell"}))
+            dirty["runs"].append(mk_run(f"ins_{s}", "SG-stock", s, "R2", [seg("W1", 40, 60, 100.0)], extra={"boot_role": "instr"}))
+        cd = AN.analyze_cell(dirty, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual(cd["goodput_mean"], AN.analyze_cell(clean, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)["goodput_mean"])
+        self.assertEqual(cd["pairs"]["Q4:PM-ref_vs_VL-stock"]["label"], "EQUIV_WITHIN_3PCT")
 
     def test_placebo_failure_is_boot_noise(self):
         g = dict(EQ, **{"SG-rep": 86})
@@ -1449,7 +1492,8 @@ class DigestAndJobShellTests(unittest.TestCase):
         self.assertNotIn("results/stock_baseline/sb_mutants.py", d["files"])
         for f in ("sb_job.sh", "ENGINE_DIGEST.txt", "R_SER_FORECAST_NANO.csv", "PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md",
                   "PREDICTION_phaseB_expected_effects_2026-11-02.md", "AUDIT_harness_stock_base_r1_2026-11-02.md",
-                  "AUDIT_harness_stock_base_r2_2026-11-02.md"):          # rev2.1: sealed documents are pinned (re-audit r2 (a))
+                  "AUDIT_harness_stock_base_r2_2026-11-02.md", "AUDIT_harness_stock_base_rev3_r1_2026-11-04.md",
+                  "AUDIT_harness_stock_base_rev3_r2_2026-11-04.md"):     # rev2.1: sealed documents are pinned (re-audit r2 (a))
             self.assertIn(f"results/stock_baseline/{f}", d["files"])
         self.assertEqual(set(d["plans_sha"]), set(SP.JOBS))
 

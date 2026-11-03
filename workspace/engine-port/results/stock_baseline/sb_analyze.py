@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev3.1 (2026-11-04; rev3 2026-11-03; rev2.1 sealed 2026-11-02).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev3.2 (2026-11-04; rev3.1 2026-11-04; rev3 2026-11-03; rev2.1 sealed 2026-11-02).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
   sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1down RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job
   sb_analyze.py report   --j1 RAW [--j1down RAW] --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]  # labels, predictions, "not measured"
@@ -18,7 +18,8 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
     |mean| < ln1.03 and the t(3) CI is inside (-ln1.03, ln1.03); otherwise UNRESOLVED_INTERVAL (also n < 4)
   * K3 placebo: invalid iff n < 4 or |mean| >= ln1.03 or CI excludes 0.  rev3.1: per base arm of the pair -- SG-rep vs SG-stock for an
     arm of the SG family, PM-rep vs PM-ref for an arm of the PM family (SP.pair_placebos); a pair is BOOT_NOISE iff one of ITS placebos
-    is invalid (Q4 survives an SG BOOT_NOISE when the PM placebo is valid; Q2 needs both)
+    is invalid (Q4 survives an SG BOOT_NOISE when the PM placebo is valid; Q2 needs both).  rev3.2: no PM-rep in R3 -> there the PM placebo
+    is not required (placebo_pm_invalid = None) (SP.PLACEBO_PM_CELLS; R3 Q2 needs the SG placebo only)
   * validity chain: trace hash per seed, cliff (TTFT within SLO +-5 % > 10 %) in neither arm, one Job and one GPU per pair, engine-tree
     stamps per PREREG §1 (VL-stock: engine_tree "vllm", registered venv + SGLang freeze sha, all VL boots of the Job identical), placebo,
     definition smoke (engine pairs), zero request failures
@@ -507,7 +508,7 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
     for fam, (ra, rb) in SP.PLACEBOS.items():             # rev3.1: one K3 placebo per base family (SG, PM)
         pls[fam] = paired(arms[ra], arms[rb], ttft_slo) if ra in arms and rb in arms else None
     pbad_by["SG"] = placebo_invalid(pls["SG"])
-    pbad_by["PM"] = placebo_invalid(pls["PM"])
+    pbad_by["PM"] = placebo_invalid(pls["PM"]) if cell in SP.PLACEBO_PM_CELLS else None
     out["placebo"], out["placebo_pm"] = pls["SG"], pls["PM"]
     out["placebo_invalid"], out["placebo_pm_invalid"] = pbad_by["SG"], pbad_by["PM"]
     for fam, pl in pls.items():
@@ -525,7 +526,7 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
             continue
         p = paired(arms[a], arms[b], ttft_slo)
         raw = label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
-        fams = SP.pair_placebos(a, b)
+        fams = SP.pair_placebos(a, b, cell)
         pbad = any(pbad_by[f] for f in fams)
         why = pair_validity(a, b, arms, job, ttft_slo, cell, smoke, pbad, offset)
         engine_pair = a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS

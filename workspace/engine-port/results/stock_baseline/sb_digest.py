@@ -3,7 +3,7 @@
 in sb_job.sh when PDMUX_SB_SEALED=1 (rc 13 on any differing byte).  `make` refuses unless ENGINE_DIGEST.txt holds the registered 30-entry engine digest 2836112b... (the tree with the
 decode-probe EXTEND flag, dev_tree_edits #39).
 Covered: every sb_* file except sb_mutants.py, sb_job.sh, ENGINE_DIGEST.txt, the A5 forecast R_SER_FORECAST_NANO.csv (§11-5 seal), the
-sealed documents SEALED_DOCS (the PREREG, the Phase B prediction document, harness audits r1 and r2 -- rev2.1, re-audit r2 (a)); the reused sealed policy / cost-term harness files (bytes are also pinned by their own HARNESS_DIGEST, here they are re-hashed so a
+sealed documents SEALED_DOCS (the PREREG, the Phase B prediction document, harness audits r1 and r2 -- rev2.1, re-audit r2 (a); rev3 audits r1 and r2 -- rev3.2); the reused sealed policy / cost-term harness files (bytes are also pinned by their own HARNESS_DIGEST, here they are re-hashed so a
 change cannot slip in between); the loadgens; engine_tree.py + the pristine reference manifest; decode_probe.py (pacing_ratios is an
 analysis input); engine_digest.py, job_entry.sh, install_runtime.sh; and the structural plan sha of each Job (canonical addendum)."""
 from __future__ import annotations
@@ -42,7 +42,7 @@ def own_files():
 
 SEALED_DOCS = ("PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md", "PREDICTION_phaseB_expected_effects_2026-11-02.md",
                "AUDIT_harness_stock_base_r1_2026-11-02.md", "AUDIT_harness_stock_base_r2_2026-11-02.md",
-    "AUDIT_harness_stock_base_rev3_r1_2026-11-04.md")   # rev2.1: pre-registered docs
+    "AUDIT_harness_stock_base_rev3_r1_2026-11-04.md", "AUDIT_harness_stock_base_rev3_r2_2026-11-04.md")   # rev2.1: pre-registered docs; rev3.2: + rev3 r2
 
 
 def make():

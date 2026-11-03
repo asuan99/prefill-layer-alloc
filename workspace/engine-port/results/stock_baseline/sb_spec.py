@@ -1,11 +1,15 @@
 #!/usr/bin/env python3
-"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev3.1 (2026-11-04, user decision (b); rev3 2026-11-03 = user decision
-(C) = (A); rev2.1 was SEALED 2026-11-02; rev3.1 is re-sealed by a new HARNESS_DIGEST.txt).  CPU only; starts no server.
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev3.2 (2026-11-04, user decision recommendation 1; rev3.1 2026-11-04 =
+user decision (b); rev3 2026-11-03 = user decision (C) = (A); rev2.1 was SEALED 2026-11-02; rev3.2 is re-sealed by a new HARNESS_DIGEST.txt).
+CPU only; starts no server.
+
+rev3.2 (harness re-audit rev3 r2, user decision 2026-11-04): PM-rep is removed from the W3 cell (W3_ARMS = rev2.1 4 arms); the PM-rep presence
+check and the PM placebo requirement apply to R1 / R2 only (PLACEBO_PM_CELLS), so in R3 the Q2 pair needs the SG placebo only (as in rev3).
 
 rev3.1 (harness audit rev3 r1, user decision (b) 2026-11-04):
   * the PREREG §8 Q1-SG prediction row is deleted (its band could not be false); Q1 is descriptive only.
   * Q2 joins SIGN_ONLY_QUESTIONS (Q2, Q3, Q5, Q8) and LATENCY_PAIRS; only Q4 (PD-mux vs vLLM) keeps the registered goodput labels.
-  * PD-mux placebo replica PM-rep (= PM-ref argv, env, tree; separate boot) in the 50 % / 80 % cells (J2) and the W3 cell (J3) only.
+  * PD-mux placebo replica PM-rep (= PM-ref argv, env, tree; separate boot) in the 50 % / 80 % cells (J2) and (rev3.1 only) the W3 cell (J3).
     K3 is applied per base arm of the pair: an arm of the SG family needs the SG placebo (SG-rep vs SG-stock), an arm of the PM family
     needs the PM placebo (PM-rep vs PM-ref), VL-stock needs none -> Q3 / Q5 / Q8 = SG, Q4 = PM, Q2 = both (PLACEBO_FAMILY).
 
@@ -215,7 +219,7 @@ STEADY = {"R1": 0.5, "R2": 0.8}
 STEADY_N, EVAL_SEEDS = 200, P.HE0_SEEDS                      # (1, 2, 3, 4)
 W3_LADDER = (0.1, 1.5, 6)
 W3_LADDER_N, W3_R3_FACTOR, W3_R3_N = P.CAP_CELL_REQUESTS["W3"], 0.8, 96
-W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock", "PM-rep")   # §3 rev2.1 4 arms + rev3.1 PD-mux placebo replica
+W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock")   # §3 rev2.1 4 arms; rev3.2: the PD-mux placebo replica (rev3.1) removed from the W3 cell
 # rev3: refcell = PM-ref at its burst lambda* rung (the identical cell exists in the first Job); rev2.1 used SG-stock, which has no value
 REFCELL_ARM, REFCELL_N, REFCELL_SEED = "PM-ref", 120, 201
 Q1_ARM = "SG-stock"                                           # Q1 = capacity of the untouched SGLang (no longer the refcell arm)
@@ -276,14 +280,19 @@ PAIRS = (("Q2", "PM-ref", "SG-stock", ("PM", "SG")), ("Q2", "PM-ref34", "SG-stoc
 PLACEBO = ("SG-rep", "SG-stock")
 # rev3.1: K3 per base arm of a pair.  Family of each arm -> the placebo that must be valid for any pair containing it; VL-stock has none.
 PLACEBO_PM = ("PM-rep", "PM-ref")
+PLACEBO_PM_CELLS = ("R1", "R2")   # rev3.2: PM-rep runs in the 50 % / 80 % cells only (not in R3); elsewhere no PM placebo is required
 PLACEBOS = {"SG": PLACEBO, "PM": PLACEBO_PM}
 PLACEBO_FAMILY = {"SG-stock": "SG", "SG-rep": "SG", "SG-mix": "SG", "SG-off": "SG", "PM-ref": "PM", "PM-ref34": "PM", "PM-rep": "PM",
                   "VL-stock": None}
 
 
-def pair_placebos(a, b):
-    """rev3.1: the placebo families a pair (a, b) depends on (Q2 -> SG + PM, Q3/Q5/Q8 -> SG, Q4 -> PM)."""
-    return sorted({PLACEBO_FAMILY[x] for x in (a, b)} - {None})
+def pair_placebos(a, b, cell=None):
+    """rev3.1: the placebo families a pair (a, b) depends on (Q2 -> SG + PM, Q3/Q5/Q8 -> SG, Q4 -> PM).  rev3.2: in a cell outside
+    PLACEBO_PM_CELLS (R3) the PM placebo is not planned, so the PM family drops out there (R3 Q2 -> SG only, as in rev3)."""
+    fams = {PLACEBO_FAMILY[x] for x in (a, b)} - {None}
+    if cell is not None and cell not in PLACEBO_PM_CELLS:
+        fams.discard("PM")
+    return sorted(fams)
 ENGINE_PAIR_ARMS = ("VL-stock",)
 
 # ---- time model (planning only; [유도] PREREG §7 + rate-based run lengths) ----------------------------------------------
@@ -563,7 +572,7 @@ def plan_problems(plan):
                 out.append(f"cell {c}: arm {a} seeds {sorted(seeds)} != {list(EVAL_SEEDS)}")
         if c != "R3" and "SG-rep" not in by:
             out.append(f"cell {c}: placebo arm SG-rep missing")
-        if PLACEBO_PM[0] not in by:                       # rev3.1: PD-mux placebo replica in every steady-state cell (R1, R2, R3)
+        if c in PLACEBO_PM_CELLS and PLACEBO_PM[0] not in by:   # rev3.1: PD-mux placebo replica; rev3.2: R1, R2 only (not R3)
             out.append(f"cell {c}: placebo arm {PLACEBO_PM[0]} missing")
     for b in plan["boots"]:                               # rev3.1: a replica must carry its base arm's bytes exactly
         a = b["arm_def"]
