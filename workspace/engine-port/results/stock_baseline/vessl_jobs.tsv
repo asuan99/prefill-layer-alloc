@@ -1,3 +1,4 @@
 submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
 2026-11-02T08:54:33Z	pdmux-stock-baseline-7899d1b-20261102085423	7899d1b0e19c695483b0ef25dce7a1e99e3e4621	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_baseline/sb_job.sh		yes
 2026-11-03T19:26:07Z	pdmux-stock-baseline-0e9c967-20261103192557	0e9c967c8b41d08246e344b5d0fed6986e67c01f	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_baseline/sb_job.sh		no
+2026-11-03T19:26:17Z	pdmux-stock-baseline-6481369-20261103192607	6481369999c6c8055ae9f6c89bc2395b83dc9dd4	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_baseline/sb_job.sh		no
