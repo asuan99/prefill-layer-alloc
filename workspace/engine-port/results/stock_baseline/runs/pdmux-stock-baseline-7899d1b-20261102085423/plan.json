@@ -1,0 +1,1224 @@
+{
+ "boots": [
+  {
+   "arm": "SMOKE-SG-stock",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1",
+     "--enable-metrics"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SMOKE-SG-stock",
+    "role": "smoke",
+    "tree": "pristine"
+   },
+   "boot_id": "J1_smoke_sglang",
+   "role": "smoke",
+   "runs": [
+    {
+     "cell": "SMOKE",
+     "kind": "smoke",
+     "n_requests": 20,
+     "run_id": "J1_SMOKE_sglang",
+     "seed": 9
+    }
+   ]
+  },
+  {
+   "arm": "SMOKE-VL-stock",
+   "arm_def": {
+    "api": "openai",
+    "cmd": [
+     "/opt/vllm-venv/bin/python",
+     "-m",
+     "vllm.entrypoints.openai.api_server",
+     "--model",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--max-model-len",
+     "20480",
+     "--max-num-seqs",
+     "48",
+     "--no-enable-prefix-caching",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "vllm",
+    "env": {
+     "CUDA_HOME": "/usr/local/cuda",
+     "TORCH_CUDA_ARCH_LIST": "8.0"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SMOKE-VL-stock",
+    "placement": "same_image_venv",
+    "role": "smoke",
+    "tree": "vllm"
+   },
+   "boot_id": "J1_smoke_vllm",
+   "role": "smoke",
+   "runs": [
+    {
+     "cell": "SMOKE",
+     "kind": "smoke",
+     "n_requests": 20,
+     "run_id": "J1_SMOKE_vllm",
+     "seed": 9
+    }
+   ]
+  },
+  {
+   "arm": "PM-ref",
+   "arm_def": {
+    "D": 44,
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--attention-backend",
+     "flashinfer",
+     "--disable-radix-cache",
+     "--mem-fraction-static",
+     "0.6",
+     "--max-running-requests",
+     "48",
+     "--context-length",
+     "20480",
+     "--random-seed",
+     "1",
+     "--disable-piecewise-cuda-graph",
+     "--chunked-prefill-size",
+     "-1",
+     "--disable-overlap-schedule",
+     "--max-prefill-tokens",
+     "16384",
+     "--host",
+     "127.0.0.1",
+     "--max-mamba-cache-size",
+     "48",
+     "--enable-pdmux",
+     "--pdmux-config-path",
+     "{ENG}/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+    ],
+    "engine": "sglang",
+    "env": {
+     "PDMUX_ENGINE_MODE": "pdmux",
+     "PDMUX_R2_FIXED_DSM": "44",
+     "PDMUX_R2_POLICY": "fixed"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "inherited": "D, cap 48, budget 65536 = KISTI \uc2b9\uacc4 (PREREG \u00a72)",
+    "name": "PM-ref",
+    "sticky": false,
+    "tree": "patched"
+   },
+   "boot_id": "J1_lad_PM-ref",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_PM-ref_lad_r7.29491_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_PM-ref_lad_r9.647518_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_PM-ref_lad_r6.3434_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_PM-ref_lad_r7.29491_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_PM-ref_lad_r8.389146_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_PM-ref_lad_r5.516_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_PM-ref_lad_r11.094646_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_PM-ref_lad_r19.404606_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_PM-ref_lad_r8.389146_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_PM-ref_lad_r14.67267_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_PM-ref_lad_r14.67267_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_PM-ref_lad_r19.404606_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_PM-ref_lad_r11.094646_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_PM-ref_lad_r12.758843_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_PM-ref_lad_r12.758843_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_PM-ref_lad_r5.516_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_PM-ref_lad_r9.647518_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_PM-ref_lad_r16.87357_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_PM-ref_lad_r16.87357_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_PM-ref_lad_r6.3434_s202",
+     "seed": 202,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "SG-off",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-off",
+    "tree": "patched"
+   },
+   "boot_id": "J1_lad_SG-off",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-off_lad_r5.516_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-off_lad_r7.29491_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-off_lad_r12.758843_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-off_lad_r7.29491_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-off_lad_r19.404606_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-off_lad_r12.758843_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-off_lad_r9.647518_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-off_lad_r14.67267_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-off_lad_r19.404606_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-off_lad_r11.094646_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-off_lad_r9.647518_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-off_lad_r16.87357_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-off_lad_r6.3434_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-off_lad_r14.67267_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-off_lad_r6.3434_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-off_lad_r11.094646_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-off_lad_r16.87357_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-off_lad_r8.389146_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-off_lad_r8.389146_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-off_lad_r5.516_s201",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "SG-mix",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1",
+     "--enable-mixed-chunk"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-mix",
+    "tree": "pristine"
+   },
+   "boot_id": "J1_lad_SG-mix",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-mix_lad_r6.3434_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-mix_lad_r9.647518_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-mix_lad_r7.29491_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-mix_lad_r7.29491_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-mix_lad_r5.516_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-mix_lad_r9.647518_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-mix_lad_r11.094646_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-mix_lad_r19.404606_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-mix_lad_r16.87357_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-mix_lad_r12.758843_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-mix_lad_r8.389146_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-mix_lad_r8.389146_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-mix_lad_r6.3434_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-mix_lad_r14.67267_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-mix_lad_r11.094646_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-mix_lad_r14.67267_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-mix_lad_r19.404606_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-mix_lad_r5.516_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-mix_lad_r16.87357_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-mix_lad_r12.758843_s201",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "SG-stock",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-stock",
+    "tree": "pristine"
+   },
+   "boot_id": "J1_lad_SG-stock",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-stock_lad_r7.29491_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-stock_lad_r11.094646_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-stock_lad_r19.404606_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-stock_lad_r5.516_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_SG-stock_lad_r7.29491_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-stock_lad_r14.67267_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_SG-stock_lad_r11.094646_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-stock_lad_r12.758843_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-stock_lad_r16.87357_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-stock_lad_r8.389146_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-stock_lad_r6.3434_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_SG-stock_lad_r6.3434_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-stock_lad_r9.647518_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_SG-stock_lad_r14.67267_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_SG-stock_lad_r5.516_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_SG-stock_lad_r16.87357_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_SG-stock_lad_r9.647518_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_SG-stock_lad_r12.758843_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_SG-stock_lad_r19.404606_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_SG-stock_lad_r8.389146_s201",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "VL-stock",
+   "arm_def": {
+    "api": "openai",
+    "cmd": [
+     "/opt/vllm-venv/bin/python",
+     "-m",
+     "vllm.entrypoints.openai.api_server",
+     "--model",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--max-model-len",
+     "20480",
+     "--max-num-seqs",
+     "48",
+     "--no-enable-prefix-caching",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "vllm",
+    "env": {
+     "CUDA_HOME": "/usr/local/cuda",
+     "TORCH_CUDA_ARCH_LIST": "8.0"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "VL-stock",
+    "placement": "same_image_venv",
+    "tree": "vllm"
+   },
+   "boot_id": "J1_lad_VL-stock",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_VL-stock_lad_r6.3434_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_VL-stock_lad_r9.647518_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_VL-stock_lad_r5.516_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 6.3434,
+     "run_id": "J1_VL-stock_lad_r6.3434_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_VL-stock_lad_r8.389146_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_VL-stock_lad_r7.29491_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 9.647518,
+     "run_id": "J1_VL-stock_lad_r9.647518_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_VL-stock_lad_r12.758843_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_VL-stock_lad_r14.67267_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 12.758843,
+     "run_id": "J1_VL-stock_lad_r12.758843_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_VL-stock_lad_r19.404606_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_VL-stock_lad_r11.094646_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 8.389146,
+     "run_id": "J1_VL-stock_lad_r8.389146_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 14.67267,
+     "run_id": "J1_VL-stock_lad_r14.67267_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_VL-stock_lad_r16.87357_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 16.87357,
+     "run_id": "J1_VL-stock_lad_r16.87357_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 11.094646,
+     "run_id": "J1_VL-stock_lad_r11.094646_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 19.404606,
+     "run_id": "J1_VL-stock_lad_r19.404606_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1_VL-stock_lad_r7.29491_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 5.516,
+     "run_id": "J1_VL-stock_lad_r5.516_s201",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  }
+ ],
+ "engine_trees": [
+  "patched",
+  "pristine",
+  "vllm"
+ ],
+ "est_min": 206.0,
+ "ext": false,
+ "hard_cap_min": 260,
+ "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+ "job": "J1",
+ "kind": "LADDER",
+ "ladder": [
+  5.516,
+  6.3434,
+  7.29491,
+  8.389146,
+  9.647518,
+  11.094646,
+  12.758843,
+  14.67267,
+  16.87357,
+  19.404606
+ ],
+ "pending": [],
+ "vllm_placement": "same_image_venv"
+}

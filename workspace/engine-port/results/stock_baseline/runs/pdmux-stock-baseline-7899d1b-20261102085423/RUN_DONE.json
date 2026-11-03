@@ -1,0 +1,154 @@
+{
+ "boots": [
+  {
+   "boot_id": "J1_smoke_sglang",
+   "runs": [
+    "J1_SMOKE_sglang"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_smoke_vllm",
+   "runs": [
+    "J1_SMOKE_vllm"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_lad_PM-ref",
+   "runs": [
+    "J1_PM-ref_lad_r7.29491_s202",
+    "J1_PM-ref_lad_r9.647518_s201",
+    "J1_PM-ref_lad_r6.3434_s201",
+    "J1_PM-ref_lad_r7.29491_s201",
+    "J1_PM-ref_lad_r8.389146_s201",
+    "J1_PM-ref_lad_r5.516_s201",
+    "J1_PM-ref_lad_r11.094646_s201",
+    "J1_PM-ref_lad_r19.404606_s202",
+    "J1_PM-ref_lad_r8.389146_s202",
+    "J1_PM-ref_lad_r14.67267_s202",
+    "J1_PM-ref_lad_r14.67267_s201",
+    "J1_PM-ref_lad_r19.404606_s201",
+    "J1_PM-ref_lad_r11.094646_s202",
+    "J1_PM-ref_lad_r12.758843_s201",
+    "J1_PM-ref_lad_r12.758843_s202",
+    "J1_PM-ref_lad_r5.516_s202",
+    "J1_PM-ref_lad_r9.647518_s202",
+    "J1_PM-ref_lad_r16.87357_s202",
+    "J1_PM-ref_lad_r16.87357_s201",
+    "J1_PM-ref_lad_r6.3434_s202"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_lad_SG-off",
+   "runs": [
+    "J1_SG-off_lad_r5.516_s202",
+    "J1_SG-off_lad_r7.29491_s202",
+    "J1_SG-off_lad_r12.758843_s202",
+    "J1_SG-off_lad_r7.29491_s201",
+    "J1_SG-off_lad_r19.404606_s202",
+    "J1_SG-off_lad_r12.758843_s201",
+    "J1_SG-off_lad_r9.647518_s202",
+    "J1_SG-off_lad_r14.67267_s202",
+    "J1_SG-off_lad_r19.404606_s201",
+    "J1_SG-off_lad_r11.094646_s201",
+    "J1_SG-off_lad_r9.647518_s201",
+    "J1_SG-off_lad_r16.87357_s201",
+    "J1_SG-off_lad_r6.3434_s201",
+    "J1_SG-off_lad_r14.67267_s201",
+    "J1_SG-off_lad_r6.3434_s202",
+    "J1_SG-off_lad_r11.094646_s202",
+    "J1_SG-off_lad_r16.87357_s202",
+    "J1_SG-off_lad_r8.389146_s201",
+    "J1_SG-off_lad_r8.389146_s202",
+    "J1_SG-off_lad_r5.516_s201"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_lad_SG-mix",
+   "runs": [
+    "J1_SG-mix_lad_r6.3434_s201",
+    "J1_SG-mix_lad_r9.647518_s202",
+    "J1_SG-mix_lad_r7.29491_s202",
+    "J1_SG-mix_lad_r7.29491_s201",
+    "J1_SG-mix_lad_r5.516_s202",
+    "J1_SG-mix_lad_r9.647518_s201",
+    "J1_SG-mix_lad_r11.094646_s202",
+    "J1_SG-mix_lad_r19.404606_s202",
+    "J1_SG-mix_lad_r16.87357_s201",
+    "J1_SG-mix_lad_r12.758843_s202",
+    "J1_SG-mix_lad_r8.389146_s201",
+    "J1_SG-mix_lad_r8.389146_s202",
+    "J1_SG-mix_lad_r6.3434_s202",
+    "J1_SG-mix_lad_r14.67267_s201",
+    "J1_SG-mix_lad_r11.094646_s201",
+    "J1_SG-mix_lad_r14.67267_s202",
+    "J1_SG-mix_lad_r19.404606_s201",
+    "J1_SG-mix_lad_r5.516_s201",
+    "J1_SG-mix_lad_r16.87357_s202",
+    "J1_SG-mix_lad_r12.758843_s201"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_lad_SG-stock",
+   "runs": [
+    "J1_SG-stock_lad_r7.29491_s201",
+    "J1_SG-stock_lad_r11.094646_s202",
+    "J1_SG-stock_lad_r19.404606_s202",
+    "J1_SG-stock_lad_r5.516_s201",
+    "J1_SG-stock_lad_r7.29491_s202",
+    "J1_SG-stock_lad_r14.67267_s202",
+    "J1_SG-stock_lad_r11.094646_s201",
+    "J1_SG-stock_lad_r12.758843_s202",
+    "J1_SG-stock_lad_r16.87357_s202",
+    "J1_SG-stock_lad_r8.389146_s202",
+    "J1_SG-stock_lad_r6.3434_s202",
+    "J1_SG-stock_lad_r6.3434_s201",
+    "J1_SG-stock_lad_r9.647518_s202",
+    "J1_SG-stock_lad_r14.67267_s201",
+    "J1_SG-stock_lad_r5.516_s202",
+    "J1_SG-stock_lad_r16.87357_s201",
+    "J1_SG-stock_lad_r9.647518_s201",
+    "J1_SG-stock_lad_r12.758843_s201",
+    "J1_SG-stock_lad_r19.404606_s201",
+    "J1_SG-stock_lad_r8.389146_s201"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1_lad_VL-stock",
+   "runs": [
+    "J1_VL-stock_lad_r6.3434_s201",
+    "J1_VL-stock_lad_r9.647518_s202",
+    "J1_VL-stock_lad_r5.516_s202",
+    "J1_VL-stock_lad_r6.3434_s202",
+    "J1_VL-stock_lad_r8.389146_s201",
+    "J1_VL-stock_lad_r7.29491_s201",
+    "J1_VL-stock_lad_r9.647518_s201",
+    "J1_VL-stock_lad_r12.758843_s202",
+    "J1_VL-stock_lad_r14.67267_s201",
+    "J1_VL-stock_lad_r12.758843_s201",
+    "J1_VL-stock_lad_r19.404606_s201",
+    "J1_VL-stock_lad_r11.094646_s202",
+    "J1_VL-stock_lad_r8.389146_s202",
+    "J1_VL-stock_lad_r14.67267_s202",
+    "J1_VL-stock_lad_r16.87357_s202",
+    "J1_VL-stock_lad_r16.87357_s201",
+    "J1_VL-stock_lad_r11.094646_s201",
+    "J1_VL-stock_lad_r19.404606_s202",
+    "J1_VL-stock_lad_r7.29491_s202",
+    "J1_VL-stock_lad_r5.516_s201"
+   ],
+   "status": "done"
+  }
+ ],
+ "gpu_uuid": "GPU-bc0be109-1009-6020-342b-305df4a1541f",
+ "job": "J1",
+ "job_name": "pdmux-stock-baseline-7899d1b-20261102085423",
+ "pending": [],
+ "plan_sha": "1482de03733538e050324c6c0576cac3893ae8f4ba29518bb05aa8353fdeb4f9",
+ "resumed": false
+}
