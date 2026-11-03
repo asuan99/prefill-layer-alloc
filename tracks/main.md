@@ -43,6 +43,7 @@
 - **기준선 Phase B — 봉인(2026-11-02)**: 사전등록 rev2.1 `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명은 하네스 참조 때문에 유지) + `HARNESS_DIGEST.txt`(digest `9b4a30f9…`, 핀 12·재사용 21·plan 4) + `ENGINE_DIGEST.txt` `2836112b…`. 감사 r1 NO-GO→수정 5건, 재감사 r2 NO-GO 1건→결정 (a) 반영, 재감사 없이 봉인. 테스트 83·변이 84/84. 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`(P-1…P-5 등록) 봉인 포함. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. **다음**: A100 용량 열리면 Workspace bring-up(vLLM venv 부팅·pristine 보존·EXTEND 이벤트·server_args 패턴) → `PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env launch.sh` dry-run → 제출 승인(첫 번째 Job부터 순차 4개). ★정오: 지속 완료율 3.0→5.06–5.34(RECHECK) — promote 필요: 예 (결정·정오·감사 2건·봉인)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
+- **실행 중**: 아래쪽 사다리 `pdmux-stock-baseline-0e9c967-20261103192557`(J1-down, 캡 75 min) · 두 번째 Job `pdmux-stock-baseline-6481369-20261103192607`(J1b, 캡 115 min) — 둘 다 2026-11-04 제출(사용자 승인 "둘 다 제출"), 회수 `fetch.sh stock_baseline <name>` → `sb_analyze.py addendum --j1 … --j1down … --j1b …`
 - 회수 완료: Phase B 첫 번째 Job `pdmux-stock-baseline-7899d1b-20261102085423`(exit 0, 75.8 min, raw sha OK, digest match, pristine OK) — 결과 `stock_baseline/RESULT_phaseB_J1_2026-11-03.md`, 진단 `DIAG_sglang_default_itl_2026-11-03.md`
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
 ## 금지 서술 (링크만)
