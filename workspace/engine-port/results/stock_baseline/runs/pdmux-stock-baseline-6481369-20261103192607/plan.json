@@ -1,0 +1,314 @@
+{
+ "boots": [
+  {
+   "arm": "PM-ref",
+   "arm_def": {
+    "D": 44,
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--attention-backend",
+     "flashinfer",
+     "--disable-radix-cache",
+     "--mem-fraction-static",
+     "0.6",
+     "--max-running-requests",
+     "48",
+     "--context-length",
+     "20480",
+     "--random-seed",
+     "1",
+     "--disable-piecewise-cuda-graph",
+     "--chunked-prefill-size",
+     "-1",
+     "--disable-overlap-schedule",
+     "--max-prefill-tokens",
+     "16384",
+     "--host",
+     "127.0.0.1",
+     "--max-mamba-cache-size",
+     "48",
+     "--enable-pdmux",
+     "--pdmux-config-path",
+     "{ENG}/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+    ],
+    "engine": "sglang",
+    "env": {
+     "PDMUX_ENGINE_MODE": "pdmux",
+     "PDMUX_R2_FIXED_DSM": "44",
+     "PDMUX_R2_POLICY": "fixed"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "inherited": "D, cap 48, budget 65536 = KISTI \uc2b9\uacc4 (PREREG \u00a72)",
+    "name": "PM-ref",
+    "sticky": false,
+    "tree": "patched"
+   },
+   "boot_id": "J1b_ref_start",
+   "floor": false,
+   "role": "refcell",
+   "runs": [
+    {
+     "cell": "REFCELL",
+     "kind": "refcell",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1b_REF_start",
+     "seed": 201,
+     "tag": "start",
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "PM-ref",
+   "arm_def": {
+    "D": 44,
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--attention-backend",
+     "flashinfer",
+     "--disable-radix-cache",
+     "--mem-fraction-static",
+     "0.6",
+     "--max-running-requests",
+     "48",
+     "--context-length",
+     "20480",
+     "--random-seed",
+     "1",
+     "--disable-piecewise-cuda-graph",
+     "--chunked-prefill-size",
+     "-1",
+     "--disable-overlap-schedule",
+     "--max-prefill-tokens",
+     "16384",
+     "--host",
+     "127.0.0.1",
+     "--max-mamba-cache-size",
+     "48",
+     "--enable-pdmux",
+     "--pdmux-config-path",
+     "{ENG}/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+    ],
+    "engine": "sglang",
+    "env": {
+     "PDMUX_ENGINE_MODE": "pdmux",
+     "PDMUX_R2_FIXED_DSM": "44",
+     "PDMUX_R2_POLICY": "fixed"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "inherited": "D, cap 48, budget 65536 = KISTI \uc2b9\uacc4 (PREREG \u00a72)",
+    "name": "PM-ref",
+    "sticky": false,
+    "tree": "patched"
+   },
+   "boot_id": "J1b_sus_PM-ref",
+   "extra_run": {
+    "cell": "SUSTAIN",
+    "conditional": true,
+    "factor": 0.5,
+    "kind": "sustain",
+    "n_requests": 2188,
+    "rate": 3.647455,
+    "run_id": "J1b_PM-ref_sus_r3.647455",
+    "seed": 201,
+    "workload": "W1"
+   },
+   "lambda_burst": 7.29491,
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "SUSTAIN",
+     "factor": 1.0,
+     "kind": "sustain",
+     "n_requests": 4377,
+     "rate": 7.29491,
+     "run_id": "J1b_PM-ref_sus_r7.29491",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "SUSTAIN",
+     "factor": 0.8,
+     "kind": "sustain",
+     "n_requests": 3502,
+     "rate": 5.835928,
+     "run_id": "J1b_PM-ref_sus_r5.835928",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "VL-stock",
+   "arm_def": {
+    "api": "openai",
+    "cmd": [
+     "/opt/vllm-venv/bin/python",
+     "-m",
+     "vllm.entrypoints.openai.api_server",
+     "--model",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--max-model-len",
+     "20480",
+     "--max-num-seqs",
+     "48",
+     "--no-enable-prefix-caching",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "vllm",
+    "env": {
+     "CUDA_HOME": "/usr/local/cuda",
+     "TORCH_CUDA_ARCH_LIST": "8.0"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "VL-stock",
+    "placement": "same_image_venv",
+    "tree": "vllm"
+   },
+   "boot_id": "J1b_sus_VL-stock",
+   "extra_run": {
+    "cell": "SUSTAIN",
+    "conditional": true,
+    "factor": 0.5,
+    "kind": "sustain",
+    "n_requests": 2517,
+    "rate": 4.194573,
+    "run_id": "J1b_VL-stock_sus_r4.194573",
+    "seed": 201,
+    "workload": "W1"
+   },
+   "lambda_burst": 8.389146,
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "SUSTAIN",
+     "factor": 1.0,
+     "kind": "sustain",
+     "n_requests": 5033,
+     "rate": 8.389146,
+     "run_id": "J1b_VL-stock_sus_r8.389146",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "SUSTAIN",
+     "factor": 0.8,
+     "kind": "sustain",
+     "n_requests": 4027,
+     "rate": 6.711317,
+     "run_id": "J1b_VL-stock_sus_r6.711317",
+     "seed": 201,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "PM-ref",
+   "arm_def": {
+    "D": 44,
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--attention-backend",
+     "flashinfer",
+     "--disable-radix-cache",
+     "--mem-fraction-static",
+     "0.6",
+     "--max-running-requests",
+     "48",
+     "--context-length",
+     "20480",
+     "--random-seed",
+     "1",
+     "--disable-piecewise-cuda-graph",
+     "--chunked-prefill-size",
+     "-1",
+     "--disable-overlap-schedule",
+     "--max-prefill-tokens",
+     "16384",
+     "--host",
+     "127.0.0.1",
+     "--max-mamba-cache-size",
+     "48",
+     "--enable-pdmux",
+     "--pdmux-config-path",
+     "{ENG}/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+    ],
+    "engine": "sglang",
+    "env": {
+     "PDMUX_ENGINE_MODE": "pdmux",
+     "PDMUX_R2_FIXED_DSM": "44",
+     "PDMUX_R2_POLICY": "fixed"
+    },
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "inherited": "D, cap 48, budget 65536 = KISTI \uc2b9\uacc4 (PREREG \u00a72)",
+    "name": "PM-ref",
+    "sticky": false,
+    "tree": "patched"
+   },
+   "boot_id": "J1b_ref_end",
+   "floor": false,
+   "role": "refcell",
+   "runs": [
+    {
+     "cell": "REFCELL",
+     "kind": "refcell",
+     "n_requests": 120,
+     "rate": 7.29491,
+     "run_id": "J1b_REF_end",
+     "seed": 201,
+     "tag": "end",
+     "workload": "W1"
+    }
+   ]
+  }
+ ],
+ "engine_trees": [
+  "patched",
+  "vllm"
+ ],
+ "est_min": 90.8,
+ "hard_cap_min": 115,
+ "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+ "job": "J1b",
+ "kind": "SUSTAIN",
+ "lambda_star_burst": {
+  "PM-ref": 7.29491,
+  "VL-stock": 8.389146
+ },
+ "pending": [],
+ "vllm_placement": "same_image_venv"
+}

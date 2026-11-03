@@ -1,0 +1,42 @@
+{
+ "boots": [
+  {
+   "boot_id": "J1b_ref_start",
+   "runs": [
+    "J1b_REF_start"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1b_sus_PM-ref",
+   "runs": [
+    "J1b_PM-ref_sus_r7.29491",
+    "J1b_PM-ref_sus_r5.835928",
+    "J1b_PM-ref_sus_r3.647455"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1b_sus_VL-stock",
+   "runs": [
+    "J1b_VL-stock_sus_r8.389146",
+    "J1b_VL-stock_sus_r6.711317",
+    "J1b_VL-stock_sus_r4.194573"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1b_ref_end",
+   "runs": [
+    "J1b_REF_end"
+   ],
+   "status": "done"
+  }
+ ],
+ "gpu_uuid": "GPU-27097514-97cf-4981-cd7e-58f7abc4ce12",
+ "job": "J1b",
+ "job_name": "pdmux-stock-baseline-6481369-20261103192607",
+ "pending": [],
+ "plan_sha": "d2979338859a696710c11fea89a571b13501645b3c5233fdb216a32c9ff3eec7",
+ "resumed": false
+}
