@@ -1,0 +1,2 @@
+DIAGNOSTIC, not a measurement.  Boots B2 B5 B1 B3 B4 of results/stock_baseline/diagboot (one run per variant, no pairing).
+Purpose: locate the ITL gap (DIAGBOOT_itl_gap_2026-11-03.md).  Do not cite any number here as a measurement or a cell.
