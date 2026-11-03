@@ -41,7 +41,8 @@ def own_files():
 
 
 SEALED_DOCS = ("PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md", "PREDICTION_phaseB_expected_effects_2026-11-02.md",
-               "AUDIT_harness_stock_base_r1_2026-11-02.md", "AUDIT_harness_stock_base_r2_2026-11-02.md")   # rev2.1: pre-registered docs
+               "AUDIT_harness_stock_base_r1_2026-11-02.md", "AUDIT_harness_stock_base_r2_2026-11-02.md",
+    "AUDIT_harness_stock_base_rev3_r1_2026-11-04.md")   # rev2.1: pre-registered docs
 
 
 def make():

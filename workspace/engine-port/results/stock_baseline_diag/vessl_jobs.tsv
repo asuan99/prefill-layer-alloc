@@ -1,2 +1,2 @@
 submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
-2026-11-03T11:22:13Z	pdmux-stock-baseline-diag-4d1b9da-20261103112203	4d1b9da5340c4039420c80500e98ef3308840e3f	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_baseline/diagboot/diag_job.sh		no
+2026-11-03T11:22:13Z	pdmux-stock-baseline-diag-4d1b9da-20261103112203	4d1b9da5340c4039420c80500e98ef3308840e3f	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b	workspace/engine-port/results/stock_baseline/diagboot/diag_job.sh		yes

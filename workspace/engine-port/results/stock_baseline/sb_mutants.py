@@ -104,7 +104,7 @@ MUTANTS = [
     ("M65 sustain TTFT 2x growth rule dropped", "sb_runner.py", " and growth <= SP.SUSTAIN_TTFT_GROWTH_MAX", ""),
     ("M66 BOTH_SATURATED rule removed", "sb_analyze.py", '        elif sat:\n            final = "BOTH_SATURATED"', '        elif False:\n            final = "BOTH_SATURATED"'),
     ("M67 saturation bar 0.98 -> 0.999", "sb_spec.py", "SATURATED_ATTAIN = 0.98 ", "SATURATED_ATTAIN = 0.999 "),
-    ("M68 latency co-metrics omitted", "sb_spec.py", 'LATENCY_PAIRS = ("Q3", "Q5", "Q8")', "LATENCY_PAIRS = ()"),
+    ("M68 latency co-metrics omitted", "sb_spec.py", 'LATENCY_PAIRS = ("Q2", "Q3", "Q5", "Q8")', "LATENCY_PAIRS = ()"),
     ("M69 latency labels ignore the validity chain", "sb_analyze.py", 'lfin = "BOOT_NOISE" if pbad else "INVALID" if why else', 'lfin = "BOOT_NOISE" if pbad else'),
     ("M70 SG-mix firing ignores server_args", "sb_analyze.py", "fired = [RU.mix_fired_from_server_args(run_server_args(r, job)) for r in arms[a].values()]",
      "fired = [True for r in arms[a].values()]"),
@@ -147,8 +147,9 @@ MUTANTS = [
      'add["refcell_rate"] = max(add["lambda_star_burst"].values(), default=None)'),
     ("M90 refcell arm back to SG-stock (rev2.1)", "sb_spec.py", 'REFCELL_ARM, REFCELL_N, REFCELL_SEED = "PM-ref", 120, 201',
      'REFCELL_ARM, REFCELL_N, REFCELL_SEED = "SG-stock", 120, 201'),
-    ("M91 sign-only rule removed (Q3/Q5/Q8 magnitudes labelled)", "sb_spec.py", 'SIGN_ONLY_QUESTIONS = ("Q3", "Q5", "Q8")', "SIGN_ONLY_QUESTIONS = ()"),
-    ("M92 Q3 latency co-metrics dropped", "sb_spec.py", 'LATENCY_PAIRS = ("Q3", "Q5", "Q8")', 'LATENCY_PAIRS = ("Q5", "Q8")'),
+    ("M91 sign-only rule removed (Q2/Q3/Q5/Q8 magnitudes labelled)", "sb_spec.py", 'SIGN_ONLY_QUESTIONS = ("Q2", "Q3", "Q5", "Q8")',
+     "SIGN_ONLY_QUESTIONS = ()"),
+    ("M92 Q3 latency co-metrics dropped", "sb_spec.py", 'LATENCY_PAIRS = ("Q2", "Q3", "Q5", "Q8")', 'LATENCY_PAIRS = ("Q2", "Q5", "Q8")'),
     ("M93 second bottom failure keeps the plain LADDER_BOTTOM_FAIL label", "sb_analyze.py",
      '    if L["status"] == "LADDER_BOTTOM_FAIL":\n        L = dict(L, status=SP.LADDER_DOWN_FAIL', '    if False:\n        L = dict(L, status=SP.LADDER_DOWN_FAIL'),
     ("M94 J1-down points pooled into the J1b input (lambda_star_burst)", "sb_analyze.py",
@@ -157,6 +158,16 @@ MUTANTS = [
     ("M96 J3 floor measured on the refcell arm (PM-ref) instead of SG-stock", "sb_spec.py",
      'boots = [refcell_boot(job, "start", ref_rate), boot(f"{job}_w3lad_SG-stock", arm("SG-stock"), w3l, role="w3ladder", floor=True)]',
      'boots = [refcell_boot(job, "start", ref_rate, floor=True), boot(f"{job}_w3lad_SG-stock", arm("SG-stock"), w3l, role="w3ladder")]'),
+    # --- rev3.1 (harness audit rev3 r1, user decision (b) 2026-11-04) ---
+    ("M97 PD-mux placebo omitted (PM-rep vs PM-ref never invalidates)", "sb_analyze.py",
+     '    pbad_by["PM"] = placebo_invalid(pls["PM"])', '    pbad_by["PM"] = False'),
+    ("M98 Q4 tied to the SG placebo (PM-ref counted as SG family)", "sb_spec.py", '"PM-ref": "PM", ', '"PM-ref": "SG", '),
+    ("M99 PM-rep argv differs from PM-ref", "sb_spec.py",
+     '        return dict(arm(REPLICA_OF[name]), name=name, replica_of=REPLICA_OF[name])',
+     '        return dict(arm(REPLICA_OF[name]), name=name, replica_of=REPLICA_OF[name], cmd=arm(REPLICA_OF[name])["cmd"] + ["--random-seed", "2"])'),
+    ("M100 plan check: PM-rep presence not required", "sb_spec.py", "        if PLACEBO_PM[0] not in by:", "        if False:"),
+    ("M101 Q2 back to the registered goodput labels (not sign-only)", "sb_spec.py",
+     'SIGN_ONLY_QUESTIONS = ("Q2", "Q3", "Q5", "Q8")', 'SIGN_ONLY_QUESTIONS = ("Q3", "Q5", "Q8")'),
 ]
 
 

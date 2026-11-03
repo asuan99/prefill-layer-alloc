@@ -1,6 +1,13 @@
 #!/usr/bin/env python3
-"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev3 (2026-11-03, user decision (C) = (A); rev2.1 was SEALED 2026-11-02;
-rev3 is re-sealed by a new HARNESS_DIGEST.txt).  CPU only; starts no server.
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev3.1 (2026-11-04, user decision (b); rev3 2026-11-03 = user decision
+(C) = (A); rev2.1 was SEALED 2026-11-02; rev3.1 is re-sealed by a new HARNESS_DIGEST.txt).  CPU only; starts no server.
+
+rev3.1 (harness audit rev3 r1, user decision (b) 2026-11-04):
+  * the PREREG §8 Q1-SG prediction row is deleted (its band could not be false); Q1 is descriptive only.
+  * Q2 joins SIGN_ONLY_QUESTIONS (Q2, Q3, Q5, Q8) and LATENCY_PAIRS; only Q4 (PD-mux vs vLLM) keeps the registered goodput labels.
+  * PD-mux placebo replica PM-rep (= PM-ref argv, env, tree; separate boot) in the 50 % / 80 % cells (J2) and the W3 cell (J3) only.
+    K3 is applied per base arm of the pair: an arm of the SG family needs the SG placebo (SG-rep vs SG-stock), an arm of the PM family
+    needs the PM placebo (PM-rep vs PM-ref), VL-stock needs none -> Q3 / Q5 / Q8 = SG, Q4 = PM, Q2 = both (PLACEBO_FAMILY).
 
 rev3 (after the first Job: SG-stock / SG-off / SG-mix LADDER_BOTTOM_FAIL at 5.516 req/s, ITL-axis cliff, ~42 ms stall per arrival):
   * reference capacity (lambda*_ref) = min of the SUSTAINED capacity of REF_ARMS = (VL-stock, PM-ref) only; the three SGLang-default arms
@@ -8,10 +15,10 @@ rev3 (after the first Job: SG-stock / SG-off / SG-mix LADDER_BOTTOM_FAIL at 5.51
   * J1-down: SG 3 arms x rungs 5.516 / 1.15^k (k = 1..4) x seeds {201, 202} x 120 requests; pick rule over J1 + J1-down points; a failing
     bottom again -> LADDER_BOTTOM_FAIL_2 (no value).  Feeds Q1 only, never lambda*_ref; independent of J1b (any order).
   * refcell = PM-ref at its burst lambda* rung (7.29491 in the first Job; the identical cell exists there) -- SG-stock has no burst lambda*.
-  * pairs with an SGLang-default arm against a reference arm or each other (Q3, Q5, Q8; NOT Q2): sign / BOTH_SATURATED / INVALID labels +
+  * pairs with an SGLang-default arm against a reference arm or each other (Q3, Q5, Q8; rev3.1 + Q2): sign / BOTH_SATURATED / INVALID labels +
     latency co-metrics only (SIGN_ONLY_QUESTIONS); Q3 gains the latency co-metrics.
 
-Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
+Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34, PM-rep (rev3.1).  Each arm = (engine, tree, image, server argv, env).
   * ONE image for every arm (rev1, user decision 2026-11-02 option b'): PDMUX_VESSL_IMAGE_SBASE = sglang-runtime@1e0d335b (SGLang side
     byte-unchanged) + /opt/vllm-venv (pristine vLLM 0.31.0).  Selected at submit time WITHOUT changing launch.sh:
     PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env scripts/vessl/launch.sh ...  Every boot first checks the two pip-freeze sha256 of the image
@@ -74,10 +81,12 @@ SG_COMMON = ["--trust-remote-code", "--dtype", "bfloat16", "--disable-radix-cach
 VL_COMMON = ["--trust-remote-code", "--dtype", "bfloat16", "--max-model-len", "20480", "--max-num-seqs", "48",
              "--no-enable-prefix-caching", "--host", "127.0.0.1"]
 PM_D = {"PM-ref": 44, "PM-ref34": 34}
-ARM_NAMES = ("SG-stock", "SG-rep", "SG-mix", "SG-off", "VL-stock", "PM-ref", "PM-ref34")
+ARM_NAMES = ("SG-stock", "SG-rep", "SG-mix", "SG-off", "VL-stock", "PM-ref", "PM-ref34", "PM-rep")
 SG_ARMS = tuple(a for a in ARM_NAMES if a != "VL-stock")
 PRISTINE_ARMS = ("SG-stock", "SG-rep", "SG-mix")
-PATCHED_ARMS = ("SG-off", "PM-ref", "PM-ref34")
+PATCHED_ARMS = ("SG-off", "PM-ref", "PM-ref34", "PM-rep")
+# rev3.1: placebo replicas -- the same arm bytes (argv, env, tree) as their base, booted separately
+REPLICA_OF = {"SG-rep": "SG-stock", "PM-rep": "PM-ref"}
 INSTR_TREE_NOTE = ("decode_probe (PDMUX_PROBE_EXTEND_TIME) lives only in the PATCHED tree; a pristine boot refuses PDMUX_* knobs. The 'SG-stock "
                    "instrumentation boot' of PREREG §5-1 therefore runs SG-stock argv on the patched tree (= SG-off config + probe). Deviation D-1.")
 
@@ -127,6 +136,8 @@ def arm(name):
         return {"name": name, "engine": "vllm", "tree": "vllm", "image_key": IMAGE_KEY,
                 "cmd": [VLLM_PY, "-m", "vllm.entrypoints.openai.api_server", "--model", S.NANO_ID, "--revision", S.NANO_REV] + VL_COMMON,
                 "env": dict(VL_ENV), "api": "openai", "placement": VLLM_PLACEMENT}
+    if name == "PM-rep":                         # rev3.1: PD-mux placebo replica = PM-ref bytes, separate boot
+        return dict(arm(REPLICA_OF[name]), name=name, replica_of=REPLICA_OF[name])
     if name in PM_D:
         D = PM_D[name]
         return {"name": name, "engine": "sglang", "tree": "patched", "image_key": IMAGE_KEY, "D": D,
@@ -186,7 +197,6 @@ REF_ARMS = ("VL-stock", "PM-ref")
 LADDER_DOWN_ARMS = ("SG-stock", "SG-mix", "SG-off")
 LADDER_DOWN_K = (1, 2, 3, 4)                                 # 5.516 / 1.15^k -> 4.796522, 4.170888, 3.62686, 3.153791
 LADDER_DOWN_FAIL = "LADDER_BOTTOM_FAIL_2"
-Q1_SG_BAND = (2.5, 4.8)                                      # rev3 PREREG §8 row Q1-SG (value from the down ladder; none -> UNSCORABLE)
 PM_REF34_LAMBDA_INHERITED = 6.343
 CAP_SEEDS, CAP_N = P.CAP_SEEDS, 120                          # (201, 202)
 SUSTAIN_S, SUSTAIN_SEED, SUSTAIN_WINDOW_S = 600.0, 201, 120.0
@@ -194,17 +204,18 @@ SUSTAIN_FACTORS, SUSTAIN_EXTRA = (1.0, 0.8), 0.5
 SUSTAIN_COMPLETION_MIN, SUSTAIN_TTFT_GROWTH_MAX = 0.95, 2.0
 SUSTAIN_E2E_MAX_S = 60.0                                     # rev2 (audit r1 A): per ARRIVAL window, share of arrivals (< 600 s) done with E2E <= 60 s
 SATURATED_ATTAIN = 0.98                                      # rev2 (audit r1 B): both arms >= this on all 4 seeds -> BOTH_SATURATED
-LATENCY_PAIRS = ("Q3", "Q5", "Q8")                           # rev2 (audit r1 B): Q5/Q8; rev3: + Q3 (VL-stock vs SG-stock)
+LATENCY_PAIRS = ("Q2", "Q3", "Q5", "Q8")                     # rev2 (audit r1 B): Q5/Q8; rev3: + Q3; rev3.1: + Q2
 # rev3: questions whose pairs contain an SGLang-default arm placed above its own capacity (no SLO burst capacity >= 5.516 req/s):
-# goodput sign / BOTH_SATURATED / INVALID labels + latency co-metrics only, no magnitude (Q2 is deliberately NOT in this set -- user text)
-SIGN_ONLY_QUESTIONS = ("Q3", "Q5", "Q8")
+# goodput sign / BOTH_SATURATED / INVALID labels + latency co-metrics only, no magnitude.  rev3.1 (audit rev3 r1, user decision (b)): + Q2
+# (the Q2 ln ratio is the ITL-axis cliff value of SG-stock); Q4 (PD-mux vs vLLM) is the only pair question with the registered labels.
+SIGN_ONLY_QUESTIONS = ("Q2", "Q3", "Q5", "Q8")
 LATENCY_METRICS = ("TPOT", "TTFT", "ITL")                    # seed-level ln(TPOT mean), ln(TTFT p50), ln(median request-internal ITL p95)
 QUESTIONS = ("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8")
 STEADY = {"R1": 0.5, "R2": 0.8}
 STEADY_N, EVAL_SEEDS = 200, P.HE0_SEEDS                      # (1, 2, 3, 4)
 W3_LADDER = (0.1, 1.5, 6)
 W3_LADDER_N, W3_R3_FACTOR, W3_R3_N = P.CAP_CELL_REQUESTS["W3"], 0.8, 96
-W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock")      # §3 "arm 4개" -- the set is not named in the PREREG (open item O-3)
+W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock", "PM-rep")   # §3 rev2.1 4 arms + rev3.1 PD-mux placebo replica
 # rev3: refcell = PM-ref at its burst lambda* rung (the identical cell exists in the first Job); rev2.1 used SG-stock, which has no value
 REFCELL_ARM, REFCELL_N, REFCELL_SEED = "PM-ref", 120, 201
 Q1_ARM = "SG-stock"                                           # Q1 = capacity of the untouched SGLang (no longer the refcell arm)
@@ -263,6 +274,16 @@ PAIRS = (("Q2", "PM-ref", "SG-stock", ("PM", "SG")), ("Q2", "PM-ref34", "SG-stoc
          ("Q5", "SG-mix", "SG-stock", ("MIX", "SG")),
          ("Q8", "SG-off", "SG-stock", ("OFF", "STOCK")))
 PLACEBO = ("SG-rep", "SG-stock")
+# rev3.1: K3 per base arm of a pair.  Family of each arm -> the placebo that must be valid for any pair containing it; VL-stock has none.
+PLACEBO_PM = ("PM-rep", "PM-ref")
+PLACEBOS = {"SG": PLACEBO, "PM": PLACEBO_PM}
+PLACEBO_FAMILY = {"SG-stock": "SG", "SG-rep": "SG", "SG-mix": "SG", "SG-off": "SG", "PM-ref": "PM", "PM-ref34": "PM", "PM-rep": "PM",
+                  "VL-stock": None}
+
+
+def pair_placebos(a, b):
+    """rev3.1: the placebo families a pair (a, b) depends on (Q2 -> SG + PM, Q3/Q5/Q8 -> SG, Q4 -> PM)."""
+    return sorted({PLACEBO_FAMILY[x] for x in (a, b)} - {None})
 ENGINE_PAIR_ARMS = ("VL-stock",)
 
 # ---- time model (planning only; [유도] PREREG §7 + rate-based run lengths) ----------------------------------------------
@@ -401,7 +422,7 @@ def plan_J1b(addendum):
 
 
 def plan_J2(addendum):
-    """Steady-state R1/R2 x 4 seeds, 7 arms (ABBA), refcells, then the instrumentation boots (separate from every measurement arm, C5):
+    """Steady-state R1/R2 x 4 seeds, 8 arms (ABBA; rev3.1 + PM-rep), refcells, then the instrumentation boots (separate from every measurement arm, C5):
     probe SG, PC PM, and the §5-0 (b) in-load TTFT offset boot (SG-stock pristine + --enable-metrics, R1 load, 200 requests, seed 301).
     VL-stock needs no extra boot for (b): vLLM's /metrics is on by default, the runner scrapes it around every VL run."""
     job = "J2"
@@ -523,7 +544,7 @@ def plan_problems(plan):
                 out.append(f"{b['boot_id']}: {a['name']} must boot the pristine tree")
             if a["tree"] == "pristine" and (a["env"] or any(x in ("--enable-pdmux", "--pdmux-config-path") for x in a["cmd"])):
                 out.append(f"{b['boot_id']}: pristine boot with PD-mux env/argv")
-            if a["name"] in PM_D and a.get("sticky") is not False:
+            if (a["name"] in PM_D or REPLICA_OF.get(a["name"]) in PM_D) and a.get("sticky") is not False:
                 out.append(f"{b['boot_id']}: static PD-mux arm must be non-sticky (decision 49)")
         if b["role"] == "meas" and a["env"].get("PDMUX_DECODE_PROBE_PATH"):
             out.append(f"{b['boot_id']}: instrumentation env in a measurement boot (C5)")
@@ -542,6 +563,15 @@ def plan_problems(plan):
                 out.append(f"cell {c}: arm {a} seeds {sorted(seeds)} != {list(EVAL_SEEDS)}")
         if c != "R3" and "SG-rep" not in by:
             out.append(f"cell {c}: placebo arm SG-rep missing")
+        if PLACEBO_PM[0] not in by:                       # rev3.1: PD-mux placebo replica in every steady-state cell (R1, R2, R3)
+            out.append(f"cell {c}: placebo arm {PLACEBO_PM[0]} missing")
+    for b in plan["boots"]:                               # rev3.1: a replica must carry its base arm's bytes exactly
+        a = b["arm_def"]
+        base = REPLICA_OF.get(b["arm"])
+        if base and b["role"] == "meas":
+            ref = arm(base)
+            if (a["cmd"], a["env"], a["tree"], a["image_key"]) != (ref["cmd"], ref["env"], ref["tree"], ref["image_key"]):
+                out.append(f"{b['boot_id']}: replica {b['arm']} argv/env/tree differ from {base}")
     if plan["kind"] == "W3" and any(r.get("workload") != "W3" for b in plan["boots"] if b["role"] in ("meas", "w3ladder") for r in b["runs"]):
         out.append("J3 is W3 only (rev1: no W1 change trace)")
     if plan["kind"] == "LADDER_DOWN":                     # rev3: SG 3 arms x registered down rungs x CAP_SEEDS x CAP_N, nothing else

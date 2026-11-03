@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev3 (2026-11-03; rev2.1 sealed 2026-11-02).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev3.1 (2026-11-04; rev3 2026-11-03; rev2.1 sealed 2026-11-02).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
   sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1down RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job
   sb_analyze.py report   --j1 RAW [--j1down RAW] --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]  # labels, predictions, "not measured"
@@ -11,12 +11,14 @@ Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
   * lambda*_ref = min over the SUSTAINED capacity of SP.REF_ARMS present (rev3: VL-stock, PM-ref only; the SGLang-default arms are
     excluded -- first-Job ladder bottom failure, ITL-axis cliff; the scope of that min is recorded)
   * rev3: J1-down (SG 3 arms, 5.516 / 1.15^k, k = 1..4) -> pick rule over J1 + J1-down points; bottom failure again -> LADDER_BOTTOM_FAIL_2
-    (no value); feeds Q1 (and the PREREG §8 Q1-SG row) only, never lambda*_ref.  refcell rate = burst lambda* of SP.REFCELL_ARM (PM-ref)
-  * rev3: pairs of SP.SIGN_ONLY_QUESTIONS (Q3, Q5, Q8) carry a goodput SIGN label only (A_ABOVE_B_SIGN iff CI lo > 0, A_BELOW_B_SIGN iff
+    (no value); feeds Q1 only (descriptive; rev3.1: the §8 Q1-SG prediction row is deleted), never lambda*_ref.  refcell rate = burst lambda* of SP.REFCELL_ARM (PM-ref)
+  * rev3: pairs of SP.SIGN_ONLY_QUESTIONS (Q3, Q5, Q8; rev3.1 + Q2) carry a goodput SIGN label only (A_ABOVE_B_SIGN iff CI lo > 0, A_BELOW_B_SIGN iff
     CI hi < 0, else SIGN_UNRESOLVED) + BOTH_SATURATED / INVALID / BOOT_NOISE / MIX_NOT_FIRED + latency co-metrics; tag MAGNITUDE_NOT_CITABLE
   * pair label (§4): A_ABOVE_B iff lo > 0 and mean >= ln1.03; A_BELOW_B iff hi < 0 and mean <= -ln1.03; EQUIV_WITHIN_3PCT iff
     |mean| < ln1.03 and the t(3) CI is inside (-ln1.03, ln1.03); otherwise UNRESOLVED_INTERVAL (also n < 4)
-  * K3 placebo (SG-rep vs SG-stock): invalid iff n < 4 or |mean| >= ln1.03 or CI excludes 0 -> every label of the cell BOOT_NOISE
+  * K3 placebo: invalid iff n < 4 or |mean| >= ln1.03 or CI excludes 0.  rev3.1: per base arm of the pair -- SG-rep vs SG-stock for an
+    arm of the SG family, PM-rep vs PM-ref for an arm of the PM family (SP.pair_placebos); a pair is BOOT_NOISE iff one of ITS placebos
+    is invalid (Q4 survives an SG BOOT_NOISE when the PM placebo is valid; Q2 needs both)
   * validity chain: trace hash per seed, cliff (TTFT within SLO +-5 % > 10 %) in neither arm, one Job and one GPU per pair, engine-tree
     stamps per PREREG §1 (VL-stock: engine_tree "vllm", registered venv + SGLang freeze sha, all VL boots of the Job identical), placebo,
     definition smoke (engine pairs), zero request failures
@@ -501,12 +503,16 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
     out = {"cell": cell, "arms": sorted(arms), "pairs": {}, "goodput_mean": {}}
     for a, v in arms.items():
         out["goodput_mean"][a] = statistics.fmean(goodput(r, ttft_slo) for r in v.values())
-    pl = paired(arms[SP.PLACEBO[0]], arms[SP.PLACEBO[1]], ttft_slo) if all(x in arms for x in SP.PLACEBO) else None
-    out["placebo"] = pl
-    pbad = placebo_invalid(pl)
-    out["placebo_invalid"] = pbad
-    if pl and not math.isnan(pl["sd"]) and pl["sd"] >= SP.PLACEBO_SD_EQUIV_MAX:
-        out["placebo_note"] = "placebo sd >= 0.0186: EQUIV not reachable at n=4 (UNRESOLVED_INTERVAL is the normal result)"
+    pls, pbad_by = {}, {}
+    for fam, (ra, rb) in SP.PLACEBOS.items():             # rev3.1: one K3 placebo per base family (SG, PM)
+        pls[fam] = paired(arms[ra], arms[rb], ttft_slo) if ra in arms and rb in arms else None
+    pbad_by["SG"] = placebo_invalid(pls["SG"])
+    pbad_by["PM"] = placebo_invalid(pls["PM"])
+    out["placebo"], out["placebo_pm"] = pls["SG"], pls["PM"]
+    out["placebo_invalid"], out["placebo_pm_invalid"] = pbad_by["SG"], pbad_by["PM"]
+    for fam, pl in pls.items():
+        if pl and not math.isnan(pl["sd"]) and pl["sd"] >= SP.PLACEBO_SD_EQUIV_MAX:
+            out.setdefault("placebo_note", {})[fam] = "placebo sd >= 0.0186: EQUIV not reachable at n=4 (UNRESOLVED_INTERVAL is the normal result)"
     oob, cell_att = out_of_band(arms, ttft_slo, phases_of(cell)[0]) if cell in OOB_CELLS else (None, {})
     out["band_attainment"], out["cell_out_of_band"] = cell_att, oob
     out["ttft_offset"] = (offset or {}).get("status", "TTFT_OFFSET_UNCHECKED")
@@ -519,6 +525,8 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
             continue
         p = paired(arms[a], arms[b], ttft_slo)
         raw = label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
+        fams = SP.pair_placebos(a, b)
+        pbad = any(pbad_by[f] for f in fams)
         why = pair_validity(a, b, arms, job, ttft_slo, cell, smoke, pbad, offset)
         engine_pair = a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS
         sat = both_saturated(arms[a], arms[b], ttft_slo)
@@ -533,7 +541,7 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
         else:
             final = raw
         sign_only = q in SP.SIGN_ONLY_QUESTIONS
-        if sign_only and final == raw:          # rev3: an SGLang-default arm sits above its own capacity -> sign only, no magnitude
+        if sign_only and final == raw:          # rev3 (rev3.1 + Q2): an SGLang-default arm may sit above its own capacity -> sign only
             final = sign_label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
         tags = ["TTFT_OFFSET_SHIFT"] if engine_pair and "TTFT_OFFSET_SHIFT" in why else []
         if sign_only:
@@ -559,6 +567,7 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
         if (a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS) and not math.isnan(p["sd"]) and p["sd"] > SP.ENGINE_PAIR_SD_MAX:
             tags.append("RERUN_SEED8_REGISTERED")
         out["pairs"][key] = dict(p, raw_label=raw, label=final, validity=why, tags=tags, question=q, both_saturated=sat, sign_only=sign_only,
+                                 placebos={f: ("INVALID" if pbad_by[f] else "OK") for f in fams},
                                  seed_attainment={a: seed_attainments(arms[a], ttft_slo), b: seed_attainments(arms[b], ttft_slo)},
                                  latency=lat)
     out["mixing_opportunities"] = {x: {s: r.get("mixing_opportunities") for s, r in arms[x].items()} for x in SP.MIX_OPPORTUNITY_ARMS
@@ -733,12 +742,6 @@ def score_predictions(add, cells, instr):
         f5, bs5 = forecast_r_ser(512, b5["bs_p50"])
         P["P-4"]["descriptive_512"] = {"value": b5["r_ser_p50"], "n": b5["n"], "forecast": f5,
                                        "forecast_cell": {"L": 512, "bs": bs5, "ctx": 2048}, "score": "NOT_SCORED"}
-    v1, w1 = q1_burst(add)                                 # rev3 PREREG §8 row Q1-SG (registered before the J1-down data)
-    lo1, hi1 = SP.Q1_SG_BAND
-    P["Q1-SG"] = {"value": v1, "band": [lo1, hi1], "source": w1,
-                  "score": "UNSCORABLE" if v1 is None else ("HIT" if lo1 <= v1 <= hi1 else "MISS")}
-    if v1 is None:
-        P["Q1-SG"]["why"] = w1
     g = (cells.get("R2") or {}).get("gate5", {})
     if "SG-mix" in g and "SG-stock" in g:
         a, b = g["SG-mix"]["itl_ms"]["p95"], g["SG-stock"]["itl_ms"]["p95"]

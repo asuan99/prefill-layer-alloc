@@ -1,4 +1,4 @@
-"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev3, 2026-11-03).  No GPU, no server.
+"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev3.1, 2026-11-04).  No GPU, no server.
 SB_DIR (env) points the tests at a copy of the harness -- sb_mutants.py uses it: every registered rule must make a test FAIL when it is
 reverted (lesson 53)."""
 import gzip
@@ -119,14 +119,25 @@ def run_fake_job(td, job, add=None, ttft_of=None, server_kw=None, image_check_fn
 # ============================================================================================================== spec
 class SpecTests(unittest.TestCase):
     def test_arm_set_and_trees(self):
-        self.assertEqual(SP.ARM_NAMES, ("SG-stock", "SG-rep", "SG-mix", "SG-off", "VL-stock", "PM-ref", "PM-ref34"))
+        self.assertEqual(SP.ARM_NAMES, ("SG-stock", "SG-rep", "SG-mix", "SG-off", "VL-stock", "PM-ref", "PM-ref34", "PM-rep"))
         for n in ("SG-stock", "SG-rep", "SG-mix"):
             a = SP.arm(n)
             self.assertEqual(a["tree"], "pristine")
             self.assertEqual(a["env"], {})
             self.assertNotIn("--enable-pdmux", a["cmd"])
-        for n in ("SG-off", "PM-ref", "PM-ref34"):
+        for n in ("SG-off", "PM-ref", "PM-ref34", "PM-rep"):
             self.assertEqual(SP.arm(n)["tree"], "patched")
+
+    def test_pm_rep_is_pm_ref_bytes(self):
+        """rev3.1: the PD-mux placebo replica carries PM-ref's argv, env, tree and image exactly (separate boot, no other difference)."""
+        rep, ref = SP.arm("PM-rep"), SP.arm("PM-ref")
+        for k in ("engine", "tree", "image_key", "cmd", "env", "D", "sticky", "api"):
+            self.assertEqual(rep[k], ref[k], k)
+        self.assertEqual(rep["replica_of"], "PM-ref")
+        self.assertEqual(SP.arm("SG-rep")["cmd"], SP.arm("SG-stock")["cmd"])
+        self.assertNotIn("PM-rep", SP.LADDER_ARMS + SP.REF_ARMS)                 # no ladder, no sustained cell
+        self.assertIn("PM-rep", SP.MEAS_ARMS)
+        self.assertIn("PM-rep", SP.W3_ARMS)
 
     def test_stock_argv_defaults(self):
         st, mix, off = SP.arm("SG-stock")["cmd"], SP.arm("SG-mix")["cmd"], SP.arm("SG-off")["cmd"]
@@ -322,6 +333,18 @@ class SpecTests(unittest.TestCase):
         p = SP.make_plan("J2", ADD)
         p["boots"] = [x for x in p["boots"] if x["arm"] != "SG-rep"]
         self.assertTrue(any("placebo" in x for x in SP.plan_problems(p)))
+        for j in ("J2", "J3"):                                               # rev3.1: PD-mux placebo replica present + PM-ref bytes
+            p = SP.make_plan(j, ADD)
+            cells = {r["cell"] for b in p["boots"] if b["arm"] == "PM-rep" and b["role"] == "meas" for r in b["runs"]}
+            self.assertEqual(cells, {"R1", "R2"} if j == "J2" else {"R3"})
+            p["boots"] = [x for x in p["boots"] if x["arm"] != "PM-rep"]
+            self.assertTrue(any("placebo arm PM-rep missing" in x for x in SP.plan_problems(p)), j)
+            p = SP.make_plan(j, ADD)
+            b = [x for x in p["boots"] if x["arm"] == "PM-rep"][0]
+            b["arm_def"]["cmd"] = b["arm_def"]["cmd"] + ["--random-seed", "2"]
+            self.assertTrue(any("replica PM-rep" in x for x in SP.plan_problems(p)), j)
+        for j in ("J1", "J1-down", "J1b"):
+            self.assertNotIn("PM-rep", {b["arm"] for b in SP.make_plan(j, ADD if j == "J1b" else None)["boots"]})
 
     def test_plan_is_path_independent(self):
         txt = SP.stable(SP.make_plan("J2", ADD))
@@ -738,7 +761,7 @@ def job_of(good_by_arm, cell="R2", jitter=None, job_override=None, stamp_overrid
 
 SMOKE_OK = {"status": "CLIENT_DEF_OK"}
 OFFSET_OK = {"status": "TTFT_OFFSET_OK"}
-EQ = {"SG-stock": 80, "SG-rep": 80, "SG-mix": 80, "SG-off": 80, "PM-ref": 80, "PM-ref34": 80, "VL-stock": 80}
+EQ = {"SG-stock": 80, "SG-rep": 80, "SG-mix": 80, "SG-off": 80, "PM-ref": 80, "PM-ref34": 80, "VL-stock": 80, "PM-rep": 80}
 JIT = {(a, s): d for a in EQ for s, d in zip(SP.EVAL_SEEDS, (0, 1, -1, 0))}
 
 
@@ -777,8 +800,38 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(p["label"], "EQUIV_WITHIN_3PCT", p)
 
     def test_above(self):
-        g = dict(EQ, **{"PM-ref": 92})
-        self.assertEqual(self._pair(job_of(g, jitter=JIT), "Q2:PM-ref_vs_SG-stock")["label"], "PM_ABOVE_SG")
+        g = dict(EQ, **{"PM-ref": 92, "PM-rep": 92, "VL-stock": 80})
+        self.assertEqual(self._pair(job_of(g, jitter=JIT), "Q4:PM-ref_vs_VL-stock")["label"], "PM_ABOVE_VL")
+        self.assertEqual(self._pair(job_of(g, jitter=JIT), "Q2:PM-ref_vs_SG-stock")["label"], "PM_ABOVE_SG_SIGN")   # rev3.1: sign only
+
+    def test_placebo_per_base_arm(self):
+        """rev3.1: K3 per base arm -- SG pairs (Q2 SG side, Q3, Q5, Q8) on SG-rep vs SG-stock, PM pairs (Q4, Q2 PM side) on PM-rep vs PM-ref."""
+        self.assertEqual(SP.pair_placebos("PM-ref", "VL-stock"), ["PM"])
+        self.assertEqual(SP.pair_placebos("PM-ref34", "VL-stock"), ["PM"])
+        self.assertEqual(SP.pair_placebos("PM-ref", "SG-stock"), ["PM", "SG"])
+        self.assertEqual(SP.pair_placebos("VL-stock", "SG-stock"), ["SG"])
+        noisy = ("Q2:PM-ref_vs_SG-stock", "Q3:VL-stock_vs_SG-stock", "Q5:SG-mix_vs_SG-stock", "Q8:SG-off_vs_SG-stock")
+        c = AN.analyze_cell(job_of(dict(EQ, **{"SG-rep": 86}), jitter=JIT), "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertTrue(c["placebo_invalid"])
+        self.assertFalse(c["placebo_pm_invalid"])
+        for k in noisy:
+            self.assertEqual(c["pairs"][k]["label"], "BOOT_NOISE", k)
+        for k in ("Q4:PM-ref_vs_VL-stock", "Q4:PM-ref34_vs_VL-stock"):            # SG boot noise does not kill the PD-mux vs vLLM pair
+            self.assertEqual(c["pairs"][k]["label"], "EQUIV_WITHIN_3PCT", k)
+            self.assertEqual(c["pairs"][k]["placebos"], {"PM": "OK"})
+        c = AN.analyze_cell(job_of(dict(EQ, **{"PM-rep": 86}), jitter=JIT), "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertFalse(c["placebo_invalid"])
+        self.assertTrue(c["placebo_pm_invalid"])
+        for k in ("Q4:PM-ref_vs_VL-stock", "Q4:PM-ref34_vs_VL-stock", "Q2:PM-ref_vs_SG-stock", "Q2:PM-ref34_vs_SG-stock"):
+            self.assertEqual(c["pairs"][k]["label"], "BOOT_NOISE", k)
+        self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["latency"]["TPOT"]["label"], "BOOT_NOISE")
+        self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["placebos"], {"PM": "INVALID", "SG": "OK"})
+        for k in ("Q3:VL-stock_vs_SG-stock", "Q8:SG-off_vs_SG-stock"):
+            self.assertEqual(c["pairs"][k]["label"], "SIGN_UNRESOLVED", k)
+        g = {k: v for k, v in EQ.items() if k != "PM-rep"}                         # replica absent -> PM placebo invalid (fail-closed)
+        c = AN.analyze_cell(job_of(g, jitter=JIT), "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        self.assertEqual(c["pairs"]["Q4:PM-ref_vs_VL-stock"]["label"], "BOOT_NOISE")
+        self.assertEqual(c["pairs"]["Q8:SG-off_vs_SG-stock"]["label"], "SIGN_UNRESOLVED")
 
     def test_placebo_failure_is_boot_noise(self):
         g = dict(EQ, **{"SG-rep": 86})
@@ -995,8 +1048,9 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(q8["latency"]["TTFT"]["label"], "EQUIV_WITHIN_3PCT_TTFT")
         self.assertAlmostEqual(q8["latency"]["TPOT"]["mean"], math.log(1.1))
         self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["latency"]["TPOT"]["label"], "EQUIV_WITHIN_3PCT_TPOT")
-        self.assertEqual(set(SP.LATENCY_PAIRS), {"Q3", "Q5", "Q8"})
-        self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["latency"], {})
+        self.assertEqual(set(SP.LATENCY_PAIRS), {"Q2", "Q3", "Q5", "Q8"})                 # rev3.1: + Q2
+        self.assertEqual(set(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["latency"]), {"TPOT", "TTFT", "ITL"})
+        self.assertEqual(c["pairs"]["Q4:PM-ref_vs_VL-stock"]["latency"], {})
         self.assertEqual(set(c["pairs"]["Q3:VL-stock_vs_SG-stock"]["latency"]), {"TPOT", "TTFT", "ITL"})      # rev3: Q3 gains them
         self.assertEqual(c["pairs"]["Q3:VL-stock_vs_SG-stock"]["latency"]["TPOT"]["label"], "EQUIV_WITHIN_3PCT_TPOT")
         [r for r in j["runs"] if r["arm"] == "SG-off"][0]["segments"][0]["requests"][0]["error"] = "boom"   # validity reaches latency
@@ -1059,20 +1113,22 @@ class AnalyzeTests(unittest.TestCase):
         rows = AN.question_rows(add, {}, {})
         self.assertEqual((rows["Q1"]["status"], rows["Q1"]["detail"]["burst"]), ("PARTIAL", 4.170888))
         P = AN.score_predictions(add, {}, {})
-        self.assertEqual((P["Q1-SG"]["value"], P["Q1-SG"]["score"]), (4.170888, "HIT"))
+        self.assertNotIn("Q1-SG", P)                                         # rev3.1: the §8 Q1-SG prediction row is deleted (Q1 descriptive)
+        self.assertFalse(hasattr(SP, "Q1_SG_BAND"))
         self.assertIsNone(P["P-1"]["score"])                                 # P-1 stays on the first-Job ladder (unchanged rev2.1 rule)
         bad = AN.build_addendum(j1, None, None, j1down={"runs": lad("SG-stock", "LADDER_DOWN", [], down)})
-        self.assertEqual(AN.score_predictions(bad, {}, {})["Q1-SG"]["score"], "UNSCORABLE")
-        self.assertIn("LADDER_BOTTOM_FAIL_2", AN.score_predictions(bad, {}, {})["Q1-SG"]["why"])
-        self.assertEqual(AN.score_predictions(AN.build_addendum(j1), {}, {})["Q1-SG"]["score"], "UNSCORABLE")
+        self.assertEqual(AN.q1_burst(bad)[0], None)
+        self.assertIn("LADDER_BOTTOM_FAIL_2", AN.q1_burst(bad)[1])
         nm = "\n".join(AN.not_measured({}, {}, {"status": "CLIENT_DEF_OK"}, {}, {"status": "TTFT_OFFSET_OK"}, bad))
         self.assertIn("J1-down SG-stock: LADDER_BOTTOM_FAIL_2", nm)
         self.assertIn("기준 용량", nm)
 
     def test_sign_only_pairs(self):
-        """rev3: Q3 / Q5 / Q8 pairs carry the goodput sign only (+ MAGNITUDE_NOT_CITABLE); Q2 and Q4 keep the registered labels."""
-        self.assertEqual(SP.SIGN_ONLY_QUESTIONS, ("Q3", "Q5", "Q8"))
-        g = dict(EQ, **{"SG-off": 92, "VL-stock": 70, "PM-ref": 92, "SG-mix": 80})
+        """rev3: Q3 / Q5 / Q8 pairs carry the goodput sign only (+ MAGNITUDE_NOT_CITABLE); rev3.1: + Q2 (with latency co-metrics);
+        only Q4 keeps the registered labels."""
+        self.assertEqual(SP.SIGN_ONLY_QUESTIONS, ("Q2", "Q3", "Q5", "Q8"))
+        self.assertIn("Q2", SP.LATENCY_PAIRS)
+        g = dict(EQ, **{"SG-off": 92, "VL-stock": 70, "PM-ref": 92, "PM-rep": 92, "SG-mix": 80})
         j = job_of(g, jitter=JIT)
         for r in j["runs"]:
             if r["arm"] == "SG-mix":
@@ -1083,9 +1139,13 @@ class AnalyzeTests(unittest.TestCase):
         self.assertIn("MAGNITUDE_NOT_CITABLE", q8["tags"])
         self.assertEqual(q3["label"], "VL_BELOW_SG_SIGN")
         self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["label"], "SIGN_UNRESOLVED")
-        self.assertEqual(q2["label"], "PM_ABOVE_SG")
-        self.assertNotIn("MAGNITUDE_NOT_CITABLE", q2["tags"])
-        self.assertFalse(c["pairs"]["Q4:PM-ref_vs_VL-stock"]["sign_only"])
+        self.assertEqual((q2["raw_label"], q2["label"]), ("PM_ABOVE_SG", "PM_ABOVE_SG_SIGN"))
+        self.assertIn("MAGNITUDE_NOT_CITABLE", q2["tags"])
+        self.assertEqual(set(q2["latency"]), set(SP.LATENCY_METRICS))
+        q4 = c["pairs"]["Q4:PM-ref_vs_VL-stock"]
+        self.assertFalse(q4["sign_only"])
+        self.assertEqual(q4["label"], "PM_ABOVE_VL")
+        self.assertNotIn("MAGNITUDE_NOT_CITABLE", q4["tags"])
         self.assertEqual(AN.sign_label((0.01, 0.002, 0.02, 4), ("A", "B")), "A_ABOVE_B_SIGN")       # no 3 % margin on the sign
         self.assertEqual(AN.sign_label((0.01, 0.002, 0.02, 3), ("A", "B")), "SIGN_UNRESOLVED")
         nm = "\n".join(AN.not_measured({}, c and {"R2": c}, SMOKE_OK, {}, OFFSET_OK, None))
