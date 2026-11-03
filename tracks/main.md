@@ -29,7 +29,7 @@
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
 3. promote 7차 후보 정리: 결정 43–58·60·60i–64i, 정책 캠페인 결과·감사 r1 4건, 구조 검증(`7a7a2c08`, 감사 필요), 두 메모(감사 필요)
 ## 사용자 결정 대기
-- **Phase B rev3 방향** / 진단 Job(`DIAGBOOT_itl_gap_2026-11-03.md`): `--enable-pdmux`만 빼면 ITL p95 45→69 ms·attainment 1.0→0.19(B5), overlap·chunk·mem 변형은 무효, piecewise cudagraph는 py3.14 이미지에서 부팅 불가(B2) → 손대지 않은 SGLang의 정지는 설정 우연이 아니라 PD-mux 동시 실행 부재의 결과 / 권고 rev3: ③ 기준 용량 = min{vLLM, PD-mux}(SGLang 3 arm 제외, 그 쌍은 부호·지연 지표) + SGLang 3 arm 아래쪽 사다리(k=−1…−4, Q1 완성) + 공정성 범위 문구(SGLang eager prefill vs vLLM piecewise) · 대안: py3.12 SGLang 이미지 재빌드로 piecewise 해소 후 사다리 재측정(이미지·bring-up 재작업)
+- **Phase B rev3.2 봉인(2026-11-04)** / 감사 rev3 r1·r2(NO-GO 2건 수정) 뒤 사용자 결정으로 재봉인(`HARNESS_DIGEST` `0515bd1a…`, 핀 14·재사용 21·plan 5; 결정: Q2 부호 전용, PM-rep 플라시보 R1·R2만, 아래쪽 사다리 Job, 기준 용량 = min{vLLM, PD-mux}, refcell PM-ref 7.29) / **제출 승인 대기**: 아래쪽 사다리 Job(SG 3 arm, ≈56 min)·두 번째 Job(지속 용량 vLLM·PD-mux, ≈91 min; addendum `runs/…7899d1b…/ADDENDUM_J1_rev3.json`) — 세 번째·네 번째는 두 번째 결과 뒤 결정(재감사 예보: Q4 BOTH_SATURATED, 정본 goodput 라벨 ≈0; 용량 근처 셀 재설계 권고)
 - **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md` · ★2026-11-01 규약 개정(REPORT 위)이 이 결정에 걸려 있음 — 결정 전까지 정책 판정 셀 Job 제출 금지(승계 상수 규약)
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
