@@ -1,14 +1,19 @@
 #!/usr/bin/env python3
-"""Analysis of PREREG_STOCK_BASE rev2.1 (DRAFT, NOT SEALED).  Pure functions over the raw trees of the Jobs; CPU; no server.
+"""Analysis of PREREG_STOCK_BASE rev3 (2026-11-03; rev2.1 sealed 2026-11-02).  Pure functions over the raw trees of the Jobs; CPU; no server.
 
-  sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job (after J1 / after J1b)
-  sb_analyze.py report   --j1 RAW --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]    # labels, predictions, "not measured" section
+  sb_analyze.py addendum --j1 RAW_J1 [--j1ext RAW] [--j1down RAW] [--j1b RAW_J1b] --out ADD.json   # rates for the next Job
+  sb_analyze.py report   --j1 RAW [--j1down RAW] --j1b RAW --j2 RAW --j3 RAW [--out ANALYSIS.json]  # labels, predictions, "not measured"
 
 Registered rules implemented here (each guarded by a mutant in sb_mutants.py):
   * good request = no error AND TTFT <= SLO AND request-internal token-ITL p95 <= SLO (gate 4)
   * goodput = sum(good) / sum(segment durations) (gate 7: durations ADD, never max)
   * lambda* = pick rule (sb_runner.lambda_pick; tie -> lower rate); sustained lambda* = largest sustained point passing (§3)
-  * lambda*_ref = min over the arms present (the scope of that min is recorded)
+  * lambda*_ref = min over the SUSTAINED capacity of SP.REF_ARMS present (rev3: VL-stock, PM-ref only; the SGLang-default arms are
+    excluded -- first-Job ladder bottom failure, ITL-axis cliff; the scope of that min is recorded)
+  * rev3: J1-down (SG 3 arms, 5.516 / 1.15^k, k = 1..4) -> pick rule over J1 + J1-down points; bottom failure again -> LADDER_BOTTOM_FAIL_2
+    (no value); feeds Q1 (and the PREREG §8 Q1-SG row) only, never lambda*_ref.  refcell rate = burst lambda* of SP.REFCELL_ARM (PM-ref)
+  * rev3: pairs of SP.SIGN_ONLY_QUESTIONS (Q3, Q5, Q8) carry a goodput SIGN label only (A_ABOVE_B_SIGN iff CI lo > 0, A_BELOW_B_SIGN iff
+    CI hi < 0, else SIGN_UNRESOLVED) + BOTH_SATURATED / INVALID / BOOT_NOISE / MIX_NOT_FIRED + latency co-metrics; tag MAGNITUDE_NOT_CITABLE
   * pair label (§4): A_ABOVE_B iff lo > 0 and mean >= ln1.03; A_BELOW_B iff hi < 0 and mean <= -ln1.03; EQUIV_WITHIN_3PCT iff
     |mean| < ln1.03 and the t(3) CI is inside (-ln1.03, ln1.03); otherwise UNRESOLVED_INTERVAL (also n < 4)
   * K3 placebo (SG-rep vs SG-stock): invalid iff n < 4 or |mean| >= ln1.03 or CI excludes 0 -> every label of the cell BOOT_NOISE
@@ -133,6 +138,19 @@ def label(ci, tokens):
     return "UNRESOLVED_INTERVAL"
 
 
+def sign_label(ci, tokens):
+    """rev3 (SIGN_ONLY_QUESTIONS): the goodput sign only -- no 3 % margin, no EQUIV (a magnitude statement)."""
+    m, lo, hi, n = ci
+    a, b = tokens
+    if n < 4 or not all(isinstance(x, (int, float)) and x == x for x in (m, lo, hi)):      # n < 4 or NaN -> no sign
+        return "SIGN_UNRESOLVED"
+    if lo > 0:
+        return f"{a}_ABOVE_{b}_SIGN"
+    if hi < 0:
+        return f"{a}_BELOW_{b}_SIGN"
+    return "SIGN_UNRESOLVED"
+
+
 def paired(runs_a, runs_b, ttft_slo):
     """runs_x: {seed: run}.  seed-level paired ln(goodput A / goodput B), t(n-1) 95 %."""
     seeds = sorted(set(runs_a) & set(runs_b))
@@ -201,8 +219,8 @@ def both_saturated(runs_a, runs_b, ttft_slo):
 
 
 # ---- capacity ----------------------------------------------------------------------------------------------------------
-def ladder_lambda(job_runs, arm, ttft_slo=SP.W1_TTFT_MS):
-    pts = [(r["spec"]["rate"], attainment(r, ttft_slo)) for r in job_runs if r["arm"] == arm and r.get("cell") == "LADDER"]
+def ladder_lambda(job_runs, arm, ttft_slo=SP.W1_TTFT_MS, cells=("LADDER",)):
+    pts = [(r["spec"]["rate"], attainment(r, ttft_slo)) for r in job_runs if r["arm"] == arm and r.get("cell") in cells]
     lam, st = RU.lambda_pick(pts)
     return {"lambda_star": lam if st == "BRACKETED" else None, "lambda_star_raw": lam, "status": st, "points": sorted(pts)}
 
@@ -220,7 +238,18 @@ def sustained_lambda(job_runs, arm):
             "points": sorted(rows, key=lambda x: x["rate"])}
 
 
-def build_addendum(j1, j1ext=None, j1b=None, w1_sha=None):
+def ladder_down(j1_runs, j1down, arm, ttft_slo=SP.W1_TTFT_MS):
+    """rev3: the same pick rule over the first-Job ladder points + the J1-down points of `arm`.  A failing bottom again (the lowest
+    J1-down rung) -> LADDER_BOTTOM_FAIL_2 and no value."""
+    if j1down is None or not any(r["arm"] == arm and r.get("cell") == "LADDER_DOWN" for r in j1down["runs"]):
+        return {"lambda_star": None, "status": "NOT_RUN", "points": []}
+    L = ladder_lambda(list(j1_runs) + list(j1down["runs"]), arm, ttft_slo, cells=("LADDER", "LADDER_DOWN"))
+    if L["status"] == "LADDER_BOTTOM_FAIL":
+        L = dict(L, status=SP.LADDER_DOWN_FAIL, lambda_star=None)
+    return L
+
+
+def build_addendum(j1, j1ext=None, j1b=None, w1_sha=None, j1down=None):
     runs = list(j1["runs"]) + (list(j1ext["runs"]) if j1ext else [])
     add = {"lambda_star_burst": {}, "ladder": {}, "stamps": {}, "w1_lengths_sha256": w1_sha}
     for a in SP.LADDER_ARMS:
@@ -231,19 +260,27 @@ def build_addendum(j1, j1ext=None, j1b=None, w1_sha=None):
         add["ladder"][a] = L
         add["lambda_star_burst"][a] = L["lambda_star"]
     add["lambda_star_burst"] = {k: v for k, v in add["lambda_star_burst"].items() if v is not None}
-    sg = add["lambda_star_burst"].get(SP.REFCELL_ARM)
-    add["refcell_rate"] = sg
-    add["refcell_rule"] = "R-a: refcell rate = lambda*_SG-stock(burst), a Job-1 ladder rung (identical cell exists in Job 1) -- OPEN ITEM O-1"
+    add["refcell_arm"] = SP.REFCELL_ARM
+    add["refcell_rate"] = add["lambda_star_burst"].get(SP.REFCELL_ARM)
+    add["refcell_rule"] = (f"rev3: refcell = {SP.REFCELL_ARM} at its burst lambda* rung (a first-Job ladder rung: the identical cell exists "
+                           "in Job 1); rev2.1 used SG-stock, which has no burst lambda*")
     add["stamps"]["J1"] = sorted({(r.get("job_name"), r.get("gpu_uuid")) for r in j1["runs"]})
+    if j1down is not None:                                  # rev3: Q1 only -- kept apart from lambda_star_burst (J1b input)
+        add["ladder_down"] = {a: ladder_down(runs, j1down, a) for a in SP.LADDER_DOWN_ARMS}
+        add["lambda_star_burst_down"] = {a: v["lambda_star"] for a, v in add["ladder_down"].items()}
+        add["stamps"]["J1-down"] = sorted({(r.get("job_name"), r.get("gpu_uuid")) for r in j1down["runs"]})
+    add["lambda_star_ref_arms"] = list(SP.REF_ARMS)
+    add["lambda_star_ref_excluded"] = {a: "rev3: excluded from the reference capacity (first-Job ladder bottom failure, ITL-axis cliff)"
+                                       for a in SP.LADDER_DOWN_ARMS}
     if j1b:
         add["lambda_star_sustained"] = {}
         for a in SP.LADDER_ARMS:
             if any(r["arm"] == a for r in j1b["runs"]):
                 add["lambda_star_sustained"][a] = sustained_lambda(j1b["runs"], a)
-        vals = {a: v["lambda_star_sustained"] for a, v in add["lambda_star_sustained"].items()}
+        vals = {a: v["lambda_star_sustained"] for a, v in add["lambda_star_sustained"].items() if a in SP.REF_ARMS}
         add["lambda_star_ref"] = min(vals.values()) if vals and all(v is not None for v in vals.values()) else None
         add["lambda_star_ref_scope"] = sorted(vals)
-        add["lambda_star_ref_missing_arms"] = sorted(set(SP.LADDER_ARMS) - set(vals))
+        add["lambda_star_ref_missing_arms"] = sorted(set(SP.REF_ARMS) - set(vals))
         if any(v is None for v in vals.values()):
             add["lambda_star_ref_why_none"] = sorted(a for a, v in vals.items() if v is None)
     return add
@@ -495,7 +532,12 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
             final = "BOTH_SATURATED"
         else:
             final = raw
+        sign_only = q in SP.SIGN_ONLY_QUESTIONS
+        if sign_only and final == raw:          # rev3: an SGLang-default arm sits above its own capacity -> sign only, no magnitude
+            final = sign_label((p["mean"], p["lo"], p["hi"], p["n"]), tok)
         tags = ["TTFT_OFFSET_SHIFT"] if engine_pair and "TTFT_OFFSET_SHIFT" in why else []
+        if sign_only:
+            tags.append("MAGNITUDE_NOT_CITABLE")
         if oob:
             tags.append("CELL_OUT_OF_BAND")
         if sub["tag"] != "SUBSTRATE_OK":
@@ -516,7 +558,7 @@ def analyze_cell(job, cell, j1, smoke, ttft_slo, offset=None):
                 lat[m] = dict(pm, raw_label=lraw, label=lfin)
         if (a in SP.ENGINE_PAIR_ARMS or b in SP.ENGINE_PAIR_ARMS) and not math.isnan(p["sd"]) and p["sd"] > SP.ENGINE_PAIR_SD_MAX:
             tags.append("RERUN_SEED8_REGISTERED")
-        out["pairs"][key] = dict(p, raw_label=raw, label=final, validity=why, tags=tags, question=q, both_saturated=sat,
+        out["pairs"][key] = dict(p, raw_label=raw, label=final, validity=why, tags=tags, question=q, both_saturated=sat, sign_only=sign_only,
                                  seed_attainment={a: seed_attainments(arms[a], ttft_slo), b: seed_attainments(arms[b], ttft_slo)},
                                  latency=lat)
     out["mixing_opportunities"] = {x: {s: r.get("mixing_opportunities") for s, r in arms[x].items()} for x in SP.MIX_OPPORTUNITY_ARMS
@@ -691,6 +733,12 @@ def score_predictions(add, cells, instr):
         f5, bs5 = forecast_r_ser(512, b5["bs_p50"])
         P["P-4"]["descriptive_512"] = {"value": b5["r_ser_p50"], "n": b5["n"], "forecast": f5,
                                        "forecast_cell": {"L": 512, "bs": bs5, "ctx": 2048}, "score": "NOT_SCORED"}
+    v1, w1 = q1_burst(add)                                 # rev3 PREREG §8 row Q1-SG (registered before the J1-down data)
+    lo1, hi1 = SP.Q1_SG_BAND
+    P["Q1-SG"] = {"value": v1, "band": [lo1, hi1], "source": w1,
+                  "score": "UNSCORABLE" if v1 is None else ("HIT" if lo1 <= v1 <= hi1 else "MISS")}
+    if v1 is None:
+        P["Q1-SG"]["why"] = w1
     g = (cells.get("R2") or {}).get("gate5", {})
     if "SG-mix" in g and "SG-stock" in g:
         a, b = g["SG-mix"]["itl_ms"]["p95"], g["SG-stock"]["itl_ms"]["p95"]
@@ -714,19 +762,34 @@ Q7_KEYS = ("Q2:PM-ref_vs_SG-stock", "Q3:VL-stock_vs_SG-stock")     # Q7 = the si
 LABEL_NOT_MEASURED = ("NOT_RUN", "INVALID", "BOOT_NOISE", "MIX_NOT_FIRED", "INVALID/UNRESOLVED:TTFT_OFFSET_SHIFT")
 
 
+def q1_burst(add):
+    """rev3: SG-stock burst lambda* = the first-Job ladder value if bracketed there, else the J1-down value (same pick rule over both).
+    -> (value, source-or-reason)."""
+    add = add or {}
+    v = (add.get("lambda_star_burst") or {}).get(SP.Q1_ARM)
+    if v is not None:
+        return v, "J1 ladder"
+    st1 = ((add.get("ladder") or {}).get(SP.Q1_ARM) or {}).get("status", "Job 1 없음")
+    if "ladder_down" not in add:
+        return None, f"J1 {st1}; 아래쪽 사다리(J1-down) raw 없음"
+    d = add["ladder_down"].get(SP.Q1_ARM) or {}
+    if d.get("lambda_star") is None:
+        return None, f"J1 {st1}; J1-down {d.get('status', 'NOT_RUN')}"
+    return d["lambda_star"], "J1 + J1-down ladder"
+
+
 def question_rows(add, cells, instr):
     """rev2 (audit r1 ⑦): one row per question Q1-Q8, ALWAYS (a question with no data is NOT_MEASURED with its reason)."""
     rows = {}
-    lb = (add or {}).get("lambda_star_burst") or {}
-    ls = ((add or {}).get("lambda_star_sustained") or {}).get(SP.REFCELL_ARM) or {}
-    v_b, v_s = lb.get(SP.REFCELL_ARM), ls.get("lambda_star_sustained")
+    ls = ((add or {}).get("lambda_star_sustained") or {}).get(SP.Q1_ARM) or {}
+    (v_b, src), v_s = q1_burst(add), ls.get("lambda_star_sustained")
     why = []
     if v_b is None:
-        why.append("SG-stock 버스트 λ* 없음(" + str(((add or {}).get("ladder") or {}).get(SP.REFCELL_ARM, {}).get("status", "Job 1 없음")) + ")")
+        why.append(f"{SP.Q1_ARM} 버스트 λ* 없음({src})")
     if v_s is None:
-        why.append("SG-stock 지속 λ* 없음(" + str(ls.get("status", "Job 2 없음")) + ")")
+        why.append(f"{SP.Q1_ARM} 지속 λ* 없음(rev3: SGLang 기본 구성 3 arm은 지속 셀을 돌리지 않는다 — 기준 용량에서 제외)")
     rows["Q1"] = {"status": "MEASURED" if not why else ("PARTIAL" if (v_b is not None or v_s is not None) else "NOT_MEASURED"),
-                  "detail": {"burst": v_b, "sustained": v_s}, "why": why}
+                  "detail": {"burst": v_b, "burst_source": src if v_b is not None else None, "sustained": v_s}, "why": why}
     for q, cs in Q_CELL_PAIRS.items():
         got, miss = {}, []
         for c in cs:
@@ -769,6 +832,17 @@ def boot_status_rows(name, j):
     return out
 
 
+def ladder_down_rows(add, j1down_present):
+    """rev3: the downward ladder status of every SGLang-default arm (Q1 only)."""
+    if not j1down_present and "ladder_down" not in (add or {}):
+        return ["J1-down(아래쪽 사다리): raw 없음 → Q1 버스트 λ*는 첫 번째 Job 사다리 결과만"]
+    out = []
+    for a, v in sorted(((add or {}).get("ladder_down") or {}).items()):
+        if v.get("lambda_star") is None:
+            out.append(f"J1-down {a}: {v.get('status')} (값 없음)")
+    return out
+
+
 def ref_capacity_rows(add):
     if add is None:
         return ["기준 용량(λ*_ref): addendum 없음(Job 1 raw 없음)"]
@@ -786,7 +860,14 @@ def ref_capacity_rows(add):
 def not_measured(jobs, cells, smoke, instr, offset=None, add=None):
     out = [f"{q} {r['status']}: " + ("; ".join(r["why"]) if r["why"] else "—") for q, r in question_rows(add, cells, instr).items()]
     out += [f"PREREG §10: {x}" for x in PREREG_LOST]
+    out += ladder_down_rows(add, jobs.get("J1-down") is not None)
     out += ref_capacity_rows(add)
+    out.append(f"rev3: 기준 용량 = {list(SP.REF_ARMS)}의 지속 용량 최소; {list(SP.LADDER_DOWN_ARMS)}는 제외(첫 번째 Job 사다리 바닥 실패 — "
+               "ITL 축 절벽, 도착당 ~42 ms 정지) — 이 3 arm의 지속 용량은 측정하지 않는다")
+    for cname, c in cells.items():
+        for k, v in c.get("pairs", {}).items():
+            if v.get("sign_only"):
+                out.append(f"{cname} {k}: rev3 부호·라벨 + 지연 공동 지표만 (goodput % 크기 인용 금지)")
     for name, j in jobs.items():
         if j is None:
             out.append(f"{name}: Job raw tree absent")
@@ -820,7 +901,7 @@ def render_not_measured(items):
     return "## 측정하지 않은 것 (sb_analyze 자동 생성)\n\n" + "\n".join(f"- {x}" for x in items) + "\n"
 
 
-EXPECTED_KIND = {"J1": "LADDER", "J1b": "SUSTAIN", "J2": "STEADY", "J3": "W3"}
+EXPECTED_KIND = {"J1": "LADDER", "J1-down": "LADDER_DOWN", "J1b": "SUSTAIN", "J2": "STEADY", "J3": "W3"}
 
 
 def kind_problems(jobs):
@@ -829,8 +910,8 @@ def kind_problems(jobs):
             if j is not None and (j.get("plan") or {}).get("kind") != EXPECTED_KIND[n]}
 
 
-def report(j1, j1b, j2, j3, add=None):
-    jobs = {"J1": j1, "J1b": j1b, "J2": j2, "J3": j3}
+def report(j1, j1b, j2, j3, add=None, j1down=None):
+    jobs = {"J1": j1, "J1-down": j1down, "J1b": j1b, "J2": j2, "J3": j3}
     kp = kind_problems(jobs)
     j2u, j3u = (None if "J2" in kp else j2), (None if "J3" in kp else j3)
     smoke = smoke_verdict(j1)
@@ -843,7 +924,8 @@ def report(j1, j1b, j2, j3, add=None):
     if j3u is not None and j3u.get("floor") and cell_runs(j3u, "R3"):
         cells["R3"] = analyze_cell(j3u, "R3", j1, smoke, SP.W3_TTFT_K * j3u["floor"]["floor_ms"], offset)
     instr = instr_summary(j2u)
-    add = add or (build_addendum(j1, None, j1b) if j1 else None)
+    j1du = None if "J1-down" in kp else j1down
+    add = add or (build_addendum(j1, None, j1b, j1down=j1du) if j1 else None)
     preds = score_predictions(add, cells, instr)
     nm = [f"{n}: REFUSED ({w})" for n, w in sorted(kp.items())] + not_measured(jobs, cells, smoke, instr, offset, add)
     return {"smoke": smoke, "ttft_offset": offset, "kind_problems": kp, "addendum": add, "cells": cells, "instr": instr,
@@ -857,21 +939,23 @@ def main(argv=None):
     p = sub.add_parser("addendum")
     p.add_argument("--j1", required=True)
     p.add_argument("--j1ext")
+    p.add_argument("--j1down")
     p.add_argument("--j1b")
     p.add_argument("--w1-lengths-sha256")
     p.add_argument("--out", required=True)
     q = sub.add_parser("report")
-    for k in ("--j1", "--j1b", "--j2", "--j3", "--out", "--addendum"):
+    for k in ("--j1", "--j1down", "--j1b", "--j2", "--j3", "--out", "--addendum"):
         q.add_argument(k)
     a = ap.parse_args(argv)
     if a.cmd == "addendum":
         add = build_addendum(load_job(a.j1), load_job(a.j1ext) if a.j1ext else None, load_job(a.j1b) if a.j1b else None,
-                             a.w1_lengths_sha256)
+                             a.w1_lengths_sha256, load_job(a.j1down) if a.j1down else None)
         Path(a.out).write_text(json.dumps(add, indent=1, sort_keys=True, default=str) + "\n")
-        print(json.dumps({"lambda_star_burst": add["lambda_star_burst"], "lambda_star_ref": add.get("lambda_star_ref")}))
+        print(json.dumps({"lambda_star_burst": add["lambda_star_burst"], "refcell_arm": add["refcell_arm"], "refcell_rate": add["refcell_rate"],
+                          "lambda_star_burst_down": add.get("lambda_star_burst_down"), "lambda_star_ref": add.get("lambda_star_ref")}))
         return 0
     ld = lambda x: load_job(x) if x else None
-    res = report(ld(a.j1), ld(a.j1b), ld(a.j2), ld(a.j3), json.load(open(a.addendum)) if a.addendum else None)
+    res = report(ld(a.j1), ld(a.j1b), ld(a.j2), ld(a.j3), json.load(open(a.addendum)) if a.addendum else None, ld(a.j1down))
     txt = json.dumps(res, indent=1, sort_keys=True, default=str)
     (Path(a.out).write_text(txt + "\n") if a.out else print(txt))
     return 0

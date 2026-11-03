@@ -1,4 +1,4 @@
-"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev2 DRAFT).  No GPU, no server.
+"""CPU tests of the stock-baseline harness (results/stock_baseline/sb_*, PREREG_STOCK_BASE rev3, 2026-11-03).  No GPU, no server.
 SB_DIR (env) points the tests at a copy of the harness -- sb_mutants.py uses it: every registered rule must make a test FAIL when it is
 reverted (lesson 53)."""
 import gzip
@@ -22,6 +22,8 @@ import sb_loadgen as LG  # noqa: E402
 W1_POOL = [[100 + i, 20 + (i % 7)] for i in range(400)]
 W3_POOL = [[i, 6000 + i, 300] for i in range(50)]
 ADD = {"lambda_star_burst": {a: 6.0 for a in SP.LADDER_ARMS}, "lambda_star_ref": 5.0, "refcell_rate": 6.0}
+# rev3: the first Job's real addendum shape -- the SGLang-default arms have no burst lambda* (LADDER_BOTTOM_FAIL)
+ADD_J1_REAL = {"lambda_star_burst": {"VL-stock": 8.389146, "PM-ref": 7.29491}, "refcell_rate": 7.29491, "refcell_arm": "PM-ref"}
 
 
 def pristine_stamp(argv=()):
@@ -200,6 +202,7 @@ class SpecTests(unittest.TestCase):
     def test_J1b_plan(self):
         p = SP.make_plan("J1b", ADD)
         self.assertEqual([b["role"] for b in (p["boots"][0], p["boots"][-1])], ["refcell", "refcell"])
+        self.assertEqual(sorted(b["arm"] for b in p["boots"][1:-1]), ["PM-ref", "VL-stock"])        # rev3: REF_ARMS only
         for b in p["boots"][1:-1]:
             self.assertEqual(sorted(r["factor"] for r in b["runs"]), [0.8, 1.0])
             self.assertEqual(b["extra_run"]["factor"], 0.5)
@@ -207,6 +210,50 @@ class SpecTests(unittest.TestCase):
                 self.assertEqual(r["n_requests"], int(round(r["rate"] * 600)))
         with self.assertRaises(RuntimeError):
             SP.make_plan("J1b", None)
+
+    def test_J1b_plan_from_first_job_addendum(self):
+        """rev3: the second Job is plannable from the first Job's real addendum (no SGLang-default burst lambda*), sustained cells for
+        VL-stock / PM-ref only at {1.0, 0.8} x their burst lambda*, refcell = PM-ref at 7.29491 (a first-Job rung), no J1-down needed."""
+        self.assertEqual(SP.REF_ARMS, ("VL-stock", "PM-ref"))
+        p = SP.make_plan("J1b", ADD_J1_REAL)
+        self.assertEqual(SP.plan_problems(p), [])
+        sus = {b["arm"]: sorted(r["rate"] for r in b["runs"]) for b in p["boots"] if b["role"] == "meas"}
+        self.assertEqual(sus, {"VL-stock": [6.711317, 8.389146], "PM-ref": [5.835928, 7.29491]})
+        self.assertEqual({b["arm"]: b["extra_run"]["rate"] for b in p["boots"] if b["role"] == "meas"},
+                         {"VL-stock": 4.194573, "PM-ref": 3.647455})
+        refs = [b for b in p["boots"] if b["role"] == "refcell"]
+        self.assertEqual([(b["arm"], b["runs"][0]["rate"], b["runs"][0]["seed"], b["runs"][0]["n_requests"]) for b in refs],
+                         [("PM-ref", 7.29491, 201, 120)] * 2)
+        self.assertIn(7.29491, SP.ladder_rates())                                            # identical cell exists in Job 1
+        bad = json.loads(json.dumps(p))
+        bad["boots"][0] = SP.refcell_boot("J1b", "start", 7.29491)
+        bad["boots"][0]["arm"] = "SG-stock"
+        self.assertTrue(any("refcell boot arm" in x for x in SP.plan_problems(bad)))
+        bad = json.loads(json.dumps(p))
+        bad["boots"].insert(1, SP.boot("J1b_sus_SG-stock", SP.arm("SG-stock"), []))
+        self.assertTrue(any("REF_ARMS" in x for x in SP.plan_problems(bad)))
+
+    def test_J1_down_plan(self):
+        """rev3: SG 3 arms x 5.516 / 1.15^k (k = 1..4) x seeds {201, 202} x 120 requests, one boot per arm, no smoke, no addendum."""
+        p = SP.make_plan("J1-down")
+        self.assertEqual(p["kind"], "LADDER_DOWN")
+        self.assertEqual(p["ladder"], [4.796522, 4.170888, 3.62686, 3.153791])
+        self.assertEqual(sorted(b["arm"] for b in p["boots"]), ["SG-mix", "SG-off", "SG-stock"])
+        for b in p["boots"]:
+            self.assertEqual(b["role"], "meas")
+            self.assertEqual(sorted((r["rate"], r["seed"]) for r in b["runs"]),
+                             sorted((r, s) for r in (4.796522, 4.170888, 3.62686, 3.153791) for s in (201, 202)))
+            self.assertTrue(all(r["n_requests"] == 120 and r["cell"] == "LADDER_DOWN" for r in b["runs"]))
+        self.assertEqual({b["arm"]: b["arm_def"]["tree"] for b in p["boots"]}, {"SG-stock": "pristine", "SG-mix": "pristine", "SG-off": "patched"})
+        self.assertEqual(SP.plan_problems(p), [])
+        self.assertAlmostEqual(p["est_min"], 3 * (SP.BOOT_OH_MIN + 8 * SP.CAP_CELL_MIN), places=6)
+        bad = json.loads(json.dumps(p))
+        bad["boots"][0]["runs"][0]["rate"] = 5.516
+        self.assertTrue(any("J1-down" in x for x in SP.plan_problems(bad)))
+        bad = json.loads(json.dumps(p))
+        bad["boots"].append(SP.boot("J1-down_lad_VL-stock", SP.arm("VL-stock"), []))
+        self.assertTrue(any("one measurement boot per" in x for x in SP.plan_problems(bad)))
+        self.assertIn("J1-down", SP.JOBS)
 
     def test_J2_abba_and_cells(self):
         p = SP.make_plan("J2", ADD)
@@ -246,7 +293,9 @@ class SpecTests(unittest.TestCase):
         self.assertFalse(hasattr(SP, "trace_run") or hasattr(SP, "TRACE_LO"))
         roles = [b["role"] for b in p["boots"]]
         self.assertEqual(roles, ["refcell", "w3ladder"] + ["meas"] * (2 * len(SP.W3_ARMS)) + ["refcell"])
-        self.assertTrue(p["boots"][0]["floor"])
+        self.assertFalse(p["boots"][0].get("floor"))                       # rev3: refcell arm is PM-ref; floor stays on SG-stock
+        self.assertEqual((p["boots"][1]["arm"], p["boots"][1]["floor"]), ("SG-stock", True))
+        self.assertEqual(p["boots"][0]["arm"], SP.REFCELL_ARM)
         runs = [r for b in p["boots"] if b["role"] in ("meas", "w3ladder") for r in b["runs"]]
         self.assertTrue(runs and all(r["workload"] == "W3" for r in runs))
         self.assertEqual({r["cell"] for b in p["boots"] if b["role"] == "meas" for r in b["runs"]}, {"R3"})
@@ -568,22 +617,22 @@ class RunnerJobTests(unittest.TestCase):
 
     def test_sustain_extra_point_only_when_both_fail(self):
         with tempfile.TemporaryDirectory() as td:
-            _p, out, _r = run_fake_job(td, "J1b", ADD, ttft_of=lambda a, q: 9000.0 if a == "SG-mix" else 100.0)
-            ev = json.loads((out / "boots" / "J1b_sus_SG-mix" / "SUSTAIN_EVAL.json").read_text())
-            ev_ok = json.loads((out / "boots" / "J1b_sus_SG-stock" / "SUSTAIN_EVAL.json").read_text())
+            _p, out, _r = run_fake_job(td, "J1b", ADD, ttft_of=lambda a, q: 9000.0 if a == "VL-stock" else 100.0)
+            ev = json.loads((out / "boots" / "J1b_sus_VL-stock" / "SUSTAIN_EVAL.json").read_text())
+            ev_ok = json.loads((out / "boots" / "J1b_sus_PM-ref" / "SUSTAIN_EVAL.json").read_text())
             self.assertEqual(ev_ok["extra_needed"], False)
-            names = [p.name for p in (out / "runs").glob("*SG-mix_sus*")]
-            names_ok = [p.name for p in (out / "runs").glob("*SG-stock_sus*")]
+            names = [p.name for p in (out / "runs").glob("*VL-stock_sus*")]
+            names_ok = [p.name for p in (out / "runs").glob("*PM-ref_sus*")]
             self.assertEqual(len(names_ok), 2)
             # TTFT 9000 everywhere still passes the completion/growth rule (sustain rule is not the SLO) -> no extra either;
             # force a failure through completion: rerun with growth
         with tempfile.TemporaryDirectory() as td:
             def tt(a, q):
-                return 100.0 + (2000.0 * (q["arrival_s"] > 480)) if a == "SG-mix" else 100.0
+                return 100.0 + (2000.0 * (q["arrival_s"] > 480)) if a == "VL-stock" else 100.0
             _p, out, _r = run_fake_job(td, "J1b", ADD, ttft_of=tt)
-            ev = json.loads((out / "boots" / "J1b_sus_SG-mix" / "SUSTAIN_EVAL.json").read_text())
+            ev = json.loads((out / "boots" / "J1b_sus_VL-stock" / "SUSTAIN_EVAL.json").read_text())
             self.assertTrue(ev["extra_needed"])
-            self.assertEqual(len(list((out / "runs").glob("*SG-mix_sus*"))), 3)
+            self.assertEqual(len(list((out / "runs").glob("*VL-stock_sus*"))), 3)
 
     def test_J3_fills_R3_from_in_job_ladder(self):
         with tempfile.TemporaryDirectory() as td:
@@ -721,8 +770,11 @@ class AnalyzeTests(unittest.TestCase):
 
     def test_equiv_cell_valid(self):
         p = self._pair(job_of(EQ, jitter=JIT), "Q8:SG-off_vs_SG-stock")
-        self.assertEqual(p["label"], "EQUIV_WITHIN_3PCT", p)
+        self.assertEqual(p["label"], "SIGN_UNRESOLVED", p)                 # rev3: Q8 is sign-only (EQUIV is a magnitude statement)
+        self.assertEqual(p["raw_label"], "EQUIV_WITHIN_3PCT", p)
         self.assertEqual(p["validity"], [])
+        p = self._pair(job_of(EQ, jitter=JIT), "Q4:PM-ref_vs_VL-stock")
+        self.assertEqual(p["label"], "EQUIV_WITHIN_3PCT", p)
 
     def test_above(self):
         g = dict(EQ, **{"PM-ref": 92})
@@ -782,8 +834,9 @@ class AnalyzeTests(unittest.TestCase):
         j = job_of(EQ, jitter=JIT)
         p = self._pair(j, "Q3:VL-stock_vs_SG-stock", smoke={"status": "CLIENT_DEF_UNCHECKED"})
         self.assertEqual(p["label"], "INVALID")
-        self.assertEqual(self._pair(j, "Q3:VL-stock_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
-        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", smoke={"status": "CLIENT_DEF_UNCHECKED"})["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(j, "Q3:VL-stock_vs_SG-stock")["label"], "SIGN_UNRESOLVED")
+        self.assertEqual(self._pair(j, "Q4:PM-ref_vs_VL-stock")["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", smoke={"status": "CLIENT_DEF_UNCHECKED"})["label"], "SIGN_UNRESOLVED")
 
     def test_engine_pair_needs_in_load_offset(self):
         j = job_of(EQ, jitter=JIT)
@@ -793,7 +846,7 @@ class AnalyzeTests(unittest.TestCase):
         p = self._pair(j, "Q4:PM-ref_vs_VL-stock", offset=None)
         self.assertEqual(p["label"], "INVALID")
         self.assertIn("TTFT_OFFSET_UNCHECKED", p["validity"])
-        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", offset={"status": "TTFT_OFFSET_SHIFT"})["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock", offset={"status": "TTFT_OFFSET_SHIFT"})["label"], "SIGN_UNRESOLVED")
 
     def test_vllm_stamp_rules(self):
         p = self._pair(job_of(EQ, jitter=JIT, stamp_override={"VL-stock": vllm_stamp(vllm_venv_freeze_sha256="0" * 64)}),
@@ -808,7 +861,7 @@ class AnalyzeTests(unittest.TestCase):
         p = self._pair(j, "Q3:VL-stock_vs_SG-stock")
         self.assertEqual(p["label"], "INVALID")
         self.assertIn("VLLM_STAMP_DIFFERS_IN_JOB:2", p["validity"])
-        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(j, "Q8:SG-off_vs_SG-stock")["label"], "SIGN_UNRESOLVED")
 
     @staticmethod
     def _offset_j2(sg_server_ms, vl_server_ms, client_ms=200.0, n=200, vl_count_delta=None):
@@ -870,9 +923,11 @@ class AnalyzeTests(unittest.TestCase):
         self.assertIsNone(AN.analyze_cell(j, "R1", None, SMOKE_OK, 3000.0, OFFSET_OK)["cell_out_of_band"])
 
     def test_substrate(self):
-        base = mk_run("j1", "SG-stock", 201, "LADDER", [seg("W1", 95, 5, 20.0)], th="REF")
-        j1 = {"runs": [base]}
-        ref = lambda tag, g: mk_run(f"r{tag}", "SG-stock", 201, "REFCELL", [seg("W1", g, 100 - g, 20.0)], th="REF",
+        self.assertEqual(SP.REFCELL_ARM, "PM-ref")                          # rev3
+        base = mk_run("j1", "PM-ref", 201, "LADDER", [seg("W1", 95, 5, 20.0)], th="REF")
+        other = mk_run("j1x", "SG-stock", 201, "LADDER", [seg("W1", 20, 80, 20.0)], th="REF")     # same trace, other arm: not the baseline
+        j1 = {"runs": [other, base]}
+        ref = lambda tag, g: mk_run(f"r{tag}", "PM-ref", 201, "REFCELL", [seg("W1", g, 100 - g, 20.0)], th="REF",
                                     spec={"tag": tag})
         self.assertEqual(AN.substrate({"runs": [ref("start", 93), ref("end", 90)]}, j1)["tag"], "SUBSTRATE_OK")
         self.assertEqual(AN.substrate({"runs": [ref("start", 93), ref("end", 84)]}, j1)["tag"], "SUBSTRATE_SHIFT")
@@ -896,12 +951,12 @@ class AnalyzeTests(unittest.TestCase):
             if r["arm"] == "SG-stock":
                 r["mixing_opportunities"] = 7
         c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
-        self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["label"], "SIGN_UNRESOLVED")
         self.assertEqual(set(c["mixing_opportunities"]), {"SG-mix", "SG-stock"})     # negative control reported
         self.assertEqual(set(c["mixing_opportunities"]["SG-stock"].values()), {7})
         j2 = job_of(EQ, jitter=JIT)                                                   # server_args from the boot record also count
         j2["boots"]["b_SG-mix"]["server_args"] = dict(on)
-        self.assertEqual(self._pair(j2, "Q5:SG-mix_vs_SG-stock")["label"], "EQUIV_WITHIN_3PCT")
+        self.assertEqual(self._pair(j2, "Q5:SG-mix_vs_SG-stock")["label"], "SIGN_UNRESOLVED")
         self.assertEqual(self._pair(job_of(EQ, jitter=JIT), "Q5:SG-mix_vs_SG-stock")["label"], "MIX_NOT_FIRED")
 
     def test_both_saturated(self):
@@ -916,7 +971,8 @@ class AnalyzeTests(unittest.TestCase):
             self.assertTrue(p["both_saturated"])
         p = self._pair(job_of(dict(sat, **{"SG-off": 90}), jitter=jit), "Q8:SG-off_vs_SG-stock")
         self.assertFalse(p["both_saturated"])
-        self.assertEqual(p["label"], "OFF_BELOW_STOCK")
+        self.assertEqual(p["label"], "OFF_BELOW_STOCK_SIGN")                # rev3: sign only
+        self.assertEqual(p["raw_label"], "OFF_BELOW_STOCK")
         p = self._pair(job_of(EQ, jitter=JIT), "Q8:SG-off_vs_SG-stock")
         self.assertFalse(p["both_saturated"])
 
@@ -939,8 +995,10 @@ class AnalyzeTests(unittest.TestCase):
         self.assertEqual(q8["latency"]["TTFT"]["label"], "EQUIV_WITHIN_3PCT_TTFT")
         self.assertAlmostEqual(q8["latency"]["TPOT"]["mean"], math.log(1.1))
         self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["latency"]["TPOT"]["label"], "EQUIV_WITHIN_3PCT_TPOT")
-        self.assertEqual(set(SP.LATENCY_PAIRS), {"Q5", "Q8"})
+        self.assertEqual(set(SP.LATENCY_PAIRS), {"Q3", "Q5", "Q8"})
         self.assertEqual(c["pairs"]["Q2:PM-ref_vs_SG-stock"]["latency"], {})
+        self.assertEqual(set(c["pairs"]["Q3:VL-stock_vs_SG-stock"]["latency"]), {"TPOT", "TTFT", "ITL"})      # rev3: Q3 gains them
+        self.assertEqual(c["pairs"]["Q3:VL-stock_vs_SG-stock"]["latency"]["TPOT"]["label"], "EQUIV_WITHIN_3PCT_TPOT")
         [r for r in j["runs"] if r["arm"] == "SG-off"][0]["segments"][0]["requests"][0]["error"] = "boom"   # validity reaches latency
         c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
         self.assertEqual(c["pairs"]["Q8:SG-off_vs_SG-stock"]["latency"]["TPOT"]["label"], "INVALID")
@@ -955,18 +1013,83 @@ class AnalyzeTests(unittest.TestCase):
                 for s in (201, 202):
                     out.append(mk_run(f"{arm}{r}{s}f", arm, s, "LADDER", [seg("W1", 50, 70, 20.0)], spec={"rate": r}))
             return out
-        j1 = {"runs": lad("SG-stock", [5.0, 6.0], [7.0]) + lad("PM-ref", [5.0], [6.0, 7.0])}
+        j1 = {"runs": lad("PM-ref", [5.0], [6.0, 7.0]) + lad("VL-stock", [5.0, 6.0], [7.0]) + lad("SG-stock", [], [5.516, 6.0])}
         def sus(arm, rate, ok):
             n = int(rate * 600)
             reqs = [{"scheduled_arrival_s": i / rate, "sent_s": i / rate, "ttft_ms": 100.0, "completion_s": i / rate + 1, "error": "",
                      "token_itl_ms": [5.0]} for i in range(n if ok else n // 2)]
             return mk_run(f"s{arm}{rate}", arm, 201, "SUSTAIN", [{"phase": "W1", "duration_s": 600.0, "requests": reqs}], spec={"rate": rate})
-        j1b = {"runs": [sus("SG-stock", 6.0, False), sus("SG-stock", 4.8, True), sus("PM-ref", 5.0, True), sus("PM-ref", 4.0, True)]}
+        j1b = {"runs": [sus("PM-ref", 6.0, False), sus("PM-ref", 4.8, True), sus("SG-stock", 3.0, True)]}
         add = AN.build_addendum(j1, None, j1b)
-        self.assertEqual(add["lambda_star_burst"], {"SG-stock": 6.0, "PM-ref": 5.0})
-        self.assertEqual(add["refcell_rate"], 6.0)
-        self.assertEqual(add["lambda_star_ref"], 4.8)
-        self.assertIn("VL-stock", add["lambda_star_ref_missing_arms"])
+        self.assertEqual(add["lambda_star_burst"], {"PM-ref": 5.0, "VL-stock": 6.0})
+        self.assertEqual(add["ladder"]["SG-stock"]["status"], "LADDER_BOTTOM_FAIL")
+        self.assertEqual((add["refcell_arm"], add["refcell_rate"]), ("PM-ref", 5.0))       # rev3: PM-ref burst rung, not VL (6.0) / max
+        self.assertEqual(add["lambda_star_ref"], 4.8)                        # SG-stock's 3.0 is excluded from the min (rev3)
+        self.assertEqual(add["lambda_star_ref_scope"], ["PM-ref"])
+        self.assertEqual(add["lambda_star_ref_missing_arms"], ["VL-stock"])
+        self.assertIn("SG-stock", add["lambda_star_ref_excluded"])
+        j1b2 = {"runs": j1b["runs"] + [sus("VL-stock", 5.0, True), sus("VL-stock", 4.0, True)]}
+        self.assertEqual(AN.build_addendum(j1, None, j1b2)["lambda_star_ref"], 4.8)
+        j1b3 = {"runs": j1b2["runs"] + [sus("SG-off", 3.5, False), sus("SG-off", 2.8, False)]}     # an SG arm with None: still excluded
+        self.assertEqual(AN.build_addendum(j1, None, j1b3)["lambda_star_ref"], 4.8)
+
+    def test_ladder_down(self):
+        """rev3: pick rule over J1 + J1-down points; bottom failure again -> LADDER_BOTTOM_FAIL_2 (no value); Q1 only."""
+        def lad(arm, cell, rates_ok, rates_fail):
+            out = []
+            for r in rates_ok + rates_fail:
+                for s in (201, 202):
+                    g = 118 if r in rates_ok else 30
+                    out.append(mk_run(f"{arm}{cell}{r}{s}", arm, s, cell, [seg("W1", g, 120 - g, 20.0)], spec={"rate": r}))
+            return out
+        down = SP.ladder_rates(down=True)                                    # [4.796522, 4.170888, 3.62686, 3.153791]
+        j1 = {"runs": lad("SG-stock", "LADDER", [], [5.516, 6.3434]) + lad("SG-mix", "LADDER", [], [5.516]) +
+                      lad("SG-off", "LADDER", [], [5.516]) + lad("PM-ref", "LADDER", [5.516, 7.29491], [8.389146])}
+        jd = {"runs": lad("SG-stock", "LADDER_DOWN", down[2:] + [down[1]], [down[0]]) + lad("SG-mix", "LADDER_DOWN", [], down) +
+                      lad("SG-off", "LADDER_DOWN", down, [])}
+        add = AN.build_addendum(j1, None, None, j1down=jd)
+        self.assertEqual(add["ladder_down"]["SG-stock"]["status"], "BRACKETED")
+        self.assertEqual(add["lambda_star_burst_down"]["SG-stock"], 4.170888)
+        self.assertEqual(add["ladder_down"]["SG-mix"]["status"], "LADDER_BOTTOM_FAIL_2")
+        self.assertIsNone(add["lambda_star_burst_down"]["SG-mix"])
+        self.assertEqual((add["ladder_down"]["SG-off"]["status"], add["lambda_star_burst_down"]["SG-off"]), ("BRACKETED", 4.796522))
+        self.assertEqual(add["lambda_star_burst"], {"PM-ref": 7.29491})      # J1-down never feeds the J1b input
+        self.assertEqual(add["refcell_rate"], 7.29491)
+        self.assertEqual(AN.q1_burst(add), (4.170888, "J1 + J1-down ladder"))
+        rows = AN.question_rows(add, {}, {})
+        self.assertEqual((rows["Q1"]["status"], rows["Q1"]["detail"]["burst"]), ("PARTIAL", 4.170888))
+        P = AN.score_predictions(add, {}, {})
+        self.assertEqual((P["Q1-SG"]["value"], P["Q1-SG"]["score"]), (4.170888, "HIT"))
+        self.assertIsNone(P["P-1"]["score"])                                 # P-1 stays on the first-Job ladder (unchanged rev2.1 rule)
+        bad = AN.build_addendum(j1, None, None, j1down={"runs": lad("SG-stock", "LADDER_DOWN", [], down)})
+        self.assertEqual(AN.score_predictions(bad, {}, {})["Q1-SG"]["score"], "UNSCORABLE")
+        self.assertIn("LADDER_BOTTOM_FAIL_2", AN.score_predictions(bad, {}, {})["Q1-SG"]["why"])
+        self.assertEqual(AN.score_predictions(AN.build_addendum(j1), {}, {})["Q1-SG"]["score"], "UNSCORABLE")
+        nm = "\n".join(AN.not_measured({}, {}, {"status": "CLIENT_DEF_OK"}, {}, {"status": "TTFT_OFFSET_OK"}, bad))
+        self.assertIn("J1-down SG-stock: LADDER_BOTTOM_FAIL_2", nm)
+        self.assertIn("기준 용량", nm)
+
+    def test_sign_only_pairs(self):
+        """rev3: Q3 / Q5 / Q8 pairs carry the goodput sign only (+ MAGNITUDE_NOT_CITABLE); Q2 and Q4 keep the registered labels."""
+        self.assertEqual(SP.SIGN_ONLY_QUESTIONS, ("Q3", "Q5", "Q8"))
+        g = dict(EQ, **{"SG-off": 92, "VL-stock": 70, "PM-ref": 92, "SG-mix": 80})
+        j = job_of(g, jitter=JIT)
+        for r in j["runs"]:
+            if r["arm"] == "SG-mix":
+                r["server_args"] = {"enable_mixed_chunk": "True", "chunked_prefill_size": "8192"}
+        c = AN.analyze_cell(j, "R2", None, SMOKE_OK, 3000.0, OFFSET_OK)
+        q8, q3, q2 = c["pairs"]["Q8:SG-off_vs_SG-stock"], c["pairs"]["Q3:VL-stock_vs_SG-stock"], c["pairs"]["Q2:PM-ref_vs_SG-stock"]
+        self.assertEqual((q8["raw_label"], q8["label"]), ("OFF_ABOVE_STOCK", "OFF_ABOVE_STOCK_SIGN"))
+        self.assertIn("MAGNITUDE_NOT_CITABLE", q8["tags"])
+        self.assertEqual(q3["label"], "VL_BELOW_SG_SIGN")
+        self.assertEqual(c["pairs"]["Q5:SG-mix_vs_SG-stock"]["label"], "SIGN_UNRESOLVED")
+        self.assertEqual(q2["label"], "PM_ABOVE_SG")
+        self.assertNotIn("MAGNITUDE_NOT_CITABLE", q2["tags"])
+        self.assertFalse(c["pairs"]["Q4:PM-ref_vs_VL-stock"]["sign_only"])
+        self.assertEqual(AN.sign_label((0.01, 0.002, 0.02, 4), ("A", "B")), "A_ABOVE_B_SIGN")       # no 3 % margin on the sign
+        self.assertEqual(AN.sign_label((0.01, 0.002, 0.02, 3), ("A", "B")), "SIGN_UNRESOLVED")
+        nm = "\n".join(AN.not_measured({}, c and {"R2": c}, SMOKE_OK, {}, OFFSET_OK, None))
+        self.assertIn("Q8:SG-off_vs_SG-stock: rev3 부호", nm)
 
 
 class InstrTests(unittest.TestCase):
@@ -1278,6 +1401,16 @@ class DigestAndJobShellTests(unittest.TestCase):
     def test_job_refuses_unsealed_and_bad_job(self):
         self.assertEqual(self._job({"PDMUX_SB_JOB": "J1"}).returncode, 16)
         self.assertEqual(self._job({"PDMUX_SB_JOB": "JX", "PDMUX_SB_TEST_MODE": "1"}).returncode, 16)
+
+    def test_job_accepts_J1_down(self):
+        """rev3: J1-down is in the PDMUX_SB_JOB allow-list (passes the config gate; stops here at the engine-digest gate, rc 13)."""
+        with tempfile.TemporaryDirectory() as td:
+            f = Path(td) / "ED.txt"
+            f.write_text("0" * 64 + "\n")
+            r = self._job({"PDMUX_SB_JOB": "J1-down", "PDMUX_SB_TEST_MODE": "1", "PDMUX_SB_ENGINE_DIGEST_FILE": str(f),
+                           "PDMUX_SB_OUT": f"{td}/raw", "PDMUX_SB_SUMMARY": f"{td}/sum"})
+            self.assertEqual(r.returncode, 13, r.stderr)
+            self.assertNotIn("ABORT_CONFIG", r.stderr)
 
     def test_job_refuses_wrong_engine_digest(self):
         with tempfile.TemporaryDirectory() as td:

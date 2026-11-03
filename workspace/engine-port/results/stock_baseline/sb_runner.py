@@ -1,5 +1,5 @@
 #!/usr/bin/env python3
-"""Job runner of PREREG_STOCK_BASE rev2.1 (SEALED 2026-11-02; sb_job.sh gates on HARNESS_DIGEST.txt + PDMUX_SB_SEALED=1).
+"""Job runner of PREREG_STOCK_BASE rev3 (2026-11-03; rev2.1 sealed 2026-11-02; sb_job.sh gates on HARNESS_DIGEST.txt + PDMUX_SB_SEALED=1).
 
   sb_runner.py plan --job J2 [--addendum ADD.json]
   sb_runner.py run  --job J2 --out RAW --w1-lengths L.json [--w3-tokens F.bin] [--addendum ADD.json] [--resume]
@@ -12,8 +12,8 @@ stamp of its boot, the trace hash, the load window (epoch + CLOCK_MONOTONIC: t_l
 finish stamps (t_sent_mono, token_t_mono[0], t_finished_mono).  Boot-specific steps:
   smoke    (J1)  : §5-0 sequential fixed requests + server TTFT histogram deltas
   sustain  (J1b) : after the boot's two points, the registered 0.5 x lambda* point runs in the same boot iff neither point passed
-  refcell        : first and last boot of J1b/J2/J3 (J3 start boot also measures the W3 floor)
-  w3ladder (J3)  : SG-stock W3 ladder; lambda*_W3 (pick rule, in-Job) fills the R3 rate of the stage-gated R3 boots
+  refcell        : first and last boot of J1b/J2/J3; rev3: arm PM-ref at its burst lambda* rung
+  w3ladder (J3)  : rev3: measures the W3 floor first (SG-stock), then the SG-stock W3 ladder; lambda*_W3 (pick rule, in-Job) fills the R3 rate of the stage-gated R3 boots
   instr    (J2)  : instrumentation boots after every measurement boot (C5); raw probe / telemetry files gzipped, reduced by sb_analyze;
                    the SG probe run adds a synthetic single-request segment after its W1 segment (t_synth_start/end, PREREG §5-1)
   instr_metrics (J2) / every vLLM run : server TTFT histogram (sum, count) scraped right before and right after the run (§5-0 (b))
@@ -371,7 +371,7 @@ def measure_floor(srv, a, replay_fn, w3_pool, out, w3_tokens=None, n=8, seed=7):
         s = replay_segment(replay_fn, a["api"], srv.base_url, seg, Path(out) / "floor", w3_tokens)
         tt += [r["ttft_ms"] for r in s["requests"] if r.get("ttft_ms") is not None]
     f = statistics.median(tt) if tt else None
-    dump({"n": len(tt), "ttft_ms": tt, "floor_ms": f, **stamp()}, Path(out) / "floor.json")
+    dump({"n": len(tt), "ttft_ms": tt, "floor_ms": f, "arm": a["name"], **stamp()}, Path(out) / "floor.json")
     return f
 
 
@@ -479,7 +479,7 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
             return {"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_LAMBDA", "runs": []}
         for r in b["runs"]:
             r["rate"] = ctx["r3_rate"]
-    if b.get("role") == "w3ladder" and ctx.get("w3_slo_ms") is None:
+    if b.get("role") == "w3ladder" and ctx.get("w3_slo_ms") is None and not b.get("floor"):
         dump({"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR"}, bdir / "DONE.json")
         return {"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR", "runs": []}
     ic = image_check_fn()
@@ -516,6 +516,9 @@ def run_boot(b, out, make_server, replay_fn, w1_pool, w3_pool, w3_tokens=None, c
         if b.get("floor") and not (Path(out) / "floor.json").exists():
             f = measure_floor(srv, a, replay_fn, w3_pool, out, w3_tokens)
             ctx["w3_slo_ms"] = SP.W3_TTFT_K * f if f else None
+        if b.get("role") == "w3ladder" and ctx.get("w3_slo_ms") is None:      # rev3: floor measured in this boot and failed
+            dump({"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR"}, bdir / "DONE.json")
+            return {"boot_id": b["boot_id"], "status": "SKIPPED_NO_W3_FLOOR", "runs": []}
         runs = list(b["runs"])
         if b["role"] == "smoke":
             for run in runs:

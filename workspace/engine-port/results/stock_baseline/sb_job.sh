@@ -1,11 +1,12 @@
 #!/bin/bash
-# Job target of PREREG_STOCK_BASE rev2.1 (SEALED 2026-11-02): J1, J1-ext, J1b, J2, J3.  Refuses unless PDMUX_SB_SEALED=1 or
+# Job target of PREREG_STOCK_BASE rev3 (2026-11-03; rev2.1 sealed 2026-11-02): J1, J1-ext, J1-down, J1b, J2, J3.  Refuses unless PDMUX_SB_SEALED=1 or
 # PDMUX_SB_TEST_MODE=1 (CPU tests).  Nothing is launched by this file being committed.
 #
 #   launch.sh --campaign stock_<job> --target workspace/engine-port/results/stock_baseline/sb_job.sh \
 #             --env PDMUX_SB_JOB=J2 --env PDMUX_SB_ADDENDUM=/data/stock/addendum_<sha>.json --env PDMUX_REQUIRE_PRISTINE=1
 #
-# J1 needs no addendum; J1b needs lambda_star_burst + refcell_rate (after J1); J2/J3 need lambda_star_ref (after J1b).
+# J1 and J1-down (rev3: SG 3 arms below the grid, Q1 only, independent of J1b) need no addendum; J1b needs lambda_star_burst of
+# VL-stock / PM-ref + refcell_rate (after J1); J2/J3 need lambda_star_ref (after J1b; rev3: min over VL-stock / PM-ref only).
 # Image: every arm runs in ONE image, PDMUX_VESSL_IMAGE_SBASE; VL-stock boots /opt/vllm-venv/bin/python inside it.  Select it at
 # submit time without changing launch.sh: PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env scripts/vessl/launch.sh ...
 # sb_runner refuses any boot whose image pip-freeze sha256 (SGLang /opt/pdmux, vLLM /opt/vllm-venv) differs from the registered values.
@@ -24,11 +25,11 @@ w3sha="4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f"   # res
 expected_digest="2836112bd710a712a26a31fb516a685a25c6d893308b2058bb7b5590deda5ed7"
 
 case "${job}" in
-  J1|J1-ext|J1b|J2|J3) ;;
-  *) echo "ABORT_CONFIG: PDMUX_SB_JOB must be J1|J1-ext|J1b|J2|J3; got '${job}'" >&2; exit 16 ;;
+  J1|J1-ext|J1-down|J1b|J2|J3) ;;
+  *) echo "ABORT_CONFIG: PDMUX_SB_JOB must be J1|J1-ext|J1-down|J1b|J2|J3; got '${job}'" >&2; exit 16 ;;
 esac
 if [[ "${PDMUX_SB_SEALED:-}" != 1 && "${PDMUX_SB_TEST_MODE:-}" != 1 ]]; then
-  echo "ABORT_UNSEALED: PDMUX_SB_SEALED=1 not set (PREREG_STOCK_BASE rev2.1 is sealed by HARNESS_DIGEST.txt)" >&2; exit 16
+  echo "ABORT_UNSEALED: PDMUX_SB_SEALED=1 not set (PREREG_STOCK_BASE rev3 is sealed by HARNESS_DIGEST.txt)" >&2; exit 16
 fi
 if [[ "${PDMUX_SB_SEALED:-}" == 1 ]] && { [[ -n "${PDMUX_SB_ENGINE_DIGEST_FILE:-}" ]] || [[ -n "${PDMUX_SB_HARNESS_DIGEST:-}" ]] || [[ -n "${PDMUX_SB_MANIFEST:-}" ]]; }; then
   echo "ABORT_SEALED_OVERRIDE: digest/manifest paths cannot be overridden when PDMUX_SB_SEALED=1" >&2; exit 16

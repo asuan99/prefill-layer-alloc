@@ -1,5 +1,15 @@
 #!/usr/bin/env python3
-"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev2.1 (SEALED 2026-11-02 via HARNESS_DIGEST.txt).  CPU only; starts no server.
+"""Registered constants, arms and Job plans of PREREG_STOCK_BASE rev3 (2026-11-03, user decision (C) = (A); rev2.1 was SEALED 2026-11-02;
+rev3 is re-sealed by a new HARNESS_DIGEST.txt).  CPU only; starts no server.
+
+rev3 (after the first Job: SG-stock / SG-off / SG-mix LADDER_BOTTOM_FAIL at 5.516 req/s, ITL-axis cliff, ~42 ms stall per arrival):
+  * reference capacity (lambda*_ref) = min of the SUSTAINED capacity of REF_ARMS = (VL-stock, PM-ref) only; the three SGLang-default arms
+    are excluded from the min (PREREG §3) and get no sustained cell (J1b runs REF_ARMS only).
+  * J1-down: SG 3 arms x rungs 5.516 / 1.15^k (k = 1..4) x seeds {201, 202} x 120 requests; pick rule over J1 + J1-down points; a failing
+    bottom again -> LADDER_BOTTOM_FAIL_2 (no value).  Feeds Q1 only, never lambda*_ref; independent of J1b (any order).
+  * refcell = PM-ref at its burst lambda* rung (7.29491 in the first Job; the identical cell exists there) -- SG-stock has no burst lambda*.
+  * pairs with an SGLang-default arm against a reference arm or each other (Q3, Q5, Q8; NOT Q2): sign / BOTH_SATURATED / INVALID labels +
+    latency co-metrics only (SIGN_ONLY_QUESTIONS); Q3 gains the latency co-metrics.
 
 Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.  Each arm = (engine, tree, image, server argv, env).
   * ONE image for every arm (rev1, user decision 2026-11-02 option b'): PDMUX_VESSL_IMAGE_SBASE = sglang-runtime@1e0d335b (SGLang side
@@ -11,7 +21,7 @@ Arms (PREREG §2): SG-stock, SG-rep, SG-mix, SG-off, VL-stock, PM-ref, PM-ref34.
     exists only in the patched tree, see INSTR_TREE_NOTE).
   * VL-stock = `/opt/vllm-venv/bin/python -m vllm.entrypoints.openai.api_server` defaults + --max-num-seqs 48 + prefix caching OFF + --port,
     env CUDA_HOME / TORCH_CUDA_ARCH_LIST only (no PYTHONPATH, no PDMUX_*), in the same Job and on the same GPU as the SGLang arms.
-Jobs (PREREG §7): J1 ladder (+ definition smoke), J1b sustained cells, J2 steady-state R1/R2 (+ instrumentation boots + the in-load TTFT
+Jobs (PREREG §7): J1 ladder (+ definition smoke), J1-down (rev3, SG 3 arms below the grid), J1b sustained cells (rev3: REF_ARMS only), J2 steady-state R1/R2 (+ instrumentation boots + the in-load TTFT
 offset boot), J3 = W3 only (time model ~254 min > the 4 h rule: NOT split, disclosed -- user decision 2026-11-02).  The W1 change trace (LO<->HI) is NOT used: every arm is a fixed configuration, so there is no controller whose
 reaction a load change could show (gate 2 applies to controller comparisons only) -- user decision 2026-11-02, PREREG rev1 §3.
 Rates that depend on earlier Jobs come from an ADDENDUM json (written by sb_analyze.py addendum after the earlier Job); plans that need
@@ -169,6 +179,14 @@ VL_PROFILER_PENDING = "INSTR-VL-stock (§5-2 torch-profiler window: not implemen
 LADDER_RMIN, LADDER_FACTOR, LADDER_N = 5.516, 1.15, 10      # CAP1-R grid (k = 0..9)
 LADDER_EXT_K = (10, 11, 12, 13)                             # registered single extension on LADDER_TOP_PASS
 LADDER_ARMS = ("SG-stock", "SG-mix", "SG-off", "VL-stock", "PM-ref")   # §7 (PM-ref34 inherits CAP1-R D34 lambda* 6.343, no ladder)
+# rev3 (user decision 2026-11-03): the reference capacity is the min over these arms' SUSTAINED capacity only; the SGLang-default arms
+# (LADDER_BOTTOM_FAIL in the first Job, ITL-axis cliff) are excluded and get no sustained cell.
+REF_ARMS = ("VL-stock", "PM-ref")
+# rev3: downward ladder for the SGLang-default arms (Q1 only, never part of lambda*_ref); same pick rule over J1 + J1-down points
+LADDER_DOWN_ARMS = ("SG-stock", "SG-mix", "SG-off")
+LADDER_DOWN_K = (1, 2, 3, 4)                                 # 5.516 / 1.15^k -> 4.796522, 4.170888, 3.62686, 3.153791
+LADDER_DOWN_FAIL = "LADDER_BOTTOM_FAIL_2"
+Q1_SG_BAND = (2.5, 4.8)                                      # rev3 PREREG §8 row Q1-SG (value from the down ladder; none -> UNSCORABLE)
 PM_REF34_LAMBDA_INHERITED = 6.343
 CAP_SEEDS, CAP_N = P.CAP_SEEDS, 120                          # (201, 202)
 SUSTAIN_S, SUSTAIN_SEED, SUSTAIN_WINDOW_S = 600.0, 201, 120.0
@@ -176,7 +194,10 @@ SUSTAIN_FACTORS, SUSTAIN_EXTRA = (1.0, 0.8), 0.5
 SUSTAIN_COMPLETION_MIN, SUSTAIN_TTFT_GROWTH_MAX = 0.95, 2.0
 SUSTAIN_E2E_MAX_S = 60.0                                     # rev2 (audit r1 A): per ARRIVAL window, share of arrivals (< 600 s) done with E2E <= 60 s
 SATURATED_ATTAIN = 0.98                                      # rev2 (audit r1 B): both arms >= this on all 4 seeds -> BOTH_SATURATED
-LATENCY_PAIRS = ("Q5", "Q8")                                 # rev2 (audit r1 B): latency co-metrics registered for these questions
+LATENCY_PAIRS = ("Q3", "Q5", "Q8")                           # rev2 (audit r1 B): Q5/Q8; rev3: + Q3 (VL-stock vs SG-stock)
+# rev3: questions whose pairs contain an SGLang-default arm placed above its own capacity (no SLO burst capacity >= 5.516 req/s):
+# goodput sign / BOTH_SATURATED / INVALID labels + latency co-metrics only, no magnitude (Q2 is deliberately NOT in this set -- user text)
+SIGN_ONLY_QUESTIONS = ("Q3", "Q5", "Q8")
 LATENCY_METRICS = ("TPOT", "TTFT", "ITL")                    # seed-level ln(TPOT mean), ln(TTFT p50), ln(median request-internal ITL p95)
 QUESTIONS = ("Q1", "Q2", "Q3", "Q4", "Q5", "Q6", "Q7", "Q8")
 STEADY = {"R1": 0.5, "R2": 0.8}
@@ -184,7 +205,9 @@ STEADY_N, EVAL_SEEDS = 200, P.HE0_SEEDS                      # (1, 2, 3, 4)
 W3_LADDER = (0.1, 1.5, 6)
 W3_LADDER_N, W3_R3_FACTOR, W3_R3_N = P.CAP_CELL_REQUESTS["W3"], 0.8, 96
 W3_ARMS = ("SG-stock", "SG-rep", "PM-ref", "VL-stock")      # §3 "arm 4개" -- the set is not named in the PREREG (open item O-3)
-REFCELL_ARM, REFCELL_N, REFCELL_SEED = "SG-stock", 120, 201
+# rev3: refcell = PM-ref at its burst lambda* rung (the identical cell exists in the first Job); rev2.1 used SG-stock, which has no value
+REFCELL_ARM, REFCELL_N, REFCELL_SEED = "PM-ref", 120, 201
+Q1_ARM = "SG-stock"                                           # Q1 = capacity of the untouched SGLang (no longer the refcell arm)
 SMOKE_N, SMOKE_SEED, SMOKE_MAX_OUT = 20, 9, 64
 INSTR_N, INSTR_SEED = 60, 301
 METRICS_CELL, METRICS_N = "R1", 200                         # §5-0 (b): R1 load, 200 requests, seed INSTR_SEED
@@ -265,7 +288,9 @@ def _rng(*salt):
     return random.Random(int(hashlib.sha256("|".join(map(str, (PLAN_SEED,) + salt)).encode()).hexdigest()[:12], 16))
 
 
-def ladder_rates(ext=False):
+def ladder_rates(ext=False, down=False):
+    if down:
+        return [round(LADDER_RMIN / LADDER_FACTOR ** k, 6) for k in LADDER_DOWN_K]
     if ext:
         return [round(LADDER_RMIN * LADDER_FACTOR ** k, 6) for k in LADDER_EXT_K]
     return P.ladder(LADDER_RMIN, LADDER_FACTOR, LADDER_N)
@@ -336,14 +361,29 @@ def plan_J1(addendum=None, ext=False):
     return {"job": job, "kind": "LADDER", "ladder": rates, "ext": ext, "boots": boots, "pending": []}
 
 
+def plan_J1_down():
+    """rev3: downward ladder of the SGLang-default arms (one boot per arm, cells in random order, no smoke); Q1 only."""
+    job = "J1-down"
+    rng = _rng(job)
+    rates = ladder_rates(down=True)
+    order = list(LADDER_DOWN_ARMS)
+    rng.shuffle(order)
+    boots = []
+    for name in order:
+        cells = [cap_run(f"{job}_{name}_lad_r{r}_s{s}", "W1", r, s, CAP_N, cell="LADDER_DOWN") for r in rates for s in CAP_SEEDS]
+        rng.shuffle(cells)
+        boots.append(boot(f"{job}_lad_{name}", arm(name), cells))
+    return {"job": job, "kind": "LADDER_DOWN", "ladder": rates, "boots": boots, "pending": []}
+
+
 def plan_J1b(addendum):
-    """Sustained cells: {lambda*_arm, 0.8 lambda*_arm} x 600 s x seed 201 per ladder arm (+ registered 0.5 point, decided in-boot);
-    refcell at Job start and end."""
+    """Sustained cells: {lambda*_arm, 0.8 lambda*_arm} x 600 s x seed 201 per REFERENCE arm (rev3: VL-stock, PM-ref only; + registered
+    0.5 point, decided in-boot); refcell (PM-ref at its burst lambda* rung) at Job start and end.  Needs no J1-down."""
     job = "J1b"
     rng = _rng(job)
     lam = need(addendum, "lambda_star_burst")
     ref_rate = need(addendum, "refcell_rate")
-    order = list(LADDER_ARMS)
+    order = list(REF_ARMS)
     rng.shuffle(order)
     boots = [refcell_boot(job, "start", ref_rate)]
     for name in order:
@@ -388,7 +428,7 @@ def plan_J2(addendum):
 
 
 def plan_J3(addendum):
-    """W3 only (rev1): floor (in the refcell-start boot), SG-stock W3 ladder (6 rungs x 2 seeds), then R3 = 0.8 lambda*_W3 x 96 requests x
+    """W3 only (rev1): floor (rev3: in the SG-stock W3 ladder boot, before its rungs), SG-stock W3 ladder (6 rungs x 2 seeds), then R3 = 0.8 lambda*_W3 x 96 requests x
     4 seeds x W3 arms (ABBA, rates filled in-Job), refcell end.  The W1 change trace is not applied: every arm is a fixed configuration
     (no controller to react to a load change; gate 2 is limited to controller comparisons) -- user decision 2026-11-02."""
     job = "J3"
@@ -400,13 +440,14 @@ def plan_J3(addendum):
     def w3_for(name, seeds, rd):
         return [cap_run(f"{job}_{name}_R3_s{s}", "W3", None, s, W3_R3_N, kind="steady", cell="R3", rate_key="R3") for s in seeds]
     w3, w3halves = abba(job, "R3", list(W3_ARMS), w3_for)
-    boots = [refcell_boot(job, "start", ref_rate, floor=True), boot(f"{job}_w3lad_SG-stock", arm("SG-stock"), w3l, role="w3ladder")]
+    # rev3: the refcell arm is PM-ref, so the W3 floor moves to the SG-stock W3 ladder boot (floor arm stays SG-stock, as in rev2.1)
+    boots = [refcell_boot(job, "start", ref_rate), boot(f"{job}_w3lad_SG-stock", arm("SG-stock"), w3l, role="w3ladder", floor=True)]
     boots += [dict(b, stage_gated="R3") for b in w3] + [refcell_boot(job, "end", ref_rate)]
     return {"job": job, "kind": "W3", "lambda_star_ref": lam, "seed_halves": {"R3": w3halves}, "boots": boots, "pending": []}
 
 
-JOBS = ("J1", "J1b", "J2", "J3")
-PLAN_KINDS = ("LADDER", "SUSTAIN", "STEADY", "W3")
+JOBS = ("J1", "J1-down", "J1b", "J2", "J3")
+PLAN_KINDS = ("LADDER", "LADDER_DOWN", "SUSTAIN", "STEADY", "W3")
 
 
 def make_plan(job, addendum=None):
@@ -414,6 +455,8 @@ def make_plan(job, addendum=None):
         return finish(plan_J1(addendum))
     if job == "J1-ext":
         return finish(dict(plan_J1(addendum, ext=True), job="J1-ext"))
+    if job == "J1-down":
+        return finish(plan_J1_down())
     if job == "J1b":
         return finish(plan_J1b(addendum))
     if job == "J2":
@@ -501,6 +544,23 @@ def plan_problems(plan):
             out.append(f"cell {c}: placebo arm SG-rep missing")
     if plan["kind"] == "W3" and any(r.get("workload") != "W3" for b in plan["boots"] if b["role"] in ("meas", "w3ladder") for r in b["runs"]):
         out.append("J3 is W3 only (rev1: no W1 change trace)")
+    if plan["kind"] == "LADDER_DOWN":                     # rev3: SG 3 arms x registered down rungs x CAP_SEEDS x CAP_N, nothing else
+        if sorted(b["arm"] for b in plan["boots"]) != sorted(LADDER_DOWN_ARMS) or any(b["role"] != "meas" for b in plan["boots"]):
+            out.append(f"J1-down boots must be one measurement boot per {LADDER_DOWN_ARMS}")
+        want = sorted((r, s) for r in ladder_rates(down=True) for s in CAP_SEEDS)
+        for b in plan["boots"]:
+            if sorted((r["rate"], r["seed"]) for r in b["runs"]) != want or any(r["n_requests"] != CAP_N or r["cell"] != "LADDER_DOWN"
+                                                                                 for r in b["runs"]):
+                out.append(f"{b['boot_id']}: J1-down cells != registered down rungs x seeds {list(CAP_SEEDS)} x {CAP_N}")
+            if any(r["rate"] >= LADDER_RMIN for r in b["runs"]):
+                out.append(f"{b['boot_id']}: J1-down rung at or above the first-Job bottom {LADDER_RMIN}")
+    if plan["kind"] == "SUSTAIN":                         # rev3: sustained cells for the reference arms only
+        sus = sorted(b["arm"] for b in plan["boots"] if b["role"] == "meas")
+        if sus != sorted(REF_ARMS):
+            out.append(f"J1b sustained arms {sus} != REF_ARMS {sorted(REF_ARMS)}")
+    if plan["kind"] in ("SUSTAIN", "STEADY", "W3"):
+        if any(b["arm"] != REFCELL_ARM for b in plan["boots"] if b["role"] == "refcell"):
+            out.append(f"refcell boot arm must be {REFCELL_ARM}")
     if plan["kind"] in ("STEADY", "W3"):
         refs = [b for b in plan["boots"] if b["role"] == "refcell"]
         if [b["runs"][0]["tag"] for b in refs] != ["start", "end"] or plan["boots"][0]["role"] != "refcell" or plan["boots"][-1]["role"] != "refcell":
@@ -514,8 +574,11 @@ if __name__ == "__main__":
     ap.add_argument("job", choices=JOBS + ("J1-ext",))
     ap.add_argument("--addendum")
     a = ap.parse_args()
-    add = json.load(open(a.addendum)) if a.addendum else (CANON if a.job != "J1" else None)
+    add = json.load(open(a.addendum)) if a.addendum else (CANON if a.job not in ("J1", "J1-down") else None)
     p = make_plan(a.job, add)
     print(json.dumps({"job": p["job"], "boots": len(p["boots"]), "est_min": p["est_min"], "hard_cap_min": p["hard_cap_min"],
                       "pending": p["pending"], "problems": plan_problems(p), "plan_sha": sha(p),
-                      "canonical_addendum": a.addendum is None and a.job != "J1"}, indent=1))
+                      "canonical_addendum": a.addendum is None and a.job not in ("J1", "J1-down"),
+                      "arms": sorted({b["arm"] for b in p["boots"]}),
+                      "rates": sorted({r["rate"] for b in p["boots"] for r in b["runs"] if r.get("rate") is not None}),
+                      "refcell_rate": (add or {}).get("refcell_rate")}, indent=1))
