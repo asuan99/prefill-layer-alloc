@@ -29,7 +29,7 @@
 2. HE0 셀 부하 재정의 원칙(a)–(d) 사용자 결정 → 수정 루프 용량 재측정 → OFF·ON 각각 TUNE → 같은 Job 짝 EVAL
 3. promote 7차 후보 정리: 결정 43–58·60·60i–64i, 정책 캠페인 결과·감사 r1 4건, 구조 검증(`7a7a2c08`, 감사 필요), 두 메모(감사 필요)
 ## 사용자 결정 대기
-- **Phase B bring-up·제출** / 봉인 완료, A100 용량 대기 / 용량 열리면 Workspace create 1회(승인 유효) → dry-run → 제출 승인 요청
+- **Phase B 첫 번째 Job 이후** / 손대지 않은 SGLang·패치 OFF·mixed-chunk 3 arm이 사다리 바닥(5.516)에서 실패(ITL 항 100%, ITL 축 절벽: 도착마다 ~42 ms 정지가 토큰 10%라 p95≈64 ms > 60; vLLM 8.39·PD-mux 7.29는 정상) → 봉인 계획기가 두 번째 Job을 못 냄(refcell_rate None, 아래쪽 사다리 확장 미등록) / 선택지: ① 여기서 정지(Q1 부분) ② 아래쪽 사다리 확장 새 등록(통과점 ≈2.4 req/s 추정 → 판정 셀이 vLLM·PD-mux 용량의 12–27%, 포화 예상) ③ 기준 용량 min에서 SGLang 제외 새 등록 ④ GPU 전 분리 boot(B5 `--enable-pdmux` 제거 / B2 piecewise 재시도 / B1 overlap) ⑤ SLO 재정의(새 등록·직접 측정). + 공정성 문제: `--disable-piecewise-cuda-graph`가 eager prefill → 42 ms 고정 비용 원인 후보, vLLM은 piecewise ON
 - **HE0 셀 부하 재정의** / 현 셀(HI = 1.5×버스트 λ*_W1)에서 동적 arm이 FEAS 혼잡 가드로 고정(TUNE 4/4) → HE0 판정 불가, 이 원인은 루프 수정으로 안 풀림 / 검토 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md` · ★2026-11-01 규약 개정(REPORT 위)이 이 결정에 걸려 있음 — 결정 전까지 정책 판정 셀 Job 제출 금지(승계 상수 규약)
 - **HyMux 원고** / 2026-10-27 사용자: **보류(원고 유지)**. 구조 검증 `7a7a2c08`: R4·R5·R6·R11 미구현, R7·R9 부분 — 원고 인용 시 이 대조표가 차단 근거 / (a) 구현 구조로 낮춤 · (b) 구현·측정 · 보류 지속
 - **multi-GPU의 논문 내 위치** / 메인 지표 근거 0 / (A) 단일 GPU 메인 + 실측 TP 이식성·DP 라우팅 절(권고) · (B) multi-GPU 메인(G0 양의 결과 + 대형 hybrid 선행) · DP 라우팅 열린 결정 O-D1…O-D5
@@ -43,7 +43,7 @@
 - **기준선 Phase B — 봉인(2026-11-02)**: 사전등록 rev2.1 `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명은 하네스 참조 때문에 유지) + `HARNESS_DIGEST.txt`(digest `9b4a30f9…`, 핀 12·재사용 21·plan 4) + `ENGINE_DIGEST.txt` `2836112b…`. 감사 r1 NO-GO→수정 5건, 재감사 r2 NO-GO 1건→결정 (a) 반영, 재감사 없이 봉인. 테스트 83·변이 84/84. 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`(P-1…P-5 등록) 봉인 포함. 이미지 `sglang-vllm-runtime@a5f9bf0f…` Public. **다음**: A100 용량 열리면 Workspace bring-up(vLLM venv 부팅·pristine 보존·EXTEND 이벤트·server_args 패턴) → `PDMUX_VESSL_ENV=scripts/vessl/vessl.sbase.env launch.sh` dry-run → 제출 승인(첫 번째 Job부터 순차 4개). ★정오: 지속 완료율 3.0→5.06–5.34(RECHECK) — promote 필요: 예 (결정·정오·감사 2건·봉인)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
-- **실행 중**: `pdmux-stock-baseline-7899d1b-20261102085423`(job-4ma8ia5u8cfx, Phase B 첫 번째 Job = W1 용량 사다리 5 arm + smoke, 하드캡 260 min, 제출 2026-11-02 08:54Z, 사용자 승인) — 회수 `scripts/vessl/fetch.sh stock_baseline <name>`, 분석 `sb_analyze.py addendum` → 두 번째 Job rate 입력
+- 회수 완료: Phase B 첫 번째 Job `pdmux-stock-baseline-7899d1b-20261102085423`(exit 0, 75.8 min, raw sha OK, digest match, pristine OK) — 결과 `stock_baseline/RESULT_phaseB_J1_2026-11-03.md`, 진단 `DIAG_sglang_default_itl_2026-11-03.md`
 - 회수 완료(main): gate+smoke · CAP1 · CAP1-R · CAP2+지속성 · TUNE(job-9t469viisz2i) — 원장 각 `results/policy_*/vessl_jobs.tsv`
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
