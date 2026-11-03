@@ -1,5 +1,5 @@
-import sys, json, statistics, glob
-sys.path.insert(0, "/home/wonho/Experiments/KISTI/prefill-layer-alloc/workspace/engine-port/results/cap_char/policy_harness")
+import sys, json, os, statistics, glob
+sys.path.insert(0, os.environ.get("PDMUX_PROJECT_ROOT", "/home/wonho/Experiments/KISTI/prefill-layer-alloc") + "/workspace/engine-port/results/cap_char/policy_harness")
 import ph_verdict as V
 def stats(path):
     r = json.load(open(path))
