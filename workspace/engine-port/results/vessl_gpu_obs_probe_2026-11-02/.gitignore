@@ -1,0 +1,2 @@
+# nsys sqlite traces (>1 MB) are kept on disk only; see commit 6e38320b and UNCOMMITTED_BINARIES.txt
+*.sqlite
