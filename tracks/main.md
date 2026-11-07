@@ -50,7 +50,7 @@
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
 ## 최근 로그
 - 2026-10-30~11-02(D\* 세션): PD-mux 공식 구현 대조·R2·구현 결함 설명 · D\* 예측식·EVAL 사전 예측 봉인(결정 61) · EVAL dry-run 중 결정 60 보류 발견, 제출 안 함 · 축 지도 §8b·§6b 기대 효과(E2 판정 prefill-heavy 한정으로 정정)
+- 2026-10-27~11-07(참고 페이지 세션): LLM 요청 스케줄링 정책 개요(라우팅·큐 순서·배칭·PD 배치·선점 5층) + 동작 시나리오 7종(PD 간섭·decode 굶김 연쇄 포함) 공유 페이지 artifact H96kSDZVW7CnfmTKh175Tp, 원본 `reports/figures/sched_policy_map_2026-10-27/` — 개념도(칸 수 설명용)·새 판정 0, "우리 측정" 상자는 A100 단일 GPU 범위 · promote 불필요
 - 2026-11-02~04(main): Phase B 하네스 rev1→3.2(감사 4회), 합본 이미지·bring-up, Job 4개(사다리·진단·아래쪽 사다리·지속) 회수·분석, 정오 2건(지속 완료율·패치 트리 OFF 범위), 결정 (C)·(b)·권고1 등
 - 2026-11-01~02(기준선 세션): 결정 62 · Phase A CPU 재집계(`stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md`) · 설계 결함 S1–S12·패턴 P1–P6 정리, 에이전트 규약 3파일 개정
 - 2026-10-28~11-01(impl 세션): 구현 결함 Phase 0·범위 감사·7차 promote(부분) · 엔진 수정 E1–E3·E5(브랜치) · GPU 정확성 gate 2회 · 통합 정책 측정 4 Job·결과 감사 r1
-- 2026-10-28~30(정책 캠페인 세션): 진단·정책 PREREG(감사 r1/r2), gate+smoke·CAP1·CAP1-R·CAP2+지속성·TUNE 6 Job 측정·회수·결과 감사, 결정 43–58·60, raw 반출, implfix 영향·HE0 셀 재정의 메모
