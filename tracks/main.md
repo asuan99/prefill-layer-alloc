@@ -26,6 +26,7 @@
 - **설계 결함·반복 패턴 정리(2026-11-01, 사용자 요청 "진행")**: `reports/audit/2026-11-01_design_defects/REPORT.md` — 결함 S1–S12 심각도 순, 반복 패턴 P1–P6 원인(계획/셋업) 분류. 에이전트 규약 개정 적용: experiment-runner(부하 위치·승계 상수·처치 발생 횟수·PREREG 필수 항), result-analyst(게이트 4 차단형·"측정하지 않은 것" 절·cost model 2칸), claims-auditor(confound 12·13·파이프라인 모집단 층·`GO-with-caveats(검출력)`·caveat 상한). 미감사 — promote 필요: 예 (결정·규약)
 - **Phase B(기본 서빙 구조 기준선) 2026-11-01~04**: PREREG `stock_baseline/PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(파일명 고정) rev0→rev3.2 봉인(`HARNESS_DIGEST` `0515bd1a…`, `ENGINE_DIGEST` `2836112b…`; 감사 r1·r2·rev3 r1·r2 전부 NO-GO→수정, 상한 뒤 사용자 결정으로 봉인), 사전 예측 `PREDICTION_phaseB_expected_effects_2026-11-02.md`. 이미지 `sglang-vllm-runtime@a5f9bf0f…`(SGLang 바이트 불변 + vLLM 0.31.0 venv), bring-up 8/8 PASS. **Job 3개 완료**: 첫 번째(사다리 5 arm) · 아래쪽 사다리(SG 3 arm) · 두 번째(지속 vLLM·PD-mux) + 진단 Job(B1–B5). ★정오: "지속 완료율 ≈3.0"은 CAP2 감사 스크립트 단위 오류(`policy_cap2/RECHECK_sustain_throughput_2026-11-02.md`). ★정오: VESSL 모든 fused/OFF arm = 패치 트리·플래그 OFF(부록 D: causal_conv1d int64 커널 차이) — 측정으로는 손대지 않은 트리와 동일(3.15). 규약 개정 `reports/audit/2026-11-01_design_defects/REPORT.md` — promote 필요: 예 (결정·감사·결과·정오)
 - **보고서 세션(kisti-40, 2026-11-02~04)**: 교수 보고 Doc "Hybrid PD-mux 진행 보고 (10/12 이후)"(claude.ai artifact L1W7SChVG15JUBSsQusoyU, 감사 r1 반영; 그림 `reports/figures/report_2026-11-02/`) · **stock_quick**(봉인 밖, 사용자 승인) SG-stock W1·W3 사다리 `pdmux-stock-quick-6dfe05d-20261102071129` 회수 — `stock_quick/RESULT_stock_quick_2026-11-02.md`(결과 감사 r1: A·B PLAUSIBLE 조건부, C 앞 문장 OVERBROAD 삭제): W1은 SG ITL p95≈65 ms 문턱 절벽(60→0.21, 사후 80→1.00), W3 등록 술어에서 SG ≥ 모든 static, 최대 토큰 정지 ≤1 s(사후, `sq_maxitl.py`, 미감사)면 역전 — 다른 Job·GPU·n=2 기술값, Phase B와 섞지 않음 · 수식 선행연구 검토 `reports/cost_model/REVIEW_formula_prior_art_2026-11-02.md`(F_S,dec·2s·c* = ReplaySSM 부록 C, causal 계수 Marconi와 관례 차) · 문헌 SLO attainment 조사 `reports/SURVEY_slo_attainment_published_2026-11-02.md`(미감사) — promote 필요: 예 (결과·감사)
+- **cap·mem 메모(2026-11-07, 미감사, GPU 0)**: `cap_char/MEMO_cap_memfraction_vs_replayssm_2026-11-07.md` — cap 48은 근거 없는 승계값, SGLang 제약은 radix OFF cap≡정적 mamba 슬롯(고갈 assert) · ReplaySSM B=256은 1 GPU·고정 배치·짧은 프롬프트 오프라인 측정(vLLM 통합 풀) · mem 0.6은 결정 13의 장문 OOM 대응이며 다수 요청용 아님, cap 256은 mem 0.6에서 state만으로 풀 초과·평균 1.3k면 mem 약 0.75 [유도] — promote 필요: 예 (결과, 감사 후)
 ## 다음 행동
 1. Phase B 세 번째·네 번째 Job 여부 결정(아래) → (다)면 result-analyst 결과 감사 r1(두 결과 문서) → promote 7차(정책 캠페인 + Phase B 전부)
 2. (나)면 rev4: 세 번째 Job 셀을 각 arm 지속 용량의 0.9–1.0(또는 공통 3.0·3.5)으로, PD-mux 대 vLLM 집중, SG 쌍 부호+지연 — 하네스 셀 rate만 변경, 감사 2회, 재봉인
@@ -43,14 +44,15 @@
 - **논문 방향** / C 감사 r1·학회 검토(2026-10-27): A+B만이면 생태계 대비 약함, C 신규성은 hybrid 귀속뿐 / **② + C 사다리(권고)**: H-D → V-O → C 게이트(H-D 여지 >3% 또는 V-O phase별 oracle 분기, 첫 마일스톤 = 순수 attention에서 예측형이 static을 이기는 재현; 최소 조건 = P_gen+recal·DuetServe판 baseline·hold-out·분할 T_dec F1·δ·CM-6 목적항·iteration 배선) · ② 단독 · ① 특성화(ISPASS/IISWC)
 - **진단 PREREG rev2 addendum**(`7af52ffb`, 미봉인) / 관문 문턱 3개·D-4 크기·M1 배치·하네스 감사 1회 / 문턱 그대로·D-4 boot 8·M1은 D-1a 합침·감사 1회(권고) · 조정
 - **통합 정책 측정 후속** / 4 Job 결과·감사 r1(아래) — 다음 측정은 새 PREREG 필요 / (A) 하네스 결함(PC 축약 부하 창) 수정 + 박자 셀 검출력 확보 + EVAL 셀 플래그 분리(E1만·E2만·E1+E2, 용량 아래 셀) 재측정(권고) · (B) 결과 promote만 하고 측정 중단 · (C) EVAL 셀만 재측정 ※ E2 단독 arm은 prefill-heavy 셀(8k/64 저부하)에서만 효과가 잡힘 — W1 HE0 셀이면 잡음 이하 예상(`expected_gain.json` p_decode_empty)
+- **결정 13 mem 범위** / 0.6이 장문 없는 cap 블록·G0까지 적용돼 cap 상향을 막음(메모 위) / (A) long-ctx·봉인 실험만 0.6, 새 cap 스윕은 cap 48에서 mem {0.6, 0.75} 대조 → 0.75에서 cap {48, 128, 256}(권고) · (B) 0.6 유지
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out · CONSENSUS §1 행 38
 ## 실행 중·미회수 Job
 - 없음(2026-11-04). Phase B 원장 `results/stock_baseline/vessl_jobs.tsv`(Job 3개)·`stock_baseline_diag/vessl_jobs.tsv`(진단 1개), 전부 회수·sha 검증. Workspace 3개 standby
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 인용 금지 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 금지 · RESULT_costterms §17 promote 금지 목록 · "슬롯 상한이 hybrid 고유" · M3 판정서 문안 · J1 크기 문장 · AJ-2 J-H1 값
 ## 최근 로그
+- 2026-11-07(main, batch 제약 세션): SGLang cap·슬롯 코드, ReplaySSM 논문·저장소 대조, mem 0.6 출처·실험별 집계 → 메모 1건
 - 2026-10-30~11-02(D\* 세션): PD-mux 공식 구현 대조·R2·구현 결함 설명 · D\* 예측식·EVAL 사전 예측 봉인(결정 61) · EVAL dry-run 중 결정 60 보류 발견, 제출 안 함 · 축 지도 §8b·§6b 기대 효과(E2 판정 prefill-heavy 한정으로 정정)
 - 2026-10-27~11-07(참고 페이지 세션): LLM 요청 스케줄링 정책 개요(라우팅·큐 순서·배칭·PD 배치·선점 5층) + 동작 시나리오 7종(PD 간섭·decode 굶김 연쇄 포함) 공유 페이지 artifact H96kSDZVW7CnfmTKh175Tp, 원본 `reports/figures/sched_policy_map_2026-10-27/` — 개념도(칸 수 설명용)·새 판정 0, "우리 측정" 상자는 A100 단일 GPU 범위 · promote 불필요
 - 2026-11-02~04(main): Phase B 하네스 rev1→3.2(감사 4회), 합본 이미지·bring-up, Job 4개(사다리·진단·아래쪽 사다리·지속) 회수·분석, 정오 2건(지속 완료율·패치 트리 OFF 범위), 결정 (C)·(b)·권고1 등
 - 2026-11-01~02(기준선 세션): 결정 62 · Phase A CPU 재집계(`stock_baseline/RESULT_stock_baseline_phaseA_2026-11-01.md`) · 설계 결함 S1–S12·패턴 P1–P6 정리, 에이전트 규약 3파일 개정
-- 2026-10-28~11-01(impl 세션): 구현 결함 Phase 0·범위 감사·7차 promote(부분) · 엔진 수정 E1–E3·E5(브랜치) · GPU 정확성 gate 2회 · 통합 정책 측정 4 Job·결과 감사 r1
