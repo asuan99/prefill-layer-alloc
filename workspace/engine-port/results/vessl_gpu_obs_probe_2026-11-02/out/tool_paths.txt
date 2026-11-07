@@ -1,0 +1,1 @@
+nsys=/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys ncu=/data/tools/nsight/root/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu

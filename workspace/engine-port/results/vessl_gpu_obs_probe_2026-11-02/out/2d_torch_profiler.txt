@@ -1,0 +1,6 @@
+$ /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 50 --torch-profiler /tmp/gpuobs/out/2d_torch_trace.json
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+torch 2.9.1+cu130 cuda 13.0 NVIDIA A100-SXM4-80GB
+trace_events 315 kernel_events 0
+elapsed_s 1.447

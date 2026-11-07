@@ -1,0 +1,4 @@
+driver=580.178.04 image_nsys=none image_ncu=none
+/data/tools/nsight/dl/nsight-systems-2025.5.2_2025.5.2.266-1_amd64.deb: OK
+/data/tools/nsight/dl/nsight-compute-2025.3.1_2025.3.1.4-1_amd64.deb: OK
+nsys=/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys ncu=/data/tools/nsight/root/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu

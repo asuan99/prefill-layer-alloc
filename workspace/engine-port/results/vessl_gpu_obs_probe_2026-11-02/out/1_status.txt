@@ -1,0 +1,5 @@
+CapPrm:	00000000a80425fb
+CapEff:	00000000a80425fb
+CapBnd:	00000000a80425fb
+NoNewPrivs:	0
+Seccomp:	0

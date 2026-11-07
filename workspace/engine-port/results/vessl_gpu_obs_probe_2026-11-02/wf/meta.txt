@@ -1,0 +1,16 @@
+start_utc=2026-11-02T08:42:40.247Z
+command=/opt/conda/bin/python scripts/gpu_obs_matmul.py --iters 400
+trace=cuda,nvtx,osrt poll_ms=100
+NVIDIA Nsight Systems version 2025.5.2.266-255236693005v0
+NVIDIA A100-SXM4-80GB, GPU-e93db115-977f-d5e4-15b2-1db76454a0d4, 580.178.04, 400.00 W
+end_utc=2026-11-02T08:42:52.992Z rc=0
+total 4580
+-rw-r--r--. 1 root root     318 Nov  2 08:42 meta.txt
+-rw-r--r--. 1 root root    6714 Nov  2 08:42 nvml_power.csv
+-rw-r--r--. 1 root root       0 Nov  2 08:42 nvml_power.err
+-rw-r--r--. 1 root root     697 Nov  2 08:42 stats.log
+-rw-r--r--. 1 root root    1138 Nov  2 08:42 stats_cuda_api_sum.csv
+-rw-r--r--. 1 root root    2145 Nov  2 08:42 stats_cuda_gpu_kern_sum.csv
+-rw-r--r--. 1 root root     404 Nov  2 08:42 stats_nvtx_sum.csv
+-rw-rw-r--. 1 root root  529260 Nov  2 08:42 trace.nsys-rep
+-rw-r--r--. 1 root root 4128768 Nov  2 08:42 trace.sqlite

@@ -1,0 +1,241 @@
+{
+ "mode": "node",
+ "tables": [
+  "CUDA_GRAPH_NODE_EVENTS"
+ ],
+ "arms": {
+  "graph_replay_d": {
+   "kernels": 147,
+   "expected": 150,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 147,
+   "mean_dur_us": 777.34,
+   "names": [
+    "ampere_sgemm_128x64_nn",
+    "vectorized_elementwise_kernel"
+   ]
+  },
+  "graph_replay_p": {
+   "kernels": 147,
+   "expected": 150,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3
+   ],
+   "streams": [
+    147
+   ],
+   "with_graph_node": 147,
+   "mean_dur_us": 4057.08,
+   "names": [
+    "ampere_sgemm_128x64_nn",
+    "vectorized_elementwise_kernel"
+   ]
+  },
+  "green_concurrent": {
+   "kernels": 60,
+   "expected": 60,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3,
+    4
+   ],
+   "streams": [
+    147,
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 3615.16,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "green_d_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 1160.15,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "green_p_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3
+   ],
+   "streams": [
+    147
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 6069.19,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "plain_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    0
+   ],
+   "streams": [
+    13
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 972.4,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "small_launch_heavy": {
+   "kernels": 2002,
+   "expected": 2000,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3,
+    4
+   ],
+   "streams": [
+    147,
+    148
+   ],
+   "with_graph_node": 2,
+   "mean_dur_us": 4.97,
+   "names": [
+    "ampere_sgemm_128x64_nn",
+    "vectorized_elementwise_kernel"
+   ]
+  },
+  "triton_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 4.23,
+   "names": [
+    "add_k"
+   ]
+  },
+  "triton_graph_replay": {
+   "kernels": 50,
+   "expected": 50,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 50,
+   "mean_dur_us": 3.88,
+   "names": [
+    "add_k"
+   ]
+  }
+ },
+ "gates": {
+  "G1": {
+   "pass": false,
+   "detail": [
+    "graph_replay_d: kernels 147 != 150",
+    "graph_replay_p: kernels 147 != 150",
+    "small_launch_heavy: kernels 2002 != 2000"
+   ]
+  },
+  "G2": {
+   "pass": true,
+   "detail": [
+    [
+     0
+    ],
+    [
+     3
+    ],
+    [
+     4
+    ]
+   ]
+  },
+  "G3": {
+   "pass": true,
+   "detail": 5.231365314681545
+  },
+  "G4": {
+   "pass": true,
+   "detail": [
+    [
+     147,
+     147,
+     0
+    ],
+    [
+     147,
+     147,
+     0
+    ],
+    [
+     50,
+     50,
+     0
+    ]
+   ]
+  },
+  "G5": {
+   "pass": true,
+   "detail": {
+    "partitions": 2,
+    "overlap_ms": 34.810583
+   }
+  }
+ }
+}

@@ -1,0 +1,38 @@
+$ /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_sqlite.py /tmp/gpuobs/out/2a_trace.sqlite
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+COMPOSITE_EVENTS 7855
+CUPTI_ACTIVITY_KIND_KERNEL 602
+CUPTI_ACTIVITY_KIND_MEMSET 200
+CUPTI_ACTIVITY_KIND_OVERHEAD 6
+CUPTI_ACTIVITY_KIND_RUNTIME 2546
+CUPTI_ACTIVITY_KIND_SYNCHRONIZATION 200
+DIAGNOSTIC_EVENT 18
+NVTX_EVENTS 200
+OSRT_API 5049
+OSRT_CALLCHAINS 5149
+OSRT_FILE_ACCESS_DESCRIPTORS 1320
+OSRT_FILE_ACCESS_EVENTS 1320
+TARGET_INFO_GPU 1
+kernel ampere_sgemm_128x64_nn n=200 total_ms=1446.074
+kernel elementwise_kernel n=200 total_ms=17.259
+kernel reduce_kernel n=200 total_ms=8.837
+kernel distribution_elementwise_grid_stride_kernel n=2 total_ms=0.144
+diag (1, 'Dwarf backtraces collected.')
+diag (1, "Event 'Reference Cycles', with sampling period 2000000, used to trigger process-tree CPU IP sample collection.")
+diag (1, '4 CPU IP samples collected for every CPU IP backtrace collected.')
+diag (1, 'Profiling has started.')
+diag (1, 'Process was launched by the profiler, see /tmp/nvidia/nsight_systems/quadd_session_10698/streams/pid_709_stdout.log and stderr.log for program output')
+diag (1, 'Common injection library initialized successfully.')
+diag (1, 'OS runtime libraries injection initialized successfully.')
+diag (1, 'Buffers holding CUDA trace data will be flushed on CudaProfilerStop() call. See --flush-on-cudaprofilerstop to control this behavior.')
+diag (1, 'Loaded CUPTI library: /data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/libcupti.so.13.1')
+diag (1, 'Enabling trace for device graph launch')
+diag (1, 'CUDA injection initialized successfully.')
+diag (1, 'NVTX injection initialized successfully.')
+diag (2, 'No NVTX events collected. Does the process use NVTX?')
+diag (1, 'Number of CUDA events collected: \t3348.')
+diag (1, 'Number of OS runtime libraries events collected: \t5046.')
+diag (1, 'Number of CUPTI events produced: \t3578, CUPTI buffers: 50.')
+diag (1, 'Profiling has stopped.')
+diag (1, 'Number of IP samples collected: \t7855.')

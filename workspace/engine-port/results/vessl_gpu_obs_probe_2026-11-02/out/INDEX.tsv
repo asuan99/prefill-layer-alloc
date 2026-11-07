@@ -1,0 +1,20 @@
+1_capsh	0	capsh --decode=00000000a80425fb
+1_rmprofiling	0	grep -i RmProfilingAdminOnly /proc/driver/nvidia/params
+1_perf_paranoid	0	cat /proc/sys/kernel/perf_event_paranoid
+1_smi_power_clock	0	nvidia-smi -q -d POWER,CLOCK
+1_smi_list	0	nvidia-smi --query-gpu=name,uuid,driver_version,power.limit,power.default_limit,power.min_limit,power.max_limit --format=csv
+1_smi_header	0	nvidia-smi
+1_nsys_version	0	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys --version
+1_ncu_version	0	/data/tools/nsight/root/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu --version
+1_nsys_status	0	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys status -e
+1_nsys_gpu_metrics_help	0	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile --gpu-metrics-devices=help
+2a_nsys_trace	0	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile -t cuda,nvtx,osrt --force-overwrite=true -o /tmp/gpuobs/out/2a_trace /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py
+2a_nsys_stats	0	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys stats --force-export=true --report cuda_gpu_kern_sum --report cuda_api_sum --report nvtx_sum /tmp/gpuobs/out/2a_trace.nsys-rep
+2a_sqlite	0	/opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_sqlite.py /tmp/gpuobs/out/2a_trace.sqlite
+2b_nsys_gpu_metrics	1	/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile --gpu-metrics-devices=0 --force-overwrite=true -o /tmp/gpuobs/out/2b_metrics /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 100
+2c_ncu_speedoflight	1	/data/tools/nsight/root/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu --section SpeedOfLight -f -o /tmp/gpuobs/out/2c_ncu /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 4 --size 1024
+2d_torch_profiler	0	/opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 50 --torch-profiler /tmp/gpuobs/out/2d_torch_trace.json
+2e_load_for_smi	0	/opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 100
+2e_smi_poll	33 rows	nvidia-smi --query-gpu=... -lms 100
+2f_smi_pl	4	nvidia-smi -i 0 -pl 400.00
+2f_smi_lgc	4	nvidia-smi -i 0 -lgc 1410,1410

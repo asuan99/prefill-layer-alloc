@@ -1,0 +1,31 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import torch; import sgl_kernel
+                  ^^^^^^^^^^^^^^^^^
+  File "/opt/conda/lib/python3.14/site-packages/sgl_kernel/__init__.py", line 6, in <module>
+    common_ops = _load_architecture_specific_ops()
+  File "/opt/conda/lib/python3.14/site-packages/sgl_kernel/load_utils.py", line 197, in _load_architecture_specific_ops
+    raise ImportError(error_msg)
+ImportError: 
+[sgl_kernel] CRITICAL: Could not load any common_ops library!
+
+Attempted locations:
+1. Architecture-specific pattern: /opt/conda/lib/python3.14/site-packages/sgl_kernel/sm100/common_ops.* - found files: ['/opt/conda/lib/python3.14/site-packages/sgl_kernel/sm100/common_ops.abi3.so']
+2. Fallback pattern: /opt/conda/lib/python3.14/site-packages/sgl_kernel/common_ops.* - found files: []
+3. Standard Python import: common_ops - failed
+
+GPU Info:
+- Compute capability: 80
+- Expected variant: SM80 (precise math for compatibility)
+- CUDA version: 13.0
+
+Please ensure sgl_kernel is properly installed with:
+pip install sglang-kernel --index-url https://docs.sglang.ai/whl/cu130/
+
+Error details from previous import attempts:
+- ImportError: libnuma.so.1: cannot open shared object file: No such file or directory
+- ModuleNotFoundError: No module named 'common_ops'
+
+/data/tools/libnuma/dl/libnuma1_2.0.18-1build1_amd64.deb: OK
+sgl_kernel ok
+ld=/data/tools/libnuma/root/usr/lib/x86_64-linux-gnu:

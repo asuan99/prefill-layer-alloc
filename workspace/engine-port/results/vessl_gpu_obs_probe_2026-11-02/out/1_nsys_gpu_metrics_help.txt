@@ -1,0 +1,4 @@
+$ /data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile --gpu-metrics-devices=help
+GPU Metrics: None of the installed GPUs are supported:
+	Ampere GA100 | NVIDIA A100-SXM4-80GB PCI[0000:a0:1c.0] - Insufficient privilege, see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+See the user guide: https://docs.nvidia.com/nsight-systems/UserGuide/index.html#gpu-metrics

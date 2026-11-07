@@ -1,0 +1,209 @@
+{
+ "mode": "graph",
+ "tables": [
+  "CUDA_GRAPH_EVENTS",
+  "CUPTI_ACTIVITY_KIND_GRAPH_TRACE"
+ ],
+ "arms": {
+  "graph_replay_d": {
+   "kernels": 0,
+   "expected": 150,
+   "graph_rows": 50,
+   "ctx": [],
+   "green_ctx": [],
+   "streams": [],
+   "with_graph_node": 0,
+   "mean_dur_us": null,
+   "names": []
+  },
+  "graph_replay_p": {
+   "kernels": 0,
+   "expected": 150,
+   "graph_rows": 50,
+   "ctx": [],
+   "green_ctx": [],
+   "streams": [],
+   "with_graph_node": 0,
+   "mean_dur_us": null,
+   "names": []
+  },
+  "green_concurrent": {
+   "kernels": 60,
+   "expected": 60,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3,
+    4
+   ],
+   "streams": [
+    147,
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 3614.62,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "green_d_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 1159.48,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "green_p_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    3
+   ],
+   "streams": [
+    147
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 6068.69,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "plain_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    0
+   ],
+   "streams": [
+    13
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 971.62,
+   "names": [
+    "ampere_sgemm_128x64_nn"
+   ]
+  },
+  "small_launch_heavy": {
+   "kernels": 2000,
+   "expected": 2000,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 1.48,
+   "names": [
+    "vectorized_elementwise_kernel"
+   ]
+  },
+  "triton_eager": {
+   "kernels": 30,
+   "expected": 30,
+   "graph_rows": 0,
+   "ctx": [
+    1
+   ],
+   "green_ctx": [
+    4
+   ],
+   "streams": [
+    148
+   ],
+   "with_graph_node": 0,
+   "mean_dur_us": 4.1,
+   "names": [
+    "add_k"
+   ]
+  },
+  "triton_graph_replay": {
+   "kernels": 0,
+   "expected": 50,
+   "graph_rows": 50,
+   "ctx": [],
+   "green_ctx": [],
+   "streams": [],
+   "with_graph_node": 0,
+   "mean_dur_us": null,
+   "names": []
+  }
+ },
+ "gates": {
+  "G1": {
+   "pass": true,
+   "detail": []
+  },
+  "G2": {
+   "pass": true,
+   "detail": [
+    [
+     0
+    ],
+    [
+     3
+    ],
+    [
+     4
+    ]
+   ]
+  },
+  "G3": {
+   "pass": true,
+   "detail": 5.23397817174971
+  },
+  "G4": {
+   "pass": true,
+   "detail": [
+    [
+     0,
+     0,
+     50
+    ],
+    [
+     0,
+     0,
+     50
+    ],
+    [
+     0,
+     0,
+     50
+    ]
+   ]
+  },
+  "G5": {
+   "pass": true,
+   "detail": {
+    "partitions": 2,
+    "overlap_ms": 34.798069
+   }
+  }
+ }
+}

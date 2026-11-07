@@ -1,0 +1,26 @@
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+INFO:2026-11-02 08:42:36 1376:1376 CuptiActivityProfiler.cpp:243] CUDA versions. CUPTI: 130000; Runtime: 13000; Driver: 13000
+  Log file: /tmp/libkineto_activities_1376.json
+  Trace start time: 2026-11-02 08:42:43
+  Trace duration: 500ms
+  Warmup duration: 5s
+  Max GPU buffer size: 128MB
+  Enabled activities: cpu_op,user_annotation,gpu_user_annotation,gpu_memcpy,gpu_memset,kernel,external_correlation,cuda_runtime,cuda_driver,cpu_instant_event,python_function,overhead,xpu_runtime,privateuse1_runtime,privateuse1_driver
+INFO:2026-11-02 08:42:36 1376:1376 CuptiActivityProfiler.cpp:1092] Enabling GPU tracing with max CUPTI buffer size 128MB)
+INFO:2026-11-02 08:42:36 1376:1376 CuptiActivityProfiler.cpp:1150] Tracing starting in 6s
+INFO:2026-11-02 08:42:36 1376:1376 CuptiActivityProfiler.cpp:1155] Tracing will end in 7s
+STAGE:2026-11-02 08:42:36 1376:1376 ActivityProfilerController.cpp:381] Completed Stage: Warm Up
+STAGE:2026-11-02 08:42:37 1376:1376 ActivityProfilerController.cpp:388] Completed Stage: Collection
+INFO:2026-11-02 08:42:37 1376:1376 CuptiActivityProfiler.cpp:292] Processing 1 CPU buffers
+WARNING:2026-11-02 08:42:37 1376:1376 CuptiActivityProfiler.cpp:365] GPU trace is empty!
+INFO:2026-11-02 08:42:37 1376:1376 CuptiActivityProfiler.cpp:406] Record counts: Out-of-range = 0, Blocklisted runtime = 0, Invalid ext correlations = 0, CPU GPU out-of-order = 0, Unexpected CUDA events = 0, CUPTI stopped early? = 0
+INFO:2026-11-02 08:42:37 1376:1376 CuptiActivityProfiler.cpp:1449] CPU Traces Recorded:
+INFO:2026-11-02 08:42:37 1376:1376 CuptiActivityProfiler.cpp:1452] PyTorch Profiler: 1 span(s) recorded
+STAGE:2026-11-02 08:42:37 1376:1376 ActivityProfilerController.cpp:393] Completed Stage: Post Processing
+INFO:2026-11-02 08:42:37 1376:1376 output_json.cpp:175] Tracing to temporary file /tmp/gpuobs/out/2d_torch_verbose.json
+INFO:2026-11-02 08:42:37 1376:1376 output_json.cpp:685] Chrome Trace written to /tmp/gpuobs/out/2d_torch_verbose.json
+INFO:2026-11-02 08:42:37 1376:1376 output_json.cpp:737] Renamed the trace file to /tmp/gpuobs/out/2d_torch_verbose.json
+torch 2.9.1+cu130 cuda 13.0 NVIDIA A100-SXM4-80GB
+trace_events 165 kernel_events 0
+elapsed_s 1.054

@@ -1,0 +1,10 @@
+$ /data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile -t cuda,nvtx,osrt --force-overwrite=true -o /tmp/gpuobs/out/2a_trace /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+torch 2.9.1+cu130 cuda 13.0 NVIDIA A100-SXM4-80GB
+elapsed_s 1.808
+Collecting data...
+Generating '/tmp/nsys-report-4ff8.qdstrm'
+[1/1] [0%                          ] 2a_trace.nsys-rep[1/1] [0%                          ] 2a_trace.nsys-rep[1/1] [====27%                     ] 2a_trace.nsys-rep[1/1] [====28%                     ] 2a_trace.nsys-rep[1/1] [=====29%                    ] 2a_trace.nsys-rep[1/1] [=====31%                    ] 2a_trace.nsys-rep[1/1] [=======38%                  ] 2a_trace.nsys-rep[1/1] [========41%                 ] 2a_trace.nsys-rep[1/1] [========42%                 ] 2a_trace.nsys-rep[1/1] [=========43%                ] 2a_trace.nsys-rep[1/1] [=========44%                ] 2a_trace.nsys-rep[1/1] [=========45%                ] 2a_trace.nsys-rep[1/1] [==========47%               ] 2a_trace.nsys-rep[1/1] [==========48%               ] 2a_trace.nsys-rep[1/1] [==========49%               ] 2a_trace.nsys-rep[1/1] [===========50%              ] 2a_trace.nsys-rep[1/1] [===========52%              ] 2a_trace.nsys-rep[1/1] [===========53%              ] 2a_trace.nsys-rep[1/1] [============56%             ] 2a_trace.nsys-rep[1/1] [============57%             ] 2a_trace.nsys-rep[1/1] [================68%         ] 2a_trace.nsys-rep[1/1] [====================83%     ] 2a_trace.nsys-rep[1/1] [========================100%] 2a_trace.nsys-rep[1/1] [========================100%] 2a_trace.nsys-rep
+Generated:
+	/tmp/gpuobs/out/2a_trace.nsys-rep
