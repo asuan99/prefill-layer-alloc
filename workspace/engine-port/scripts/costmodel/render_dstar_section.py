@@ -118,11 +118,11 @@ def render(r: dict) -> str:
 
   <h3>사후 재현 — 측정 용량 대비 (예측 아님)</h3>
   <div class="tbl"><table><thead><tr><th>W</th><th>D</th><th>모델 λ<sub>cap</sub> (ρ 1.16, 띠 1.19–1.13)</th><th>모델 구속</th><th>측정 통과 → 첫 실패</th><th>첫 실패 셀 실패 사유(요청 비율)</th></tr></thead><tbody>{cap_rows('W1')}{cap_rows('W3')}</tbody></table></div>
-  <p class="lede" style="font-size:.84rem">맞은 것: 구속 제약 종류 W1 5/5·W3 4/5, W1 순서, 워크로드별 D* 방향(W1 큰 D, W3 작은 D), W3 D64 불가. 틀린 것: W3 상위 순서(모델 D24 &gt; D34 &gt; D16, 실측 D16 &gt; D24 = D34; TTFT 구속 셀에서 1.2–2.6배 낙관, A7 평균 대기). W1 크기는 비교하지 않습니다(측정은 120요청 버스트, 모델은 정상상태; 지속 600 s D44·D64 완료율 약 3.0 req/s). 입력: W1 E[R] {w1['ER']:.0f}·ctx {w1['ctx_decode']:.0f}, W3 E[R] {w3['ER']:.0f}·ctx {w3['ctx_decode']:.0f}.</p>
+  <p class="lede" style="font-size:.84rem">맞은 것: 구속 제약 종류 W1 5/5·W3 4/5, W1 순서, 워크로드별 D* 방향(W1 큰 D, W3 작은 D), W3 D64 불가. 틀린 것: W3 상위 순서(모델 D24 &gt; D34 &gt; D16, 실측 D16 &gt; D24 = D34; TTFT 구속 셀에서 1.2–2.6배 낙관, A7 평균 대기). W1 크기는 비교하지 않습니다(측정은 120요청 버스트, 모델은 정상상태; 지속 600 s D44·D64 과부하 포화 완료율 5.06–5.34 req/s, 정오 2026-11-02). 입력: W1 E[R] {w1['ER']:.0f}·ctx {w1['ctx_decode']:.0f}, W3 E[R] {w3['ER']:.0f}·ctx {w3['ctx_decode']:.0f}.</p>
 
-  <h3>EVAL 사전 예측 (봉인 113de504 · 보류 중)</h3>
+  <h3>EVAL 사전 예측 (봉인 113de504 · 채점은 플래그 OFF 대체물)</h3>
   <div class="tbl"><table><thead><tr><th>D</th><th>LO 좋은 요청 비율</th><th>HI goodput / D44</th><th>전체 goodput / D44</th></tr></thead><tbody>{ev_rows}</tbody></table></div>
-  <p class="lede" style="font-size:.84rem">등록 예측 E-1…E-8(띠 포함)은 PROPOSAL §5에 있습니다. 가장 강한 예측은 static D24의 HI goodput ≈ 0(배치가 차면 동거 step이 60 ms를 넘음)입니다. D44 절대 goodput은 TUNE을 본 뒤라 채점하지 않습니다. 셀 rate가 다시 정해지면 봉인된 모델 코드에 새 rate만 넣어 addendum으로 다시 봉인합니다.</p>
+  <p class="lede" style="font-size:.84rem">등록 예측 E-1…E-8(띠 포함)은 PROPOSAL §5에 있습니다. 가장 강한 예측은 static D24의 HI goodput ≈ 0(배치가 차면 동거 step이 60 ms를 넘음)입니다. D44 절대 goodput은 TUNE을 본 뒤라 채점하지 않습니다. 셀 rate가 다시 정해지면 봉인된 모델 코드에 새 rate만 넣어 addendum으로 다시 봉인합니다. 채점(implfix R Job, 결과 감사 r1, 봉인 EVAL이 아니라 digest 0a5d9c3c 플래그 OFF 대체물·1 GPU): E-1…E-5 HIT, E-6(G16/G44 0.395)·E-7(LO D16 0.562) MISS, E-8 점추정 MISS(D64/D44 HI 0.983, paired CI [0.937, 1.028]). 깨진 가정은 A6 경성 ITL 문턱입니다.</p>
 
   <h3>가정</h3>
   <ul class="ban">
