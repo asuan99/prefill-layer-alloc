@@ -1,5 +1,7 @@
 # Phase B 아래쪽 사다리 Job·두 번째 Job(지속 용량) 결과 — 기본 서빙 구조 기준선, VESSL·Nano (2026-11-04, result-analyst)
 
+> **결과 감사 r1(2026-11-07) 정정** (`AUDIT_result_phaseB_claims_r1_2026-11-07.md` E9·A1–A11, `AUDIT_result_phaseB_recompute_r1_2026-11-07.md` 지적 1–3): (1) §6 P-1·P-2의 `score: None`("MISS로 옮길지는 감사·사용자 결정")은 감사 판정 **P-1 MISS, P-2 MISS**로 확정됐다(근거 A11: 첫 번째 Job 사다리에서 SG λ\* < 5.516 → 두 띠 밖; 스코어러 `LADDER_BOTTOM_FAIL` 분기 누락 결함). 3.15로 재채점하지 않는 rev3.1 §8 규칙은 유지. (2) "ITL SLO +10% → 0.93–0.95"류는 seed 201 값이다(s202 0.483/0.23). (3) "정지 토큰 ≈10%"는 5.516 req/s 한정. (4) "길이 무관"은 ≤1024토큰 한정. (5) 3.153791은 두 GPU 점을 합친 ITL 절벽 위 값이며 크기 인용 금지, "패치 트리 OFF = 손대지 않은 SGLang"은 사다리 해상도에서 구별되지 않았다는 뜻까지(Q8 판정 아님, A10). (6) 지속/버스트 0.5는 격자 하한 항등이며 PM 0.5× run의 실제 도착은 3.43 req/s(명목 −6%). 본문 수치는 그대로 둔다.
+
 > 지위: **결과 분석(봉인 규칙 rev3.2 적용만, 새 판정 없음)**. 사전등록 = `PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(rev3.2 봉인, sha `042514e0…`, `HARNESS_DIGEST.txt` digest `0515bd1a…`) · 사전 예측 = `PREDICTION_phaseB_expected_effects_2026-11-02.md`(sha `5923a533…`) · 하네스 감사 r1·r2·rev3 r1·rev3 r2 · 첫 번째 Job 결과 `RESULT_phaseB_J1_2026-11-03.md`. 감사 전이며 정본 반영은 promote 몫이다.
 > 라벨: [측정] raw에서 직접 · [유도] raw에서 계산(봉인 규칙 밖 계산은 표시) · [가정] 검증 안 된 해석.
 > arm 이름: 손대지 않은 SGLang(`SG-stock`) · 수정 트리·플래그 OFF SGLang(`SG-off`) · 손대지 않은 SGLang + mixed-chunk(`SG-mix`) · 손대지 않은 vLLM 0.31.0(`VL-stock`) · static PD-mux D44 구성 묶음(`PM-ref`). 아래쪽 사다리 Job = `J1-down`, 두 번째 Job = `J1b`(하네스 식별자).
@@ -216,8 +218,8 @@
 
 | 예측 | 띠 | 채점 입력(봉인 규칙) | 봉인 스코어러 출력 | 비고 |
 |---|---|---|---|---|
-| P-1 손대지 않은 SGLang 버스트 λ\* | [6, 10] req/s | **첫 번째 Job 사다리 값만** = None(`LADDER_BOTTOM_FAIL`) | `score: None`, value None | rev3.1 §8: 아래쪽 값으로 다시 채점하지 않는다. 판단(MISS로 옮길지)은 첫 번째 Job 결과 문서와 같이 감사·사용자 결정 |
-| P-2 vLLM / 손대지 않은 SGLang 버스트 λ\* | [0.8, 1.25] | 첫 번째 Job 값만 = 분모 None | `score: None` | 같음 |
+| P-1 손대지 않은 SGLang 버스트 λ\* | [6, 10] req/s | **첫 번째 Job 사다리 값만** = None(`LADDER_BOTTOM_FAIL`) | `score: None`, value None | rev3.1 §8: 아래쪽 값으로 다시 채점하지 않는다. 판단(MISS로 옮길지)은 첫 번째 Job 결과 문서와 같이 감사·사용자 결정 **[★결과 감사 r1(2026-11-07) 판정: P-1 MISS]** |
+| P-2 vLLM / 손대지 않은 SGLang 버스트 λ\* | [0.8, 1.25] | 첫 번째 Job 값만 = 분모 None | `score: None` | 같음 **[★결과 감사 r1(2026-11-07) 판정: P-2 MISS]** |
 | P-3·P-5 | — | 세 번째 Job 몫 | None | — |
 | P-4 | ±30 % | 계측 boot 합성 창 없음 | `UNSCORABLE`(n = 0) | 실패 아님 |
 

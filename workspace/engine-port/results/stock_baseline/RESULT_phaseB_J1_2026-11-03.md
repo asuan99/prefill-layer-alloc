@@ -1,12 +1,14 @@
 # Phase B 첫 번째 Job(용량 사다리) 결과 — 기본 서빙 구조 기준선, VESSL·Nano (2026-11-03, result-analyst)
 
+> **결과 감사 r1(2026-11-07) 정정** (`AUDIT_result_phaseB_claims_r1_2026-11-07.md` E9·허용 문안 A1–A11, `AUDIT_result_phaseB_recompute_r1_2026-11-07.md` 지적 1–3): (1) §7 P-1·P-2의 `score: None`은 스코어러의 `LADDER_BOTTOM_FAIL` 분기 누락 결함이며, 감사 판정은 **P-1 MISS, P-2 MISS**다(첫 번째 Job에서 SG λ\* < 5.516 확정 → [6,10]·[0.8,1.25] 밖; 근거 A11; 사용자 결정 불요). "UNSCORABLE"로 인용 금지. (2) "ITL SLO +10% → 0.93–0.95"·"+5%에서 2.1배(0.22→0.47)"는 **seed 201 값**이다; s202는 0.483과 0.23(SG-stock 6.34 s201은 0.27). (3) "정지 토큰 ≈10%"는 5.516 req/s 한정(3.15에서 4–5%). (4) "길이 무관"은 입력 ≤1024토큰 한정; 512–1024토큰 51 ms는 재현 안 됨. (5) SG 구성은 piecewise CUDA graph OFF(upstream 기본은 ON)이므로 "손대지 않은 SGLang"은 이 범위를 달고 읽는다. 본문 수치는 그대로 둔다.
+
 > 지위: **결과 분석(봉인 규칙 적용만, 새 판정 없음)**. 사전등록 = `PREREG_STOCK_BASE_rev1_DRAFT_2026-11-02.md`(rev2.1, sha `b2126bd9…`) · 사전 예측 = `PREDICTION_phaseB_expected_effects_2026-11-02.md`(sha `5923a533…`) · 하네스 감사 r1·r2. 두 문서와 분석기(`sb_analyze.py`, sha `ed7bfa4a…`)는 `HARNESS_DIGEST.txt`의 봉인 sha와 일치함을 확인했다. 감사 전이며 정본 반영은 promote 몫이다.
 > 라벨: [측정] raw에서 직접 · [유도] raw에서 계산(봉인 규칙 밖 계산 포함, 표시함) · [가정] 검증 안 된 해석.
 > arm 이름: 손대지 않은 SGLang(`SG-stock`) · 수정 트리·플래그 OFF SGLang(`SG-off`) · 손대지 않은 SGLang + mixed-chunk(`SG-mix`) · 손대지 않은 vLLM 0.31.0(`VL-stock`) · static PD-mux D44 구성 묶음(`PM-ref`).
 
 ## 0. 한 줄 판정
 
-**봉인 규칙 출력 그대로: 손대지 않은 SGLang 계열 3 arm은 등록 격자 최저 rung(5.516 req/s)에서 이미 attainment 0.90에 못 미쳐(`LADDER_BOTTOM_FAIL`) 버스트 용량 값이 없다. vLLM 8.389146 · PD-mux 구성 묶음 7.29491 req/s(`BRACKETED`). 그 결과 등록 규칙상 두 번째 Job의 계획 자체가 만들어지지 않는다(`ABORT_NO_ADDENDUM`).** 손대지 않은 SGLang과 수정 트리 OFF SGLang의 실패는 **TTFT가 아니라 요청 내부 ITL p95 항**에서 나오고, 그 값이 60 ms 경계 바로 위(요청 중앙 63–66 ms)에 몰려 있다 — **ITL 축의 metric cliff**다(SLO를 +10% 옮기면 attainment 0.22 → 0.93–0.95, 진단용 계산이며 결론 아님). 호출자 가설 "기본 decode step 자체가 ~60 ms"는 raw와 **맞지 않는다**: 요청 내부 ITL **p50은 21 ms**이고, 60 ms대 값은 별도의 "간극(gap) 모드"(토큰의 약 10%)에서 나온다. mixed-chunk arm은 절벽이 아니라 확실한 실패다(간극 160–240 ms, TTFT 실패도 절반 가까이).
+**봉인 규칙 출력 그대로: 손대지 않은 SGLang 계열 3 arm은 등록 격자 최저 rung(5.516 req/s)에서 이미 attainment 0.90에 못 미쳐(`LADDER_BOTTOM_FAIL`) 버스트 용량 값이 없다. vLLM 8.389146 · PD-mux 구성 묶음 7.29491 req/s(`BRACKETED`). 그 결과 등록 규칙상 두 번째 Job의 계획 자체가 만들어지지 않는다(`ABORT_NO_ADDENDUM`).** 손대지 않은 SGLang과 수정 트리 OFF SGLang의 실패는 **TTFT가 아니라 요청 내부 ITL p95 항**에서 나오고, 그 값이 60 ms 경계 바로 위(요청 중앙 63–66 ms)에 몰려 있다 — **ITL 축의 metric cliff**다(SLO를 +10% 옮기면 attainment 0.22 → 0.93–0.95, 진단용 계산이며 결론 아님) [★감사 r1: seed 201 값; s202 0.483]. 호출자 가설 "기본 decode step 자체가 ~60 ms"는 raw와 **맞지 않는다**: 요청 내부 ITL **p50은 21 ms**이고, 60 ms대 값은 별도의 "간극(gap) 모드"(토큰의 약 10%)에서 나온다. mixed-chunk arm은 절벽이 아니라 확실한 실패다(간극 160–240 ms, TTFT 실패도 절반 가까이).
 
 - 정책 결론: **없음**(이 Job은 판정 셀이 아니다. 사다리 rung당 seed 2개, 등록된 쌍 라벨 없음 → arm 간 차이는 underpowered·기술값만).
 - 다음에 필요한 것: 사용자 결정(§8 선택지) — 등록 규칙으로는 다음 Job을 낼 수 없다.
@@ -188,7 +190,7 @@ attainment = 요청 중 (오류 없음 ∧ TTFT ≤ 3000 ms ∧ 요청 내부 to
 | mixed-chunk · 5.516 · 201 / 202 | 0.03 / 0.00 | 0.03 / 0.00 | **0.03 / 0.00** | 0.03 / 0.00 | 0.03 / 0.00 | 0.05 / 0.00 |
 | PD-mux 묶음 · vLLM · 5.516 | 0.99–1.00 | 0.99–1.00 | **0.99–1.00** | 0.99–1.00 | 0.99–1.00 | 1.00 |
 
-판정(게이트 4·6): **손대지 않은 SGLang·수정 트리 OFF의 `LADDER_BOTTOM_FAIL`은 ITL 축 metric cliff 위에서 나온 결과다** — SLO +5%에서 attainment가 0.22 → 0.47(2.1배), +10%에서 0.93–0.95. 등록 결과(`LADDER_BOTTOM_FAIL`)는 봉인 규칙의 정당한 출력으로 그대로 서지만, "손대지 않은 SGLang은 5.5 req/s를 못 버틴다" 같은 **크기·용량 해석은 `confounded(metric cliff, ITL 축)`**이다. 반대로 mixed-chunk의 실패는 ITL SLO 54–70 ms(−10%~+17%) 어디서도 바뀌지 않아 절벽이 아니고, PD-mux 묶음·vLLM의 통과도 절벽에서 ~25% 떨어져 있다.
+판정(게이트 4·6): **손대지 않은 SGLang·수정 트리 OFF의 `LADDER_BOTTOM_FAIL`은 ITL 축 metric cliff 위에서 나온 결과다** — SLO +5%에서 attainment가 0.22 → 0.47(2.1배), +10%에서 0.93–0.95 [★감사 r1: seed 201만; s202는 0.23(+5%)·0.483(+10%)]. 등록 결과(`LADDER_BOTTOM_FAIL`)는 봉인 규칙의 정당한 출력으로 그대로 서지만, "손대지 않은 SGLang은 5.5 req/s를 못 버틴다" 같은 **크기·용량 해석은 `confounded(metric cliff, ITL 축)`**이다. 반대로 mixed-chunk의 실패는 ITL SLO 54–70 ms(−10%~+17%) 어디서도 바뀌지 않아 절벽이 아니고, PD-mux 묶음·vLLM의 통과도 절벽에서 ~25% 떨어져 있다.
 ★**등록 cliff 검사의 사각 공시**: 유효성 사슬 ②(PREREG §4)는 "TTFT가 SLO ±5% 안 > 10%"만 본다. 이 Job에서 그 검사는 SGLang 계열 최저 rung에서 0.00이라 **이 절벽을 잡지 못한다**. ITL ±5% 비율은 손대지 않은 SGLang 5.516 s201 0.29 · 수정 트리 OFF 0.30/0.24로 같은 문턱(10%)을 넘는다. 등록 규칙에 ITL 절벽 검사는 없다(이 결과 문서에서 새 규칙을 만들지 않는다 — 감사·사용자 결정 몫).
 
 ![ITL p95 분포](figures/j1_itl_p95_cliff.png)
@@ -201,8 +203,8 @@ attainment = 요청 중 (오류 없음 ∧ TTFT ≤ 3000 ms ∧ 요청 내부 to
 
 | 예측 | 띠 | 관측 값 | 봉인 스코어러 출력 | 비고 |
 |---|---|---|---|---|
-| P-1 손대지 않은 SGLang 버스트 λ\* | [6, 10] req/s | **None**(`LADDER_BOTTOM_FAIL`) | `score: None` | 스코어러는 값이 None이면 HIT/MISS/UNSCORABLE 어느 것도 내지 않는다. 예측 문서 §5의 범주(HIT/MISS/UNSCORABLE = 포화·INVALID)에 이 경우는 없다. 사실로 적을 수 있는 것은 "λ\*가 존재한다면 5.516 아래다(격자 최저 rung 미달)"[유도]이며, 이를 MISS로 옮길지는 채점 규칙 해석이라 **감사·사용자 결정**이다. |
-| P-2 vLLM λ\* / 손대지 않은 SGLang λ\* | [0.8, 1.25] | **None**(분모 없음) | `score: None` | 같은 사유. |
+| P-1 손대지 않은 SGLang 버스트 λ\* | [6, 10] req/s | **None**(`LADDER_BOTTOM_FAIL`) | `score: None` | 스코어러는 값이 None이면 HIT/MISS/UNSCORABLE 어느 것도 내지 않는다. 예측 문서 §5의 범주(HIT/MISS/UNSCORABLE = 포화·INVALID)에 이 경우는 없다. 사실로 적을 수 있는 것은 "λ\*가 존재한다면 5.516 아래다(격자 최저 rung 미달)"[유도]이며, 이를 MISS로 옮길지는 채점 규칙 해석이라 **감사·사용자 결정**이다. **[★결과 감사 r1(2026-11-07) 판정: P-1 MISS]** |
+| P-2 vLLM λ\* / 손대지 않은 SGLang λ\* | [0.8, 1.25] | **None**(분모 없음) | `score: None` | 같은 사유. **[★결과 감사 r1(2026-11-07) 판정: P-2 MISS]** |
 | P-3·P-4·P-5 | — | 해당 Job 미실행 | None / UNSCORABLE(P-4, n=0) / None | 세 번째 Job 몫. P-4의 UNSCORABLE은 "합성 창 없음" 때문이지 실패가 아니다. |
 
 **기술 예측 행(채점 대상 아님, 인용 금지 문장 9)** — 틀린 방향이었음을 기술로 적는다:

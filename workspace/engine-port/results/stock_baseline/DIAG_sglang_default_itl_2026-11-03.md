@@ -1,5 +1,7 @@
 # 진단: 손대지 않은 SGLang 기본값의 ITL p95 ≈ 63 ms (2026-11-03, engine-porter, 읽기 전용)
 
+> **결과 감사 r1(2026-11-07) 정정** (`AUDIT_result_phaseB_claims_r1_2026-11-07.md` E10·①, `AUDIT_result_phaseB_recompute_r1_2026-11-07.md` 지적 2·3·7): (1) §2 표의 42 ms 초과분은 **s201·5.516 req/s 1 run**에서 유도한 값이다. 512–1024토큰 행 51 ms는 재계산에서 재현되지 않았다(41.7–44.8 ms, n=1–3). (2) "프롬프트 길이와 무관"은 **입력 ≤1024토큰 한정**이며 1024토큰 초과에서는 길이 의존 정지가 추가된다(140–263 ms, run당 1–2건). (3) "정지 토큰 ≈10%"는 5.516 req/s 한정(3.15에서 4–5%). (4) 이 진단의 SG-stock은 piecewise CUDA graph를 끈 구성이며 upstream 기본(ON)이 아니다; 정지 원인(eager 발행 CPU 비용 등)은 측정되지 않았다. (5) B3 행: chunk −1이 mem 자동값을 0.836→0.686으로 함께 바꿨다. 본문 수치는 그대로 둔다.
+
 대상 Job: `runs/pdmux-stock-baseline-7899d1b-20261102085423/raw/` (A100-SXM4-80GB 1장, NemotronH Nano 9B v2 Base,
 ShareGPT 120요청). 이 문서는 원인 진단만 다룬다. 성능 판정·goodput은 다루지 않는다. 새 GPU 실행 0.
 계산은 raw `runs/J1_*_lad_r*_s20{1,2}.json`의 `token_itl_ms`·`token_t_mono`·`t_sent_mono`에서 직접 했다
@@ -35,14 +37,14 @@ p90이 seed마다 53.6과 40.1로 흔들리는 것은 정지 비율(~10%)이 p90
 
 - 전역 정지(여러 요청이 8 ms 안에 동시에 끊기는 gap > 40 ms를 한 사건으로 묶음): SG-stock s201은 **112건**이고,
   그중 101건은 정지 구간 [시작−100 ms, 끝] 안에 새 요청이 송신됐다(trace의 `mixing_opportunities`=112와 같다).
-- 정지 길이는 프롬프트 길이와 **거의 무관한 상수**다. 도착 요청의 입력 길이별 "동시 decode의 정지 gap − 직전 0.5 s 기준 step":
+- 정지 길이는 프롬프트 길이와 **거의 무관한 상수**다 [★감사 r1: 입력 ≤1024토큰 한정]. 도착 요청의 입력 길이별 "동시 decode의 정지 gap − 직전 0.5 s 기준 step":
 
-| 입력 토큰 | SG-stock 초과분 | PM-ref 초과분 | VL-stock 초과분 |
+| 입력 토큰 | SG-stock 초과분 [★s201·5.516 1 run] | PM-ref 초과분 | VL-stock 초과분 |
 |---|---|---|---|
 | < 32 (n=54) | **42.2 ms** | 22.9 ms | 22.3 ms |
 | 32–128 | 42–43 | 24 | 25–27 |
 | 128–512 | 43–45 | 23–25 | 29 |
-| 512–1024 | 51 | 26 | 30 |
+| 512–1024 | 51 [★감사 r1: 재현 안 됨, 재계산 41.7–44.8 ms n=1–3] | 26 | 30 |
 
   ShareGPT 프롬프트 중앙은 34–39토큰이다. 이런 짧은 prefill의 GPU 연산량은 정지 길이를 설명하지 못한다.
 - **SG-stock은 덧셈, PM-ref는 상수다.** 운영 초반 bs=1(decode step 12 ms)에서 SG-stock 정지는 53.6 ms(=12+42)이고,
@@ -110,7 +112,7 @@ SG-stock과 SG-off의 diff는 `port`·`random_seed` 두 키뿐이다(트리 무�
 | **B5** | pristine | PM-ref argv에서 `--enable-pdmux --pdmux-config-path`만 제거 | p95 ≈ 60 ms대 복귀, 덧셈 구조 | "argv 기본값 대 동시 실행" 결정 실험(가장 중요) |
 | B1 | pristine | SG-stock + `--disable-overlap-schedule` | 정지 덧셈 구조 유지, p50 +1–2 ms | 후보 1 |
 | B2 | pristine | SG-stock에서 `--disable-piecewise-cuda-graph` 제거 | 고정 약 42 ms가 크게 줄면 eager 발행 비용이 확정된다. NemotronH에서 piecewise 캡처가 되는지는 미확인이라 부팅 실패도 결과로 기록 | 공통 고정 비용의 원천 |
-| B3 | pristine | SG-stock + `--chunked-prefill-size -1` | 변화 없음 | 후보 2 배제 확인 |
+| B3 | pristine | SG-stock + `--chunked-prefill-size -1` (★mem 자동값 0.836→0.686 동반) | 변화 없음 | 후보 2 배제 확인 |
 | B4 | pristine | SG-stock + `--mem-fraction-static 0.6 --max-mamba-cache-size 48` | 변화 없음 | 후보 3 배제 확인 |
 | P1 | 패치 | SG-stock argv + extend 계측(설계된 계측 boot, decode probe의 `extend_host_ms`/`extend_gpu_ms`) + 가능하면 짧은 torch profiler 창 | 짧은 prefill의 host 구간 ≈ 40 ms, 그 안에 동기화 대기 1회 | 기전(CPU 발행 대 동기화 대기) |
 
