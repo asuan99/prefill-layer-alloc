@@ -1,0 +1,587 @@
+<title>LLM 요청 스케줄링 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Gowun+Batang:wght@400;700&family=IBM+Plex+Sans+KR:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 요청이 지나가는 순서대로 5개 결정층을 위→아래로, 상단에 흐름도, 데스크톱은 좌측 고정 목차 */
+:root{
+  --bg:#f3f5f6; --surface:#ffffff; --fg:#17242a; --muted:#56656c; --line:#d5dde0;
+  --accent:#0d6b73; --accent-soft:#dcefee; --warn:#9a5b0b; --warn-soft:#f6ead6;
+  --c-dec:#7fb9bd; --on-acc:#ffffff;
+  --f-display:"Gowun Batang","Nanum Myeongjo",Georgia,serif;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0f1719; --surface:#162226; --fg:#e3ecee; --muted:#9aaab0; --line:#2a3a3f;
+  --accent:#5cc4c9; --accent-soft:#163a3d; --warn:#e2a95a; --warn-soft:#3a2c17; --c-dec:#2e7478; --on-acc:#0f1719; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0f1719; --surface:#162226; --fg:#e3ecee; --muted:#9aaab0; --line:#2a3a3f;
+  --accent:#5cc4c9; --accent-soft:#163a3d; --warn:#e2a95a; --warn-soft:#3a2c17; --c-dec:#2e7478; --on-acc:#0f1719; color-scheme:dark}
+
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:15px;line-height:1.65;padding:0 16px}
+.wrap{max-width:1120px;margin:0 auto;padding-block:40px 64px;display:grid;grid-template-columns:200px minmax(0,1fr);gap:48px}
+@media (max-width:860px){.wrap{grid-template-columns:minmax(0,1fr);gap:24px;padding-block:24px 48px}}
+
+nav.toc{position:sticky;top:calc(env(safe-area-inset-top,0px) + 24px);align-self:start;display:flex;flex-direction:column;gap:4px;font-size:13px}
+nav.toc .lbl{font-family:var(--f-mono);font-size:11px;letter-spacing:.08em;text-transform:uppercase;color:var(--muted);margin-bottom:6px}
+nav.toc a{color:var(--muted);text-decoration:none;padding:4px 8px;border-radius:4px}
+nav.toc a:hover,nav.toc a:focus-visible{color:var(--accent);background:var(--accent-soft);outline:none}
+@media (max-width:860px){nav.toc{position:static;flex-direction:row;flex-wrap:wrap}nav.toc .lbl{width:100%}}
+
+main{min-width:0;display:flex;flex-direction:column;gap:56px}
+header h1{font-family:var(--f-display);font-weight:700;font-size:clamp(28px,4vw,40px);line-height:1.25;margin:0 0 12px;text-wrap:balance}
+header p{max-width:65ch;margin:0;color:var(--muted)}
+.eyebrow{font-family:var(--f-mono);font-size:12px;letter-spacing:.08em;text-transform:uppercase;color:var(--accent);margin-bottom:10px}
+
+.flow{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px;overflow-x:auto}
+.flow svg{display:block;min-width:680px;width:100%;height:auto}
+.flow .box{fill:var(--bg);stroke:var(--line);stroke-width:1.2}
+.flow .box.stage{fill:var(--accent-soft);stroke:var(--accent)}
+.flow .box.mem{fill:var(--warn-soft);stroke:var(--warn)}
+.flow text{fill:var(--fg);font-family:var(--f-body);font-size:13px}
+.flow text.num{fill:var(--accent);font-family:var(--f-mono);font-size:11px}
+.flow text.num.w{fill:var(--warn)}
+.flow text.sub{fill:var(--muted);font-size:11px}
+.flow .arr{stroke:var(--muted);stroke-width:1.4;fill:none}
+.flow .arr.d{stroke:var(--warn);stroke-dasharray:4 4}
+.flow .head{fill:var(--muted)} .flow .head.w{fill:var(--warn)}
+.cap{font-size:13px;color:var(--muted);margin:10px 0 0}
+
+section h2{font-family:var(--f-display);font-weight:700;font-size:24px;margin:0 0 6px;display:flex;gap:12px;align-items:baseline;flex-wrap:wrap}
+section h2 .n{font-family:var(--f-mono);font-size:13px;font-weight:500;color:var(--accent)}
+section > .q{color:var(--muted);margin:0 0 18px;max-width:65ch}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:8px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;min-width:720px;font-size:14px}
+th,td{text-align:left;vertical-align:top;padding:10px 14px;border-bottom:1px solid var(--line)}
+th{font-family:var(--f-mono);font-size:11px;font-weight:500;letter-spacing:.06em;text-transform:uppercase;color:var(--muted);background:var(--bg)}
+tr:last-child td{border-bottom:0}
+td:first-child{font-weight:600;white-space:nowrap}
+td.ex{font-size:13px;color:var(--muted)}
+tr.hl td{background:var(--accent-soft)}
+tr.hl td:first-child{box-shadow:inset 3px 0 0 var(--accent)}
+.knob{margin-top:16px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.knob p{margin:0}
+code{font-family:var(--f-mono);font-size:.88em;background:var(--accent-soft);padding:1px 5px;border-radius:3px}
+.tag{font-family:var(--f-mono);font-size:11px;padding:1px 6px;border-radius:3px;background:var(--warn-soft);color:var(--warn);white-space:nowrap}
+
+.picker{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:16px}
+.picker button{font:inherit;font-size:13px;padding:6px 12px;border-radius:999px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.picker button[aria-pressed="true"]{background:var(--accent);border-color:var(--accent);color:var(--bg)}
+.picker button:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.pick-out{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:16px 18px}
+.pick-out h3{margin:0 0 6px;font-size:15px}
+.pick-out p{margin:0;color:var(--muted);max-width:68ch}
+
+.note{border-left:3px solid var(--warn);background:var(--warn-soft);padding:14px 18px;border-radius:0 6px 6px 0;max-width:76ch}
+.note p{margin:0 0 6px}.note p:last-child{margin:0}
+ul.plain{margin:0;padding-left:18px;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.refs{display:grid;grid-template-columns:repeat(auto-fill,minmax(250px,1fr));gap:4px 24px;font-size:13px;margin:0;padding:0;list-style:none}
+.refs li{padding:6px 0;border-bottom:1px dashed var(--line)}
+.refs .v{font-family:var(--f-mono);font-size:11px;color:var(--muted);margin-left:6px}
+footer{font-size:12px;color:var(--muted);border-top:1px solid var(--line);padding-top:16px}
+@media (prefers-reduced-motion:no-preference){tr td{transition:background .2s}}
+
+.scen-tabs{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:18px}
+.scen-tabs button{font:inherit;font-size:13px;padding:6px 12px;border-radius:6px;border:1px solid var(--line);background:var(--surface);color:var(--fg);cursor:pointer}
+.scen-tabs button[aria-selected="true"]{background:var(--fg);border-color:var(--fg);color:var(--bg)}
+.scen-tabs button:focus-visible,#scen-play:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.scen-head{display:flex;gap:16px;justify-content:space-between;align-items:flex-start;flex-wrap:wrap;margin-bottom:14px}
+.scen-head > div{min-width:0;flex:1 1 320px}
+.scen-layer{font-family:var(--f-mono);font-size:11px;letter-spacing:.06em;text-transform:uppercase;color:var(--accent)}
+.scen-head h3{font-family:var(--f-display);font-size:19px;margin:2px 0 4px}
+.scen-head p{margin:0;color:var(--muted);max-width:68ch;font-size:14px}
+#scen-play{font:inherit;font-size:13px;padding:7px 14px;border-radius:6px;border:1px solid var(--accent);background:var(--surface);color:var(--accent);cursor:pointer}
+#scen-play[disabled]{opacity:.6;cursor:default}
+@media (prefers-reduced-motion:reduce){#scen-play{display:none}}
+.scen-grid{display:flex;flex-direction:column;gap:12px}
+.scen-panel{background:var(--surface);border:1px solid var(--line);border-radius:8px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.scen-panel .ph{display:flex;justify-content:space-between;gap:6px 16px;flex-wrap:wrap;align-items:baseline}
+.scen-panel h4{margin:0;font-size:14px}
+.met{display:flex;flex-wrap:wrap;gap:4px 16px;margin:0;padding:0;list-style:none;font-size:12.5px;color:var(--muted)}
+.met strong{font-family:var(--f-mono);font-weight:500;color:var(--fg);margin-left:4px;font-variant-numeric:tabular-nums}
+.met .good strong{color:var(--accent)} .met .bad strong{color:var(--warn)}
+.tl-wrap{overflow-x:auto}
+.tl{display:block;width:100%;min-width:560px;height:auto}
+.tl text{font-family:var(--f-body)}
+.tl .ax{fill:var(--muted);font-family:var(--f-mono);font-size:10px}
+.tl .grid{stroke:var(--line);stroke-width:1}
+.tl .lane-l{fill:var(--fg);font-size:12px}
+.tl .b-p{fill:var(--accent)} .tl .b-d{fill:var(--c-dec)} .tl .b-w{fill:url(#hatch)}
+.tl .b-idle{fill:none;stroke:var(--warn);stroke-dasharray:3 3;stroke-width:1.2}
+.tl .b-stall{fill:var(--warn-soft);stroke:var(--warn);stroke-width:1}
+.tl .b-x,.tl .b-redo{fill:var(--warn)}
+.tl .b-intf{fill:url(#hatchw)}
+.tl .b-shr{fill:var(--accent-soft);stroke:var(--c-dec);stroke-dasharray:2 2;stroke-width:1}
+.hatchw-bg{fill:var(--warn-soft)} .hatchw-ln{stroke:var(--warn);stroke-width:1.6}
+.sw.intf{background:repeating-linear-gradient(45deg,var(--warn) 0 1.5px,var(--warn-soft) 1.5px 4px)}
+.sw.shr{background:var(--accent-soft);border:1px dashed var(--c-dec)}
+.tl .bt{fill:var(--on-acc);font-size:10.5px;pointer-events:none}
+.tl .bt.dk{fill:var(--warn)}
+.tl .bt.mu{fill:var(--fg);paint-order:stroke;stroke:var(--surface);stroke-width:3px}
+.tl .arr-m{fill:var(--fg)}
+.tl .cur{stroke:var(--fg);stroke-width:1.5}
+.tl .dim{opacity:.1}
+.hatch-bg{fill:var(--surface)} .hatch-ln{stroke:var(--muted);stroke-width:1.2;opacity:.45}
+.legend{display:flex;flex-wrap:wrap;gap:8px 18px;font-size:12.5px;color:var(--muted);margin-top:14px}
+.legend span{display:inline-flex;align-items:center;gap:6px}
+.sw{width:18px;height:11px;border-radius:2px;display:inline-block;box-sizing:border-box}
+.sw.p{background:var(--accent)} .sw.d{background:var(--c-dec)}
+.sw.w{background:repeating-linear-gradient(45deg,var(--muted) 0 1px,transparent 1px 5px);opacity:.7}
+.sw.idle{border:1.2px dashed var(--warn)} .sw.stall{background:var(--warn-soft);border:1px solid var(--warn)} .sw.x{background:var(--warn)}
+.scen-read{margin:14px 0 0;max-width:76ch}
+</style>
+
+<div class="wrap">
+<nav class="toc" aria-label="목차">
+  <span class="lbl">결정층</span>
+  <a href="#flow">전체 흐름</a>
+  <a href="#route">1 · 라우팅</a>
+  <a href="#queue">2 · 큐 순서</a>
+  <a href="#batch">3 · 배칭</a>
+  <a href="#pd">4 · Prefill/Decode 배치</a>
+  <a href="#mem">5 · 메모리·선점</a>
+  <a href="#scen">동작 시나리오</a>
+  <a href="#pick">워크로드별 선택</a>
+  <a href="#eval">평가 원칙</a>
+  <a href="#refs">참고 문헌</a>
+</nav>
+
+<main>
+<header>
+  <div class="eyebrow">LLM Serving · Request Scheduling</div>
+  <h1>LLM 요청 스케줄링 지도</h1>
+  <p>LLM 서빙의 "스케줄링"은 정책 하나가 아니라, 요청이 GPU에 닿기까지 차례로 내려지는 다섯 가지 결정이다. 각 결정층마다 어떤 정책이 있고, 무엇을 얻고 무엇을 내주는지, 실제로 어떤 노브로 운용하는지 정리했다.</p>
+</header>
+
+<div id="flow">
+  <div class="flow">
+    <svg viewBox="0 0 880 240" role="img" aria-label="요청이 라우팅, 큐 순서, 배칭, prefill/decode 배치를 거쳐 GPU에 도달하고, 메모리 압박이 선점으로 큐에 되먹임되는 흐름도">
+      <defs>
+        <marker id="ah" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head" d="M0,0 L10,5 L0,10 z"/></marker>
+        <marker id="ahw" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto"><path class="head w" d="M0,0 L10,5 L0,10 z"/></marker>
+      </defs>
+      <rect class="box" x="10" y="40" width="110" height="70" rx="6"/>
+      <text x="65" y="72" text-anchor="middle">요청 도착</text>
+      <text class="sub" x="65" y="92" text-anchor="middle">prompt + SLO</text>
+
+      <rect class="box stage" x="150" y="30" width="130" height="90" rx="6"/>
+      <text class="num" x="164" y="50">1</text>
+      <text x="215" y="76" text-anchor="middle">라우팅</text>
+      <text class="sub" x="215" y="96" text-anchor="middle">어느 인스턴스로</text>
+
+      <rect class="box stage" x="310" y="30" width="130" height="90" rx="6"/>
+      <text class="num" x="324" y="50">2</text>
+      <text x="375" y="76" text-anchor="middle">큐 순서</text>
+      <text class="sub" x="375" y="96" text-anchor="middle">누구를 먼저</text>
+
+      <rect class="box stage" x="470" y="30" width="130" height="90" rx="6"/>
+      <text class="num" x="484" y="50">3</text>
+      <text x="535" y="76" text-anchor="middle">배칭</text>
+      <text class="sub" x="535" y="96" text-anchor="middle">언제·얼마나 묶나</text>
+
+      <rect class="box stage" x="630" y="30" width="130" height="90" rx="6"/>
+      <text class="num" x="644" y="50">4</text>
+      <text x="695" y="76" text-anchor="middle">P/D 배치</text>
+      <text class="sub" x="695" y="96" text-anchor="middle">두 phase 공존 방식</text>
+
+      <rect class="box" x="790" y="40" width="80" height="70" rx="6"/>
+      <text x="830" y="80" text-anchor="middle">GPU</text>
+
+      <path class="arr" d="M120 75 H146" marker-end="url(#ah)"/>
+      <path class="arr" d="M280 75 H306" marker-end="url(#ah)"/>
+      <path class="arr" d="M440 75 H466" marker-end="url(#ah)"/>
+      <path class="arr" d="M600 75 H626" marker-end="url(#ah)"/>
+      <path class="arr" d="M760 75 H786" marker-end="url(#ah)"/>
+
+      <rect class="box mem" x="470" y="165" width="290" height="60" rx="6"/>
+      <text class="num w" x="484" y="184">5</text>
+      <text x="615" y="192" text-anchor="middle">메모리·선점</text>
+      <text class="sub" x="615" y="212" text-anchor="middle">KV 부족 시 밀어낼 요청 · admission 거부</text>
+      <path class="arr d" d="M830 110 V195 H764" marker-end="url(#ahw)"/>
+      <path class="arr d" d="M470 195 H375 V124" marker-end="url(#ahw)"/>
+      <text class="sub" x="800" y="150" text-anchor="end">KV 사용률</text>
+      <text class="sub" x="385" y="160">선점된 요청 재진입</text>
+    </svg>
+  </div>
+  <p class="cap">1–4는 요청이 지나가는 순서이고, 5는 GPU 메모리 상태가 큐로 되먹임되는 고리다. 정책들은 서로 맞물려 있어서 한 층만 바꾼 비교는 다른 층 설정에 따라 결론이 달라질 수 있다.</p>
+</div>
+
+<section id="route">
+  <h2><span class="n">1</span>라우팅·로드밸런싱</h2>
+  <p class="q">여러 인스턴스 중 어디로 보낼 것인가. 캐시 적중과 부하 균형이 서로 당긴다.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>정책</th><th>동작</th><th>얻는 것</th><th>내주는 것</th><th>예</th></tr></thead>
+    <tbody>
+      <tr data-w="none"><td>Round-robin / random</td><td>상태를 보지 않고 분배</td><td>단순, 오버헤드 0</td><td>요청 길이 편차가 크면 불균형</td><td class="ex">대부분 프록시 기본값</td></tr>
+      <tr data-w="burst"><td>Least-load / power-of-two</td><td>큐 길이·KV 사용률이 낮은 쪽 선택</td><td>꼬리 지연 완화</td><td>캐시 지역성 무시</td><td class="ex">각종 LB</td></tr>
+      <tr data-w="prefix"><td>KV/prefix-aware</td><td>같은 prefix를 캐시가 있는 인스턴스로</td><td>prefill 연산 절감, TTFT 감소</td><td>인기 prefix로 핫스팟 발생</td><td class="ex">Preble, SGLang router, llm-d, Dynamo KV router</td></tr>
+      <tr data-w="burst"><td>Dynamic rescheduling</td><td>배치 뒤에도 실행 중 요청을 옮김</td><td>부하·단편화 해소</td><td>KV 이동 비용</td><td class="ex">Llumnix</td></tr>
+      <tr data-w="agent"><td>Program/agent 단위</td><td>LLM 호출 묶음(워크플로) 전체로 우선순위·배치 결정</td><td>end-to-end 지연 개선</td><td>호출 간 의존 정보 필요</td><td class="ex">Parrot, Autellix</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="queue">
+  <h2><span class="n">2</span>큐 순서</h2>
+  <p class="q">대기 중인 요청 가운데 누구를 다음 iteration에 넣을 것인가. 출력 길이를 미리 모른다는 점이 이 층의 근본 난제다.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>정책</th><th>동작</th><th>얻는 것</th><th>내주는 것</th><th>예</th></tr></thead>
+    <tbody>
+      <tr data-w="none"><td>FCFS</td><td>도착 순서대로</td><td>단순, 기아 없음, 예측 가능</td><td>긴 요청의 head-of-line blocking</td><td class="ex">vLLM 기본, SGLang <code>fcfs</code></td></tr>
+      <tr data-w="tenant"><td>Priority</td><td>요청에 붙은 우선순위 순</td><td>tier 분리(유료/무료 등)</td><td>저우선 기아 → aging 필요</td><td class="ex">vLLM <code>--scheduling-policy priority</code>, SGLang <code>priority</code></td></tr>
+      <tr data-w="var"><td>SJF / SRPT</td><td>예측 출력 길이가 짧은 것부터</td><td>평균 지연 크게 감소</td><td>예측기 유지, 오차, 긴 요청 기아</td><td class="ex">S³, Learning-to-Rank</td></tr>
+      <tr data-w="var"><td>MLFQ (skip-join)</td><td>생성이 길어질수록 하위 큐로 강등</td><td>예측 없이 SRPT 근사</td><td>잦은 선점 → KV swap 비용</td><td class="ex">FastServe</td></tr>
+      <tr data-w="tenant"><td>Fairness (토큰 기반)</td><td>테넌트별 처리 토큰이 적은 쪽 우선</td><td>다중 테넌트 공정성</td><td>처리량 소폭 손실</td><td class="ex">VTC</td></tr>
+      <tr data-w="slo"><td>SLO / deadline-aware</td><td>마감 여유(slack)가 작은 순, 못 지킬 요청은 뒤로</td><td>SLO goodput 최적화</td><td>SLO 추정 오차, 경계에서 진동</td><td class="ex">EDF 변형, Andes</td></tr>
+      <tr data-w="prefix"><td>Cache/prefix-aware</td><td>캐시된 prefix를 많이 공유하는 요청부터</td><td>prefill 절감, 처리량 증가</td><td>공유 없는 요청 기아</td><td class="ex">SGLang <code>lpm</code>, <code>dfs-weight</code></td></tr>
+    </tbody>
+  </table></div>
+  <div class="knob">
+    <p><span class="tag">운용</span> 실서비스 기본값은 여전히 FCFS가 대세다. SJF·priority 계열을 켤 때는 aging이나 최대 대기 시간 상한을 거의 항상 함께 둔다.</p>
+  </div>
+</section>
+
+<section id="batch">
+  <h2><span class="n">3</span>배칭</h2>
+  <p class="q">언제, 얼마나 묶어서 한 번의 forward로 돌릴 것인가.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>방식</th><th>동작</th><th>얻는 것</th><th>내주는 것</th><th>예</th></tr></thead>
+    <tbody>
+      <tr data-w="none"><td>Static batching</td><td>배치 전체가 끝나야 다음 배치</td><td>구현 단순</td><td>짧은 요청이 긴 요청을 기다림</td><td class="ex">초기 서빙 시스템</td></tr>
+      <tr data-w="none"><td>Continuous (iteration-level)</td><td>매 step 끝난 요청을 빼고 새 요청 투입</td><td>GPU 활용 극대화</td><td>prefill이 들어오면 decode가 멈춤</td><td class="ex">Orca → 현재 모든 엔진 기본</td></tr>
+      <tr data-w="slo"><td>Chunked prefill</td><td>긴 prefill을 토큰 예산 단위로 잘라 decode와 같은 iteration에 섞음</td><td>decode stall 제거, ITL 꼬리 안정</td><td>긴 prompt의 TTFT 증가</td><td class="ex">Sarathi-Serve, vLLM v1 기본</td></tr>
+    </tbody>
+  </table></div>
+  <div class="knob">
+    <p><span class="tag">노브</span> iteration 토큰 예산 <code>max_num_batched_tokens</code> / chunk size, 동시 시퀀스 상한 <code>max_num_seqs</code> · <code>max_running_requests</code>, SGLang <code>schedule_conservativeness</code>.</p>
+    <p>chunk를 크게 잡으면 TTFT가 좋아지고 ITL이 나빠진다. 작게 잡으면 반대다. SLO에 맞춰 튜닝하는 값이다.</p>
+  </div>
+</section>
+
+<section id="pd">
+  <h2><span class="n">4</span>Prefill / Decode 배치</h2>
+  <p class="q">compute-bound인 prefill과 memory-bound인 decode를 같은 자원 위에서 어떻게 공존시킬 것인가.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>방식</th><th>동작</th><th>얻는 것</th><th>내주는 것</th><th>예</th></tr></thead>
+    <tbody>
+      <tr data-w="none"><td>Prefill 우선</td><td>새 요청이 오면 prefill부터</td><td>TTFT 좋음</td><td>decode가 멈춰 ITL이 튐</td><td class="ex">vLLM v0 기본</td></tr>
+      <tr data-w="slo"><td>Decode 우선 + 잔여 예산</td><td>running decode를 먼저 채우고 남는 토큰을 prefill chunk에</td><td>ITL 안정</td><td>고부하에서 TTFT 증가</td><td class="ex">vLLM v1, Sarathi-Serve</td></tr>
+      <tr data-w="scale"><td>PD disaggregation</td><td>prefill·decode를 다른 GPU/인스턴스에서 실행, KV 전송</td><td>phase 간 간섭 제거, 각자 최적 병렬화</td><td>KV 전송 비용, P:D 비율 고정 문제</td><td class="ex">DistServe, Splitwise, Mooncake, TetriInfer</td></tr>
+      <tr data-w="mux"><td>PD multiplexing</td><td>한 GPU 안에서 SM을 나눠 두 phase를 동시 실행(green context 등)</td><td>간섭·전송 비용을 함께 줄임</td><td>분할 비율 선택이 곧 정책, 동적 전환 위험</td><td class="ex">Bullet, MuxWise, NanoFlow(연산 단위)</td></tr>
+    </tbody>
+  </table></div>
+  <div class="note" style="margin-top:16px">
+    <p><strong>우리 측정 (A100 80GB 1장, SGLang + green-context, hybrid attention+SSM 모델)</strong></p>
+    <p>단일 GPU에서 SLO-aware, binding-first, gate 같은 동적 SM 분할 제어는 가장 좋은 decode-heavy 정적 분할을 넘지 못했다. 원인은 전환 비용이 아니라 위치 선정과 얽힘(entanglement)이었다. decode가 굶으면 ITL이 오르고, 배치가 정체되고, admission이 막혀 TTFT가 폭발한다. 이 기판에서의 실무 기본값은 peak decode 부하에 맞춘 decode-heavy 정적 분할이다. 다른 GPU 세대나 다중 GPU로는 그대로 옮겨지지 않는다.</p>
+  </div>
+</section>
+
+<section id="mem">
+  <h2><span class="n">5</span>메모리 압박과 선점</h2>
+  <p class="q">KV cache가 모자랄 때 누구를, 어떻게 밀어낼 것인가. 선점 횟수는 꼬리 지연의 선행 지표다.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>방식</th><th>동작</th><th>얻는 것</th><th>내주는 것</th><th>예</th></tr></thead>
+    <tbody>
+      <tr data-w="none"><td>Recompute 선점</td><td>KV를 버리고 나중에 prefill부터 다시</td><td>추가 메모리 불필요</td><td>연산 낭비 (짧은 요청에 유리)</td><td class="ex">vLLM 기본</td></tr>
+      <tr data-w="var"><td>Swap 선점</td><td>KV를 CPU 메모리로 내렸다 올림</td><td>재계산 없음 (긴 요청에 유리)</td><td>PCIe 대역폭 소모</td><td class="ex">vLLM, FastServe</td></tr>
+      <tr data-w="burst"><td>Live migration</td><td>실행 중 요청의 KV를 다른 인스턴스로</td><td>부하 균형, 단편화 해소</td><td>네트워크·동기화 비용</td><td class="ex">Llumnix</td></tr>
+      <tr data-w="slo"><td>Admission control</td><td>SLO를 못 지킬 요청은 처음부터 거부</td><td>받은 요청의 goodput 보호</td><td>처리량 포기, 거부율 관리 필요</td><td class="ex">Mooncake 조기 거부</td></tr>
+      <tr data-w="none"><td>보수적 KV 예약</td><td>새 요청이 끝까지 쓸 KV를 추정해 미리 확보</td><td>선점 폭풍 방지</td><td>너무 보수적이면 배치가 작아짐</td><td class="ex">SGLang <code>new_token_ratio</code> 계열</td></tr>
+    </tbody>
+  </table></div>
+</section>
+
+<section id="scen">
+  <h2>동작 시나리오</h2>
+  <p class="q">대표 기법을 같은 요청 묶음에 적용했을 때 시간축에서 무엇이 달라지는지 나란히 비교한다. 시간은 decode 1스텝을 1칸으로 단순화한 개념도이고, 측정값이 아니다.</p>
+  <svg width="0" height="0" style="position:absolute" aria-hidden="true" focusable="false"><defs>
+    <pattern id="hatch" width="6" height="6" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="hatch-bg" width="6" height="6"/><line class="hatch-ln" x1="0" y1="0" x2="0" y2="6"/></pattern>
+    <pattern id="hatchw" width="4" height="4" patternUnits="userSpaceOnUse" patternTransform="rotate(45)"><rect class="hatchw-bg" width="4" height="4"/><line class="hatchw-ln" x1="0" y1="0" x2="0" y2="4"/></pattern>
+  </defs></svg>
+  <div class="scen-tabs" role="tablist" aria-label="시나리오 선택" id="scen-tabs"></div>
+  <div class="scen-head">
+    <div><div class="scen-layer" id="scen-layer"></div><h3 id="scen-name"></h3><p id="scen-setup"></p></div>
+    <button type="button" id="scen-play">시간 흐름 재생</button>
+  </div>
+  <div class="scen-grid" id="scen-grid"></div>
+  <p class="scen-read" id="scen-read"></p>
+  <div class="legend" aria-label="범례">
+    <span><i class="sw p"></i>prefill</span>
+    <span><i class="sw d"></i>decode 토큰 1개</span>
+    <span><i class="sw w"></i>큐 대기</span>
+    <span><i class="sw stall"></i>decode 멈춤</span>
+    <span><i class="sw idle"></i>빈 슬롯 · 유휴 자원</span>
+    <span><i class="sw x"></i>KV 전송 · 재계산</span>
+    <span><i class="sw intf"></i>PD 간섭으로 늘어난 시간</span>
+    <span><i class="sw shr"></i>SM 축소로 늘어난 시간</span>
+    <span>▼ 요청 도착</span>
+  </div>
+</section>
+
+<section id="pick">
+  <h2>워크로드별로 먼저 볼 정책</h2>
+  <p class="q">워크로드 성질을 고르면 위 표에서 먼저 검토할 행이 강조된다.</p>
+  <div class="picker" role="group" aria-label="워크로드 선택">
+    <button type="button" id="w-var" data-w="var" aria-pressed="false">요청 길이 편차가 큼</button>
+    <button type="button" id="w-prefix" data-w="prefix" aria-pressed="false">prefix 공유 많음 (RAG·멀티턴)</button>
+    <button type="button" id="w-tenant" data-w="tenant" aria-pressed="false">다중 테넌트</button>
+    <button type="button" id="w-slo" data-w="slo" aria-pressed="true">tight SLO (chat)</button>
+    <button type="button" id="w-burst" data-w="burst" aria-pressed="false">부하 급변·버스트</button>
+    <button type="button" id="w-scale" data-w="scale" aria-pressed="false">대규모 다중 GPU</button>
+    <button type="button" id="w-mux" data-w="mux" aria-pressed="false">GPU 1장에서 PD 공존</button>
+    <button type="button" id="w-agent" data-w="agent" aria-pressed="false">agent 워크플로</button>
+  </div>
+  <div class="pick-out" aria-live="polite"><h3 id="pick-h"></h3><p id="pick-p"></p></div>
+</section>
+
+<section id="eval">
+  <h2>정책을 비교할 때</h2>
+  <ul class="plain">
+    <li><strong>지표</strong>: throughput보다 <strong>SLO goodput</strong>, 즉 TTFT와 요청 내부 ITL p95를 동시에 만족한 요청의 비율을 본다. TTFT·ITL은 p50/p95/p99를 함께 보고한다.</li>
+    <li><strong>부하 trace</strong>: 일정한 부하에서만 비교하면 동적 정책의 이득과 손실이 모두 가려진다. 부하가 바뀌는 trace(예: rate 3↔12)로 여러 라운드 비교한다.</li>
+    <li><strong>metric cliff</strong>: goodput은 TTFT가 SLO 근처일 때 급변하는 지시함수다. 먼저 용량을 재고, 경계에서 떨어진 운영점에서 측정한다.</li>
+    <li><strong>분산 먼저</strong>: 베이스라인 반복 측정의 분산을 먼저 잰다. 반복 수가 부족하거나 몇 % 이내 차이라면 정책 우열을 말하지 않는다.</li>
+    <li><strong>시뮬레이터 이득은 가설일 뿐</strong>: 시뮬레이터나 마이크로벤치의 이득이 실엔진에서 사라지는 일이 흔하다. 정책 주장은 실제 서빙으로 확인한다.</li>
+    <li><strong>SLO를 바꾸면 다시 튜닝</strong>: 다른 SLO에서 평가할 때 기존 컨트롤러를 새 기준으로 재채점하지 말고, 그 SLO로 다시 튜닝해 직접 측정한다.</li>
+  </ul>
+</section>
+
+<section id="refs">
+  <h2>참고 문헌</h2>
+  <ul class="refs">
+    <li>Orca: iteration-level scheduling<span class="v">OSDI'22</span></li>
+    <li>vLLM / PagedAttention<span class="v">SOSP'23</span></li>
+    <li>Sarathi-Serve: chunked prefill<span class="v">OSDI'24</span></li>
+    <li>DistServe<span class="v">OSDI'24</span></li>
+    <li>Splitwise<span class="v">ISCA'24</span></li>
+    <li>Mooncake<span class="v">FAST'25</span></li>
+    <li>TetriInfer<span class="v">arXiv'24</span></li>
+    <li>Llumnix<span class="v">OSDI'24</span></li>
+    <li>FastServe: skip-join MLFQ<span class="v">arXiv'23</span></li>
+    <li>VTC: Fairness in Serving LLMs<span class="v">OSDI'24</span></li>
+    <li>S³: output length prediction<span class="v">arXiv'23</span></li>
+    <li>Learning to Rank for LLM scheduling<span class="v">NeurIPS'24</span></li>
+    <li>Andes: QoE-aware serving<span class="v">arXiv'24</span></li>
+    <li>SGLang / RadixAttention<span class="v">NeurIPS'24</span></li>
+    <li>Preble: prompt-cache-aware routing<span class="v">ICLR'25</span></li>
+    <li>Parrot: semantic variable<span class="v">OSDI'24</span></li>
+    <li>Autellix: program-level scheduling<span class="v">arXiv'25</span></li>
+    <li>NanoFlow: intra-device parallelism<span class="v">OSDI'25</span></li>
+    <li>Bullet · MuxWise: in-GPU PD multiplexing<span class="v">arXiv</span></li>
+  </ul>
+</section>
+
+<footer>정리 2026-10-27. 학회 표기는 발표 시점 기준이며 인용 전 원문을 확인할 것. "우리 측정" 상자는 A100 단일 GPU 기판에 한정된 결과다.</footer>
+</main>
+</div>
+
+<script>
+(function(){
+  var info={
+    var:["요청 길이 편차가 클 때","출력 길이 예측 SJF나 예측 없는 MLFQ가 평균 지연을 가장 크게 줄인다. 선점이 늘어나므로 swap/recompute 선택을 함께 본다."],
+    prefix:["prefix 공유가 많을 때","같은 prefix를 같은 인스턴스로 보내는 라우팅과, 캐시 적중이 큰 요청을 먼저 넣는 큐 순서를 같이 쓴다. 핫스팟과 기아를 감시한다."],
+    tenant:["다중 테넌트일 때","토큰 기반 공정성(VTC)이나 tier 우선순위를 둔다. 우선순위를 쓰면 aging을 같이 넣는다."],
+    slo:["tight SLO일 때","decode 우선 + chunked prefill로 ITL 꼬리를 잡고, deadline-aware 순서와 admission control로 TTFT를 지킨다."],
+    burst:["부하가 급변할 때","부하 인지 라우팅과 migration으로 인스턴스 간 불균형을 흡수한다. 단일 GPU 안의 동적 분할은 우리 측정에서 정적 분할을 넘지 못했다."],
+    scale:["대규모 다중 GPU일 때","PD disaggregation으로 phase 간 간섭을 없애고, P:D 비율과 KV 전송 비용을 설계 변수로 다룬다."],
+    mux:["GPU 1장에서 PD를 공존시킬 때","SM 공간 분할이 핵심 정책이다. A100 단일 GPU 측정에서는 peak decode 부하에 맞춘 decode-heavy 정적 분할이 동적 제어보다 나았다."],
+    agent:["agent 워크플로일 때","요청 하나가 아니라 호출 묶음 단위로 우선순위를 매기는 program-level 스케줄링을 검토한다."]
+  };
+  var btns=document.querySelectorAll('.picker button');
+  var rows=document.querySelectorAll('tr[data-w]');
+  function pick(w){
+    btns.forEach(function(b){b.setAttribute('aria-pressed',String(b.dataset.w===w));});
+    rows.forEach(function(r){r.classList.toggle('hl',r.dataset.w===w);});
+    document.getElementById('pick-h').textContent=info[w][0];
+    document.getElementById('pick-p').textContent=info[w][1];
+    try{localStorage.setItem('sched-pick',w);}catch(e){}
+  }
+  btns.forEach(function(b){b.addEventListener('click',function(){pick(b.dataset.w);});});
+  var saved=null;try{saved=localStorage.getItem('sched-pick');}catch(e){}
+  pick(info[saved]?saved:'slo');
+})();
+</script>
+<script>
+(function(){
+  var NS='http://www.w3.org/2000/svg';
+  function b(l,s,e,k,t){return {l:l,s:s,e:e,k:k,t:t||''};}
+  function dec(l,s,n,st){st=st||1;var a=[];for(var i=0;i<n;i++)a.push(b(l,s+i*st,s+(i+1)*st,'d'));return a;}
+  function cat(){return [].concat.apply([],arguments);}
+  // decode 토큰 하나 = [기본 시간, SM 축소분, 간섭분]
+  function steps(l,s,specs){var a=[],t=s;specs.forEach(function(p){
+    a.push(b(l,t,t+p[0],'d'));t+=p[0];
+    if(p[1]){a.push(b(l,t,t+p[1],'shr'));t+=p[1];}
+    if(p[2]){a.push(b(l,t,t+p[2],'intf'));t+=p[2];}
+  });return a;}
+  function rep(p,n){var a=[];for(var i=0;i<n;i++)a.push(p);return a;}
+
+  var SC=[
+    {id:'batch',layer:'3 · 배칭',name:'Static vs Continuous 배칭',
+     setup:'동시 슬롯 3개. A(6토큰)·B(2토큰)·C(3토큰)가 t=0에 함께 시작하고, D(2토큰)가 t=2에 도착한다.',
+     read:'Static에서는 B·C가 끝난 뒤에도 그 슬롯이 배치 전체가 끝나는 t=7까지 비어 있고, D는 그때까지 기다린다. Continuous는 B가 끝난 t=3에 D를 바로 넣어 빈 슬롯 없이 돈다.',
+     T:11,panels:[
+      {title:'Static batching',lanes:['A','B','C','D'],arr:[[3,2]],
+       blocks:cat(b(0,0,1,'p','P'),dec(0,1,6),b(1,0,1,'p','P'),dec(1,1,2),b(1,3,7,'idle','빈 슬롯'),b(2,0,1,'p','P'),dec(2,1,3),b(2,4,7,'idle','빈 슬롯'),b(3,2,7,'w','대기'),b(3,7,8,'p','P'),dec(3,8,2)),
+       m:[['D 완료','t=10','bad'],['낭비된 슬롯','7칸','bad']]},
+      {title:'Continuous batching',lanes:['A','B','C','D'],arr:[[3,2]],
+       blocks:cat(b(0,0,1,'p','P'),dec(0,1,6),b(1,0,1,'p','P'),dec(1,1,2),b(2,0,1,'p','P'),dec(2,1,3),b(3,2,3,'w'),b(3,3,4,'p','P'),dec(3,4,2)),
+       m:[['D 완료','t=6','good'],['낭비된 슬롯','0칸','good']]}
+    ]},
+    {id:'chunk',layer:'3 · 배칭 / 4 · PD 배치',name:'Prefill 우선 vs Chunked prefill',
+     setup:'A·B가 decode 중일 때 t=2에 prompt가 긴 C가 도착한다. C의 prefill은 4칸 분량이다.',
+     read:'Prefill 우선에서는 C의 prefill 동안 A·B의 토큰이 4칸 끊겨 ITL이 급등한다. Chunked prefill은 C를 네 조각으로 나눠 decode와 같은 iteration에 섞는다. iteration이 1.5칸으로 길어지는 대신 A·B는 멈추지 않고, 그 대가로 C의 TTFT가 늘어난다.',
+     T:11,panels:[
+      {title:'Prefill 우선',lanes:['A','B','C'],arr:[[2,2]],
+       blocks:cat(dec(0,0,2),b(0,2,6,'stall','멈춤'),dec(0,6,4),dec(1,0,2),b(1,2,6,'stall','멈춤'),dec(1,6,4),b(2,2,6,'p','prefill'),dec(2,6,4)),
+       m:[['A 최대 토큰 간격','5칸','bad'],['C TTFT','4칸','good']]},
+      {title:'Chunked prefill',lanes:['A','B','C'],arr:[[2,2]],
+       blocks:cat(dec(0,0,2),dec(0,2,4,1.5),dec(0,8,2),dec(1,0,2),dec(1,2,4,1.5),dec(1,8,2),b(2,2,3.5,'p','1/4'),b(2,3.5,5,'p','2/4'),b(2,5,6.5,'p','3/4'),b(2,6.5,8,'p','4/4'),dec(2,8,2)),
+       m:[['A 최대 토큰 간격','1.5칸','good'],['C TTFT','6칸','bad']]}
+    ]},
+    {id:'order',layer:'2 · 큐 순서',name:'FCFS vs SJF',
+     setup:'동시 슬롯 2개. 긴 요청 L1·L2(8토큰)와 짧은 요청 S1·S2(2토큰)가 t=0에 이 순서로 큐에 있다.',
+     read:'FCFS에서는 긴 요청이 슬롯 두 개를 모두 차지해 짧은 요청이 t=9까지 기다린다(head-of-line blocking). SJF는 짧은 요청을 먼저 끝내 평균 완료 시간을 줄이지만 긴 요청은 더 늦게 끝난다. 실제로는 출력 길이를 미리 모르므로 예측기가 필요하다.',
+     T:13,panels:[
+      {title:'FCFS',lanes:['L1','L2','S1','S2'],arr:[],
+       blocks:cat(b(0,0,1,'p','P'),dec(0,1,8),b(1,0,1,'p','P'),dec(1,1,8),b(2,0,9,'w','대기'),b(2,9,10,'p','P'),dec(2,10,2),b(3,0,9,'w','대기'),b(3,9,10,'p','P'),dec(3,10,2)),
+       m:[['평균 완료','t=10.5','bad'],['긴 요청 완료','t=9','good']]},
+      {title:'SJF (짧은 요청 먼저)',lanes:['L1','L2','S1','S2'],arr:[],
+       blocks:cat(b(0,0,3,'w','대기'),b(0,3,4,'p','P'),dec(0,4,8),b(1,0,3,'w','대기'),b(1,3,4,'p','P'),dec(1,4,8),b(2,0,1,'p','P'),dec(2,1,2),b(3,0,1,'p','P'),dec(3,1,2)),
+       m:[['평균 완료','t=7.5','good'],['긴 요청 완료','t=12','bad']]}
+    ]},
+    {id:'pd',layer:'4 · Prefill/Decode 배치',name:'시분할 vs PD 분리 vs SM 다중화',
+     setup:'기존 decode 배치가 돌고 있을 때 t=2에 새 요청 P1이 도착한다. P1의 prefill은 GPU 전체를 쓰면 3칸 분량이다.',
+     read:'시분할은 P1 prefill 동안 기존 배치가 멈춘다. PD 분리는 멈춤이 없지만 GPU가 2장 필요하고 KV 전송이 붙으며, prefill GPU는 대부분 논다. SM 다중화는 GPU 1장에서 멈춤 없이 돌지만 두 phase가 SM을 나눠 쓰므로 prefill이 느려지고 decode 스텝도 길어진다. 분할 비율을 어떻게 정하느냐가 곧 정책이다.',
+     T:12,panels:[
+      {title:'시분할 (GPU 1장)',lanes:['기존 배치','P1'],arr:[[1,2]],
+       blocks:cat(dec(0,0,2),b(0,2,5,'stall','멈춤'),dec(0,5,7),b(1,2,5,'p','prefill'),dec(1,5,7)),
+       m:[['P1 TTFT','3칸',''],['기존 배치 멈춤','3칸','bad'],['GPU','1장','good']]},
+      {title:'PD 분리 (GPU 2장)',lanes:['[D] 기존 배치','[P] P1 prefill','KV 전송','[D] P1 decode'],arr:[[1,2]],
+       blocks:cat(dec(0,0,12),b(1,0,2,'idle'),b(1,2,5,'p','prefill'),b(1,5,12,'idle','유휴'),b(2,5,6,'x','KV'),dec(3,6,6)),
+       m:[['P1 TTFT','3칸 + 전송 1칸',''],['기존 배치 멈춤','0칸','good'],['GPU','2장','bad']]},
+      {title:'SM 다중화 (GPU 1장)',lanes:['decode SM 60%','prefill SM 40%','P1 decode'],arr:[[1,2]],
+       blocks:cat(dec(0,0,10,1.2),b(1,0,2,'idle'),b(1,2,6.5,'p','prefill (느려짐)'),b(1,6.5,12,'idle','유휴'),dec(2,6.5,4,1.2)),
+       m:[['P1 TTFT','4.5칸','bad'],['기존 배치 멈춤','0칸 (스텝 1→1.2)','good'],['GPU','1장','good']]}
+    ]},
+    {id:'intf',layer:'4 · Prefill/Decode 배치',name:'PD 간섭 (interference)',
+     setup:'기존 decode 배치가 돌고 있을 때 t=2에 P1(GPU 전체 기준 prefill 3칸 분량)이 도착한다. 마지막 패널에서만 t=5에 P2가 하나 더 도착한다.',
+     read:'PD 간섭은 prefill이 같은 GPU 자원을 쓰는 동안 decode 스텝이 늘어나는 현상이다. 같은 배치에 섞으면 iteration 자체가 길어져 그동안의 토큰 간격이 모두 늘어난다(주황 빗금). SM을 나눠도 HBM 대역폭과 L2 캐시는 함께 쓰므로 작은 간섭이 남고, 그 대신 decode 쪽 SM이 줄어 스텝이 상시 길어진다(점선). decode 쪽을 너무 줄이면 마지막 패널처럼 배치가 빠지지 않아 새 요청이 admission에서 막히고 TTFT가 폭발한다. 마지막 패널은 우리 A100 측정에서 동적 분할이 정적 분할을 넘지 못한 원인으로 정리된 연쇄(decode 굶김 → ITL 증가 → 배치 정체 → admission 차단)를 개념도로 옮긴 것이다.',
+     T:12,panels:[
+      {title:'기준: 간섭이 없다면 (가상)',lanes:['decode 배치','P1 prefill'],arr:[[1,2]],
+       blocks:cat(steps(0,0,rep([1],12)),b(1,2,5,'p','prefill')),
+       m:[['decode ITL','1.0칸','good'],['P1 TTFT','3칸','good']]},
+      {title:'같은 배치에 섞을 때 (chunked prefill)',lanes:['decode 배치','P1 prefill'],arr:[[1,2]],
+       blocks:cat(steps(0,0,cat(rep([1],2),rep([1,0,.6],3),rep([1],5))),b(1,2,3.6,'p','1/3'),b(1,3.6,5.2,'p','2/3'),b(1,5.2,6.8,'p','3/3')),
+       m:[['decode ITL','1.0 → 1.6칸 (+60%)','bad'],['P1 TTFT','4.8칸','']]},
+      {title:'SM 공간 분할 (decode 60%)',lanes:['decode SM 60%','prefill SM 40%'],arr:[[1,2]],
+       blocks:cat(steps(0,0,cat(rep([1,.2],2),rep([1,.2,.15],4),rep([1,.2],3))),b(1,0,2,'idle'),b(1,2,7,'p','prefill (40% SM)'),b(1,7,12,'idle','유휴')),
+       m:[['decode ITL','1.2 → 1.35칸',''],['P1 TTFT','5칸',''],['decode 멈춤','0칸','good']]},
+      {title:'decode SM을 너무 줄였을 때 (decode 30%)',lanes:['decode SM 30%','prefill SM 70%','P2'],arr:[[1,2],[2,5]],
+       blocks:cat(steps(0,0,cat(rep([1,.8],2),[[1,.8,.2]],rep([1,.8],3))),b(1,0,2,'idle'),b(1,2,4.2,'p','prefill'),b(1,4.2,12,'idle','유휴'),b(2,5,12,'w','대기: 배치가 안 빠져 admission 막힘')),
+       m:[['decode ITL','1.8 → 2.0칸','bad'],['P1 TTFT','2.2칸','good'],['P2 대기','7칸 이상','bad']]}
+    ]},
+    {id:'preempt',layer:'5 · 메모리·선점',name:'Recompute vs Swap 선점',
+     setup:'KV 메모리가 꽉 찬 상태에서 t=3에 C가 도착해 B가 밀려난다. B는 t=7에 다시 자리를 얻는다.',
+     read:'Recompute는 B의 KV를 버렸다가 prompt와 이미 생성한 토큰을 다시 prefill한다(연산 2칸). Swap은 KV를 CPU 메모리로 내렸다가 다시 올린다(PCIe 전송 0.5칸씩 두 번). 시퀀스가 길수록 재계산이 비싸져 swap이 유리하고, PCIe가 붐비면 반대가 된다.',
+     T:13,panels:[
+      {title:'Recompute',lanes:['A','B','C'],arr:[[2,3]],
+       blocks:cat(b(0,0,1,'p','P'),dec(0,1,11),b(1,0,1,'p','P'),dec(1,1,2),b(1,3,7,'w','밀려남'),b(1,7,9,'redo','재계산'),dec(1,9,3),b(2,3,4,'p','P'),dec(2,4,3)),
+       m:[['B 완료','t=12','bad'],['추가 비용','연산 2칸','']]},
+      {title:'Swap',lanes:['A','B','C'],arr:[[2,3]],
+       blocks:cat(b(0,0,1,'p','P'),dec(0,1,11),b(1,0,1,'p','P'),dec(1,1,2),b(1,3,3.5,'x'),b(1,3.5,7,'w','CPU에 보관'),b(1,7,7.5,'x'),dec(1,7.5,3),b(2,3,4,'p','P'),dec(2,4,3)),
+       m:[['B 완료','t=10.5','good'],['추가 비용','PCIe 전송 1칸','']]}
+    ]},
+    {id:'route',layer:'1 · 라우팅',name:'Round-robin vs Prefix-aware 라우팅',
+     setup:'인스턴스 I1에만 공통 prefix X가 캐시돼 있다. X를 공유하는 r1–r4가 t=0, 1, 2, 3에 차례로 도착한다. 캐시 적중 prefill은 1칸, 미스는 3칸이다.',
+     read:'Round-robin은 r2를 캐시가 없는 I2로 보내 prefix 전체를 다시 계산하고, r4는 그 prefill이 끝나기를 기다린다. Prefix-aware는 모두 I1로 보내 매번 적중하지만 요청이 한 곳에 몰리고 I2는 논다. 실제 라우터는 캐시 적중과 부하 균형 사이에서 가중치를 정한다.',
+     T:9,panels:[
+      {title:'Round-robin',lanes:['r1 → I1','r2 → I2','r3 → I1','r4 → I2'],arr:[[0,0],[1,1],[2,2],[3,3]],
+       blocks:cat(b(0,0,1,'p','hit'),dec(0,1,3),b(1,1,4,'p','miss: 전체 prefill'),dec(1,4,3),b(2,2,3,'p','hit'),dec(2,3,3),b(3,3,4,'w'),b(3,4,5,'p','hit'),dec(3,5,3)),
+       m:[['평균 TTFT','1.75칸','bad'],['I2 중복 prefill','3칸','bad']]},
+      {title:'Prefix-aware',lanes:['r1 → I1','r2 → I1','r3 → I1','r4 → I1'],arr:[[0,0],[1,1],[2,2],[3,3]],
+       blocks:cat(b(0,0,1,'p','hit'),dec(0,1,3),b(1,1,2,'p','hit'),dec(1,2,3),b(2,2,3,'p','hit'),dec(2,3,3),b(3,3,4,'p','hit'),dec(3,4,3)),
+       m:[['평균 TTFT','1칸','good'],['부하','I1에 집중, I2 유휴','bad']]}
+    ]}
+  ];
+
+  var W=760,PADL=130,TOP=24,LH=30,BH=18;
+  function el(n,a,txt){var e=document.createElementNS(NS,n);for(var k in a)e.setAttribute(k,a[k]);if(txt!=null)e.textContent=txt;return e;}
+  function tw(s){var w=0;for(var i=0;i<s.length;i++)w+=s.charCodeAt(i)>255?10.5:6.2;return w;}
+  function panel(p,T){
+    var H=TOP+p.lanes.length*LH+6,sx=(W-PADL-14)/T;
+    function X(t){return PADL+t*sx;}
+    var svg=el('svg',{viewBox:'0 0 '+W+' '+H,'class':'tl',role:'img','aria-label':p.title+' 타임라인'});
+    svg.dataset.sx=sx;svg.dataset.h=H;
+    for(var t=0;t<=T;t++){
+      svg.appendChild(el('line',{x1:X(t),x2:X(t),y1:TOP-4,y2:H-4,'class':'grid'}));
+      if(t%2===0)svg.appendChild(el('text',{x:X(t),y:14,'text-anchor':'middle','class':'ax'},'t='+t));
+    }
+    p.lanes.forEach(function(l,i){svg.appendChild(el('text',{x:PADL-10,y:TOP+i*LH+LH/2+4,'text-anchor':'end','class':'lane-l'},l));});
+    p.blocks.forEach(function(q){
+      var y=TOP+q.l*LH+(LH-BH)/2,ins=q.k==='d'?1.2:0.5,w=(q.e-q.s)*sx-2*ins;
+      var r=el('rect',{x:X(q.s)+ins,y:y,width:Math.max(w,1),height:BH,rx:2,'class':'b-'+q.k});
+      r.dataset.s=q.s;svg.appendChild(r);
+      if(q.t&&w>tw(q.t)+8){
+        var c=(q.k==='idle'||q.k==='stall')?' dk':(q.k==='w'?' mu':'');
+        var tx=el('text',{x:X(q.s)+ins+w/2,y:y+BH/2+3.8,'text-anchor':'middle','class':'bt'+c},q.t);
+        tx.dataset.s=q.s;svg.appendChild(tx);
+      }
+    });
+    (p.arr||[]).forEach(function(a){
+      var x=X(a[1]),y=TOP+a[0]*LH+(LH-BH)/2-1;
+      svg.appendChild(el('path',{d:'M'+(x-4)+' '+(y-6)+' L'+(x+4)+' '+(y-6)+' L'+x+' '+y+' Z','class':'arr-m'}));
+    });
+    var cur=el('line',{x1:PADL,x2:PADL,y1:TOP-6,y2:H-2,'class':'cur',visibility:'hidden'});
+    svg.appendChild(cur);
+    return svg;
+  }
+
+  var tabs=document.getElementById('scen-tabs'),grid=document.getElementById('scen-grid'),play=document.getElementById('scen-play');
+  var curIdx=0,raf=null;
+  SC.forEach(function(s,i){
+    var bt=document.createElement('button');bt.type='button';bt.id='scen-tab-'+s.id;bt.setAttribute('role','tab');
+    bt.textContent=s.name;bt.addEventListener('click',function(){show(i);});tabs.appendChild(bt);
+  });
+  function show(i){
+    stop();curIdx=i;var s=SC[i];
+    tabs.querySelectorAll('button').forEach(function(bt,j){bt.setAttribute('aria-selected',String(j===i));});
+    document.getElementById('scen-layer').textContent=s.layer;
+    document.getElementById('scen-name').textContent=s.name;
+    document.getElementById('scen-setup').textContent=s.setup;
+    document.getElementById('scen-read').textContent=s.read;
+    grid.textContent='';
+    s.panels.forEach(function(p){
+      var d=document.createElement('div');d.className='scen-panel';
+      var ph=document.createElement('div');ph.className='ph';
+      var h=document.createElement('h4');h.textContent=p.title;ph.appendChild(h);
+      var ul=document.createElement('ul');ul.className='met';
+      p.m.forEach(function(m){var li=document.createElement('li');if(m[2])li.className=m[2];li.textContent=m[0];var st=document.createElement('strong');st.textContent=m[1];li.appendChild(st);ul.appendChild(li);});
+      ph.appendChild(ul);d.appendChild(ph);
+      var wr=document.createElement('div');wr.className='tl-wrap';wr.appendChild(panel(p,s.T));d.appendChild(wr);
+      grid.appendChild(d);
+    });
+    try{localStorage.setItem('sched-scen',s.id);}catch(e){}
+  }
+  function frame(t){
+    grid.querySelectorAll('svg.tl').forEach(function(svg){
+      var sx=+svg.dataset.sx,cur=svg.querySelector('.cur');
+      svg.querySelectorAll('[data-s]').forEach(function(n){n.classList.toggle('dim',+n.dataset.s>=t);});
+      if(t==null){cur.setAttribute('visibility','hidden');return;}
+      var x=PADL+t*sx;cur.setAttribute('x1',x);cur.setAttribute('x2',x);cur.setAttribute('visibility','visible');
+    });
+  }
+  function stop(){if(raf)cancelAnimationFrame(raf);raf=null;play.disabled=false;play.textContent='시간 흐름 재생';
+    grid.querySelectorAll('.dim').forEach(function(n){n.classList.remove('dim');});
+    grid.querySelectorAll('.cur').forEach(function(c){c.setAttribute('visibility','hidden');});}
+  play.addEventListener('click',function(){
+    var T=SC[curIdx].T,dur=T*380,t0=performance.now();
+    play.disabled=true;play.textContent='재생 중…';
+    function step(now){var t=(now-t0)/dur*T;if(t>=T){stop();return;}frame(t);raf=requestAnimationFrame(step);}
+    raf=requestAnimationFrame(step);
+  });
+  var saved=null;try{saved=localStorage.getItem('sched-scen');}catch(e){}
+  var si=0;SC.forEach(function(s,i){if(s.id===saved)si=i;});
+  show(si);
+})();
+</script>
