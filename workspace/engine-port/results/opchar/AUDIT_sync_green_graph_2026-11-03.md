@@ -1,6 +1,6 @@
 # 감사: green stream graph replay 뒤 device sync 조기 반환 (2026-11-03)
 
-claims-auditor 1회차. 결과 원본은 main worktree의 `workspace/engine-port/results/vessl_gpu_obs_probe_2026-11-02/`(미커밋).
+claims-auditor 1회차. 결과 원본은 `workspace/engine-port/results/vessl_gpu_obs_probe_2026-11-02/`(opchar 브랜치, 1 MB 넘는 trace는 미커밋).
 
 ## 판정
 - **관측 CONFIRMED(범위 한정)**: VESSL A100, 드라이버 580.178.04, torch 2.9.1+cu130, 단순 graph body, replay가 스트림의 마지막 작업. 이때 `torch.cuda.synchronize()`는 green stream replay 완료를 기다리지 않는다. 데이터를 읽어 확인한 것은 아니고 타이밍 추론이다.
