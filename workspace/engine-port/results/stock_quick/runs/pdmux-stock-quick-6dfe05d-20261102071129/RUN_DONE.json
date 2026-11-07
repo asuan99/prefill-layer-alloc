@@ -1,0 +1,54 @@
+{
+ "boots": [
+  {
+   "boot_id": "SQ_w1_SG-stock",
+   "runs": [
+    "SQ_SG-stock_W1lad_r16.87357_s202",
+    "SQ_SG-stock_W1lad_r12.758843_s201",
+    "SQ_SG-stock_W1lad_r12.758843_s202",
+    "SQ_SG-stock_W1lad_r8.389146_s201",
+    "SQ_SG-stock_W1lad_r19.404606_s201",
+    "SQ_SG-stock_W1lad_r8.389146_s202",
+    "SQ_SG-stock_W1lad_r14.67267_s202",
+    "SQ_SG-stock_W1lad_r9.647518_s201",
+    "SQ_SG-stock_W1lad_r7.29491_s202",
+    "SQ_SG-stock_W1lad_r11.094646_s202",
+    "SQ_SG-stock_W1lad_r6.3434_s202",
+    "SQ_SG-stock_W1lad_r5.516_s202",
+    "SQ_SG-stock_W1lad_r16.87357_s201",
+    "SQ_SG-stock_W1lad_r7.29491_s201",
+    "SQ_SG-stock_W1lad_r6.3434_s201",
+    "SQ_SG-stock_W1lad_r14.67267_s201",
+    "SQ_SG-stock_W1lad_r11.094646_s201",
+    "SQ_SG-stock_W1lad_r5.516_s201",
+    "SQ_SG-stock_W1lad_r9.647518_s202",
+    "SQ_SG-stock_W1lad_r19.404606_s202"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "SQ_w3_SG-stock",
+   "runs": [
+    "SQ_SG-stock_W3lad_r0.3375_s201",
+    "SQ_SG-stock_W3lad_r0.50625_s201",
+    "SQ_SG-stock_W3lad_r0.225_s202",
+    "SQ_SG-stock_W3lad_r0.50625_s202",
+    "SQ_SG-stock_W3lad_r0.225_s201",
+    "SQ_SG-stock_W3lad_r0.759375_s202",
+    "SQ_SG-stock_W3lad_r0.1_s202",
+    "SQ_SG-stock_W3lad_r0.1_s201",
+    "SQ_SG-stock_W3lad_r0.15_s202",
+    "SQ_SG-stock_W3lad_r0.759375_s201",
+    "SQ_SG-stock_W3lad_r0.15_s201",
+    "SQ_SG-stock_W3lad_r0.3375_s202"
+   ],
+   "status": "done"
+  }
+ ],
+ "gpu_uuid": "GPU-ab79c915-5052-6beb-3996-3f09bebbf7fa",
+ "job": "SQ",
+ "job_name": "pdmux-stock-quick-6dfe05d-20261102071129",
+ "pending": [],
+ "plan_sha": "4fcb050c631caf545cb98eba6754487913025b91d47200eef2b9caee8116f7fd",
+ "resumed": false
+}

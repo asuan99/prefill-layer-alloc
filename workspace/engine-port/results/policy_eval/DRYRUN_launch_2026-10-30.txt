@@ -1,0 +1,12 @@
+=== EVAL-a ===
+job name : pdmux-policy-eval-55e3e70-20261030065807
+commit   : 55e3e701b6f91f90327d5ec6445a121950dd7769
+rate     : $1.48/h (resourcespec-a100x1) -- billed while running
+command  : vesslctl job create -n pdmux-policy-eval-55e3e70-20261030065807 -r resourcespec-a100x1 -i ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d --image-pull-policy IfNotPresent --cluster-volume clustervol-havdzigstmv7:/data --object-volume objvol-9vgmwmerzwd3:/io -e PDMUX_COMMIT=55e3e701b6f91f90327d5ec6445a121950dd7769 -e PDMUX_JOB_NAME=pdmux-policy-eval-55e3e70-20261030065807 -e PDMUX_CAMPAIGN=policy_eval -e PDMUX_TARGET=workspace/engine-port/results/cap_char/policy_harness/ph_cov_job.sh -e PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d -e PDMUX_SPEC=resourcespec-a100x1 -e PDMUX_POLICY_JOB=EVAL-a -e PDMUX_POLICY_SEALED=1 -e PDMUX_POLICY_ADDENDUM=workspace/engine-port/results/cap_char/policy_harness/addendum_eval.json --tag policy-eval --cmd bash\ /io/code/55e3e701b6f91f90327d5ec6445a121950dd7769/job_entry.sh
+(dry-run: nothing uploaded or created; add --submit after approval)
+=== EVAL-b ===
+job name : pdmux-policy-eval-55e3e70-20261030065807
+commit   : 55e3e701b6f91f90327d5ec6445a121950dd7769
+rate     : $1.48/h (resourcespec-a100x1) -- billed while running
+command  : vesslctl job create -n pdmux-policy-eval-55e3e70-20261030065807 -r resourcespec-a100x1 -i ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d --image-pull-policy IfNotPresent --cluster-volume clustervol-havdzigstmv7:/data --object-volume objvol-9vgmwmerzwd3:/io -e PDMUX_COMMIT=55e3e701b6f91f90327d5ec6445a121950dd7769 -e PDMUX_JOB_NAME=pdmux-policy-eval-55e3e70-20261030065807 -e PDMUX_CAMPAIGN=policy_eval -e PDMUX_TARGET=workspace/engine-port/results/cap_char/policy_harness/ph_cov_job.sh -e PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d -e PDMUX_SPEC=resourcespec-a100x1 -e PDMUX_POLICY_JOB=EVAL-b -e PDMUX_POLICY_SEALED=1 -e PDMUX_POLICY_ADDENDUM=workspace/engine-port/results/cap_char/policy_harness/addendum_eval.json --tag policy-eval --cmd bash\ /io/code/55e3e701b6f91f90327d5ec6445a121950dd7769/job_entry.sh
+(dry-run: nothing uploaded or created; add --submit after approval)

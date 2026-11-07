@@ -1,0 +1,39 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-ab79c915-5052-6beb-3996-3f09bebbf7fa",
+    "driver_version": "580.178.04",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 1,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-ab79c915-5052-6beb-3996-3f09bebbf7fa",
+      "driver_version": "580.178.04",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-ab79c915-5052-6beb-3996-3f09bebbf7fa"
+  ],
+  "hostname": "job-wmit6qm7bqvr-t7k59",
+  "commit": "6dfe05d0aad1ebeddae308c11066bd8d4e014ebf",
+  "image": "ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b",
+  "spec": "resourcespec-a100x1",
+  "job_name": "pdmux-stock-quick-6dfe05d-20261102071129",
+  "campaign": "stock_quick",
+  "target": "workspace/engine-port/results/stock_quick/sq_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}
