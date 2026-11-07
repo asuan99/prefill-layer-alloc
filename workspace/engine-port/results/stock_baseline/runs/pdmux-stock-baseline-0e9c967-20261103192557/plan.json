@@ -1,0 +1,346 @@
+{
+ "boots": [
+  {
+   "arm": "SG-mix",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1",
+     "--enable-mixed-chunk"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-mix",
+    "tree": "pristine"
+   },
+   "boot_id": "J1-down_lad_SG-mix",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-mix_lad_r4.796522_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-mix_lad_r4.170888_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-mix_lad_r4.170888_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-mix_lad_r3.62686_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-mix_lad_r4.796522_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-mix_lad_r3.153791_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-mix_lad_r3.62686_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-mix_lad_r3.153791_s202",
+     "seed": 202,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "SG-stock",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-stock",
+    "tree": "pristine"
+   },
+   "boot_id": "J1-down_lad_SG-stock",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-stock_lad_r4.796522_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-stock_lad_r3.62686_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-stock_lad_r3.153791_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-stock_lad_r3.62686_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-stock_lad_r4.170888_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-stock_lad_r3.153791_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-stock_lad_r4.170888_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-stock_lad_r4.796522_s202",
+     "seed": 202,
+     "workload": "W1"
+    }
+   ]
+  },
+  {
+   "arm": "SG-off",
+   "arm_def": {
+    "api": "sglang",
+    "cmd": [
+     "-m",
+     "sglang.launch_server",
+     "--model-path",
+     "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+     "--revision",
+     "dc0661c829b14e5b9246c05cfa89094a0875e052",
+     "--trust-remote-code",
+     "--dtype",
+     "bfloat16",
+     "--disable-radix-cache",
+     "--disable-piecewise-cuda-graph",
+     "--context-length",
+     "20480",
+     "--max-prefill-tokens",
+     "16384",
+     "--max-running-requests",
+     "48",
+     "--host",
+     "127.0.0.1"
+    ],
+    "engine": "sglang",
+    "env": {},
+    "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+    "name": "SG-off",
+    "tree": "patched"
+   },
+   "boot_id": "J1-down_lad_SG-off",
+   "role": "meas",
+   "runs": [
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-off_lad_r4.170888_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-off_lad_r3.153791_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-off_lad_r4.796522_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.153791,
+     "run_id": "J1-down_SG-off_lad_r3.153791_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-off_lad_r3.62686_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.796522,
+     "run_id": "J1-down_SG-off_lad_r4.796522_s202",
+     "seed": 202,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 4.170888,
+     "run_id": "J1-down_SG-off_lad_r4.170888_s201",
+     "seed": 201,
+     "workload": "W1"
+    },
+    {
+     "cell": "LADDER_DOWN",
+     "kind": "cap",
+     "n_requests": 120,
+     "rate": 3.62686,
+     "run_id": "J1-down_SG-off_lad_r3.62686_s202",
+     "seed": 202,
+     "workload": "W1"
+    }
+   ]
+  }
+ ],
+ "engine_trees": [
+  "patched",
+  "pristine"
+ ],
+ "est_min": 56.4,
+ "hard_cap_min": 75,
+ "image_key": "PDMUX_VESSL_IMAGE_SBASE",
+ "job": "J1-down",
+ "kind": "LADDER_DOWN",
+ "ladder": [
+  4.796522,
+  4.170888,
+  3.62686,
+  3.153791
+ ],
+ "pending": [],
+ "vllm_placement": "same_image_venv"
+}

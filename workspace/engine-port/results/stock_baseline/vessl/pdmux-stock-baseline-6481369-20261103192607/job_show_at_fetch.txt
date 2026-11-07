@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-stock-baseline-6481369-20261103192607
+Slug:                 job-90kty1wyzel0
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b
+Command:              bash /io/code/6481369999c6c8055ae9f6c89bc2395b83dc9dd4/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-11-03T19:26:16Z
+Started At:           2026-11-03T19:26:19Z
+Completed At:         2026-11-03T21:17:17Z
+Duration:             1h50m58s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=6481369999c6c8055ae9f6c89bc2395b83dc9dd4, PDMUX_JOB_NAME=pdmux-stock-baseline-6481369-20261103192607, PDMUX_CAMPAIGN=stock_baseline, PDMUX_TARGET=workspace/engine-port/results/stock_baseline/sb_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b, PDMUX_SPEC=resourcespec-a100x1, PDMUX_SB_JOB=J1b, PDMUX_SB_SEALED=1, PDMUX_REQUIRE_PRISTINE=1, PDMUX_SB_ADDENDUM=/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/stock_baseline/runs/pdmux-stock-baseline-7899d1b-20261102085423/ADDENDUM_J1_rev3.json
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

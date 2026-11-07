@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-stock-baseline-0e9c967-20261103192557
+Slug:                 job-opa967cax1n7
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b
+Command:              bash /io/code/0e9c967c8b41d08246e344b5d0fed6986e67c01f/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-11-03T19:26:06Z
+Started At:           2026-11-03T19:26:09Z
+Completed At:         2026-11-03T19:53:13Z
+Duration:             27m4s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=0e9c967c8b41d08246e344b5d0fed6986e67c01f, PDMUX_JOB_NAME=pdmux-stock-baseline-0e9c967-20261103192557, PDMUX_CAMPAIGN=stock_baseline, PDMUX_TARGET=workspace/engine-port/results/stock_baseline/sb_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b, PDMUX_SPEC=resourcespec-a100x1, PDMUX_SB_JOB=J1-down, PDMUX_SB_SEALED=1, PDMUX_REQUIRE_PRISTINE=1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

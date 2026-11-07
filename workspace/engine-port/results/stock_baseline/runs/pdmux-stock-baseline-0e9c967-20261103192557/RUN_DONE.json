@@ -1,0 +1,52 @@
+{
+ "boots": [
+  {
+   "boot_id": "J1-down_lad_SG-mix",
+   "runs": [
+    "J1-down_SG-mix_lad_r4.796522_s202",
+    "J1-down_SG-mix_lad_r4.170888_s202",
+    "J1-down_SG-mix_lad_r4.170888_s201",
+    "J1-down_SG-mix_lad_r3.62686_s201",
+    "J1-down_SG-mix_lad_r4.796522_s201",
+    "J1-down_SG-mix_lad_r3.153791_s201",
+    "J1-down_SG-mix_lad_r3.62686_s202",
+    "J1-down_SG-mix_lad_r3.153791_s202"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1-down_lad_SG-stock",
+   "runs": [
+    "J1-down_SG-stock_lad_r4.796522_s201",
+    "J1-down_SG-stock_lad_r3.62686_s201",
+    "J1-down_SG-stock_lad_r3.153791_s201",
+    "J1-down_SG-stock_lad_r3.62686_s202",
+    "J1-down_SG-stock_lad_r4.170888_s201",
+    "J1-down_SG-stock_lad_r3.153791_s202",
+    "J1-down_SG-stock_lad_r4.170888_s202",
+    "J1-down_SG-stock_lad_r4.796522_s202"
+   ],
+   "status": "done"
+  },
+  {
+   "boot_id": "J1-down_lad_SG-off",
+   "runs": [
+    "J1-down_SG-off_lad_r4.170888_s202",
+    "J1-down_SG-off_lad_r3.153791_s202",
+    "J1-down_SG-off_lad_r4.796522_s201",
+    "J1-down_SG-off_lad_r3.153791_s201",
+    "J1-down_SG-off_lad_r3.62686_s201",
+    "J1-down_SG-off_lad_r4.796522_s202",
+    "J1-down_SG-off_lad_r4.170888_s201",
+    "J1-down_SG-off_lad_r3.62686_s202"
+   ],
+   "status": "done"
+  }
+ ],
+ "gpu_uuid": "GPU-27097514-97cf-4981-cd7e-58f7abc4ce12",
+ "job": "J1-down",
+ "job_name": "pdmux-stock-baseline-0e9c967-20261103192557",
+ "pending": [],
+ "plan_sha": "c3b473d01709c5ba0faebc54b4dd68f08de22e25f500cc4d2d14c61ed4c6e45f",
+ "resumed": false
+}
