@@ -1,5 +1,7 @@
 # stock_quick — SGLang 기본의 SLO 달성률 (2026-11-02, 기술값, 사전등록 아님)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_slo_survey_and_sq_maxitl_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 Job `pdmux-stock-quick-6dfe05d-20261102071129`, 커밋 `6dfe05d0`, fetch DONE·sha256 통과. 첫 제출 `pdmux-stock-quick-1649840-20261102065758`은 래퍼 경로 버그로 측정 전에 rc 16으로 끝났다. 봉인 PREREG STOCK-BASE rev2.1 밖의 측정이고 Phase B를 대체하지 않는다.
 
 - 통제: Nano-9B-v2, VESSL A100, 합본 이미지 `a5f9bf0f…`, 손대지 않은 SGLang 트리(`engine_tree=pristine`), CAP1-R·CAP2와 같은 도착률 격자·셀 요청 수·seed {201, 202}, 같은 SLO(W1 TTFT 3000 ms, W3 TTFT 2814.84 ms, 요청 내부 ITL p95 60 ms).

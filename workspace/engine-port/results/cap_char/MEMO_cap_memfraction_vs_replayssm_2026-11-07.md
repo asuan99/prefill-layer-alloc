@@ -1,5 +1,7 @@
 # MEMO — cap 48·mem 0.6은 어디서 오나, ReplaySSM B=256과 무엇이 다른가 (2026-11-07, main 세션, GPU 0)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_cap_mem_memo_and_formula_review_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > 지위: 코드 읽기·기존 문서 대조·유도 계산. **새 측정 0, 미감사.** 수치 라벨: [코드] [측정·기존 문서] [유도]. 정본 인용 전 claims-auditor 1회.
 
 ## 1. cap 48은 엔진 상한이 아니다

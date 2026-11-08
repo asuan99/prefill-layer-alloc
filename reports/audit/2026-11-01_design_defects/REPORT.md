@@ -1,5 +1,7 @@
 # 설계 결함·예측 오류 정리와 반복 패턴 수정 (2026-11-01)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_design_defects_policy_memos_dstar_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > 지위: 검토 메모(사용자 요청, 미감사). 새 측정 0, 판정 변경 0. 대상 = 정책 캠페인(CAP1-R·CAP2·TUNE)과 통합 정책 측정(policy_implfix P·H·R·E3), GPU gate rev0.2, D\* 예측식.
 > 근거: 각 결과 감사 r1(`policy_cap1r/AUDIT_cap1r_result_r1_2026-10-29.md`, `policy_cap2/AUDIT_cap2_sustain_result_r1_2026-10-29.md`, `policy_tune/AUDIT_tune_result_r1_2026-10-29.md`, implfix `policy_implfix/AUDIT_harness_policy_implfix_r1_2026-10-31.md`·`AUDIT_result_policy_implfix_r1_2026-11-01.md`), 메모 `policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`.
 > 라벨: [감사] = 감사 r1에서 확정된 것 · [정리] = 이 메모가 묶은 것(감사 미경유).

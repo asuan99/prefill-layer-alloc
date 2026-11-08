@@ -1,5 +1,7 @@
 # 논문 positioning — A+B만 vs A+B+C (venue-strategist, 2026-10-27)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_hymux_structure_and_venue_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > 읽기·웹 조사만, 새 측정 0. 짝 감사: `workspace/engine-port/results/anchor_audit/VERDICT_claimC_online_predictive_2026-10-27.md`.
 > A = 비용 모델로 워크로드별 static 선택 + oracle 후회(V-O) · B = phase 경계 여지(H-D) · C = 비용 모델 구동 iteration 단위 예측형 SM 배분(hybrid 귀속).
 

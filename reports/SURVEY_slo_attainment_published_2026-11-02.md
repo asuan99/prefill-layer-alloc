@@ -1,5 +1,7 @@
 # 문헌의 SLO attainment 값 조사 — ShareGPT·arXiv 요약류 (2026-11-02)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_slo_survey_and_sq_maxitl_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > **지위**: 문헌 조사 메모. GPU 0 · 새 측정 0 · 성능 판정 0 · claim 등급 변경 0 · 정본 미수정. 미감사.
 > **목적**: 우리 측정값(Nemotron-Nano-9B-v2, A100 1장)이 문헌 값과 어떻게 비교되는지 감 잡기. 순위 주장용이 아니다.
 > **확인 범위**: 아래 값은 전부 1차 출처 PDF(arXiv 또는 로컬 `Papers/`, ORCA는 USENIX PDF)의 본문·표·그림을 직접 열어 옮겼다. 검색 스니펫은 근거로 쓰지 않았다. Bullet·MuxWise는 로컬 camera-ready 기준이다.

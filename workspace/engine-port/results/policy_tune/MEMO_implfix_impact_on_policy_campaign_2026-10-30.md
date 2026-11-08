@@ -1,5 +1,7 @@
 # 메모 — PD-mux 구현 수정 계획(E1–E3)이 정책 캠페인 수치에 주는 편차 검토 (2026-10-30)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_design_defects_policy_memos_dstar_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > 지위: 검토 메모(미감사). 새 측정 0. 대상 계획 = 작업 루트 `PDMUX_IMPL_FIX_PLAN_2026-10-28.md`, 진행 = worktree `prefill-layer-alloc-implfix`(branch `impl-defects-e123`, Phase 0 `results/impl_defects/PHASE0_CPU_CHECK_2026-10-28.md`, GPU gate c03d622 FAIL — 원인은 플래그 경로 밖: G0 결정론 boot 16k 할당 실패·G1 이중 모드 키·G4 `.item()` poll 계수).
 > 정책 캠페인 수치(CAP1-R·CAP2·TUNE, EVAL 예정)는 전부 엔진 digest 65cbb49d(커밋 3858f129) = **수정 전 루프**에서 나왔다.
 

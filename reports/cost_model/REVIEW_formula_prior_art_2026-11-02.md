@@ -1,5 +1,7 @@
 # 검토 — analytic-v1 해석적 비용 수식의 선행연구 대조와 엄밀성 (2026-11-02)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_cap_mem_memo_and_formula_review_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > **지위**: 검토 문서(venue-strategist). 정본이 아니다. `ANALYTIC_COST_FORMULAS.md`(analytic-v1)와 `analytic_terms.py`는 **고치지 않았다**. 수정이 필요하면 정본 변경 규칙(코드·문서 동시 수정, v2, §9 이력, `render_formula_tables.py`)을 따른다.
 > **GPU 0 · 새 측정 0.** 수치는 전부 `analytic_terms.py`로 다시 계산했다(손계산 인용 없음).
 > **출처 규율**: 아래 1차 출처는 전부 PDF를 직접 내려받아 `pdftotext`로 본문을 읽었다(검색 스니펫은 쓰지 않음). 절·표·식 번호는 그 판본 기준이다. 판본이 바뀌면 번호가 달라질 수 있다.

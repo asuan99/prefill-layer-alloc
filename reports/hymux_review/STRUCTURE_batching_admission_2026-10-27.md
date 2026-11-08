@@ -1,5 +1,7 @@
 # PD-mux 배치·admission 구조 재검증과 원고–코드 대조 (2026-10-27, main 트랙)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_hymux_structure_and_venue_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+
 > **지위**: 정본 아님. 정적 코드 읽기와 CPU 재계산만 했다(GPU 0, 측정 0). **새 성능 판정 0건.** Claim 등급·게이트 #6·HE0 불변.
 > 작성: engine-porter, 2026-10-27. 지시서 = 사용자 제공 이관 지시(T1–T5, 기준 HEAD `bfc82560`). 이 문서의 기준 HEAD는 `bb1d936d`이며
 > `git diff bfc82560 bb1d936d -- workspace/engine-port/src`는 비어 있다. 그래서 지시서의 줄 번호 F1–F11은 그대로 다시 확인했다.

@@ -1,5 +1,8 @@
 # 제안 — static decode SM D\*를 하드웨어·모델 항과 측정 비용 항으로 도출하는 식 (2026-10-30)
 
+> ★결과 감사 r1(2026-11-08) GO-with-edits — 판정서 `reports/audit/2026-11-08_unaudited_r1/AUDIT_design_defects_policy_memos_dstar_r1_2026-11-08.md`, 수정 전 인용 금지 목록 적용. 본문은 고치지 않았다.
+> ★정오(2026-11-02, `workspace/engine-port/results/policy_cap2/RECHECK_sustain_throughput_2026-11-02.md`; 판정서 §3-3): §4의 '지속 600 s D44·D64 완료율 약 3.0 req/s'는 CAP2 감사 스크립트의 `sent_s` 이중 가산 오류다. 올바른 값은 7.29 req/s 과부하의 포화 완료율 5.06–5.34 req/s(goodput·SLO 지속 rate 아님)이며, 같은 문장의 '모델 값이 그 사이에 있다'는 무효다. 정정값과 모델 λ_cap(5.03·5.30)의 근접은 사후 관찰이며 W1 절대값 일치의 근거로 인용하지 않는다. 원문 보존, 봉인 대상 §5(커밋 `113de504`) 불변.
+
 > **지위: 제안(결정 61).** 정본이 아니다. analytic-v1(`ANALYTIC_COST_FORMULAS.md`)은 바꾸지 않고 사전(prior)으로 불러 쓴다. 정본 수식 §8 표의 "PD-mux SM 분할" 칸을 채우는 확장 후보다.
 > **새 측정 0, GPU 0.** 입력은 이미 회수된 비용 항(T1·T2·T2′·T3)과 정책 캠페인 trace다.
 > **오염 공시:** 식은 CAP1·CAP1-R·CAP2·TUNE 결과를 본 **뒤에** 썼다. 그래서 §4의 대조는 **사후 재현(retrodiction)**이지 예측이 아니다. 예측으로 셀 수 있는 것은 §5의 EVAL 사전 예측뿐이다. EVAL은 이 문서를 커밋하는 시점에 제출되지 않았다.
