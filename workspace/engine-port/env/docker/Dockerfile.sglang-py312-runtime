@@ -12,8 +12,9 @@ RUN /opt/vllm-python/python/bin/python3 -m venv /opt/sg312-venv \
  && mkdir -p /opt/sg312-venv-meta
 
 ARG TORCH_INDEX=https://download.pytorch.org/whl/cu130
-RUN /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps --index-url "${TORCH_INDEX}" 'torch==2.9.1+cu130' \
- && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps 'triton==3.5.1'
+# torchvision and prometheus_client come with the py3.14 base environment, not the pin list, and SGLang imports both.
+RUN /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps --index-url "${TORCH_INDEX}" 'torch==2.9.1+cu130' 'torchvision==0.24.1+cu130' \
+ && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps 'triton==3.5.1' 'prometheus_client==0.26.0'
 
 # sglang-kernel 0.4.1+cu130 (canonical, abi3): same wheel and hash as the py3.14 side.
 ARG SGL_KERNEL_URL=https://github.com/sgl-project/whl/releases/download/v0.4.1/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl
@@ -29,7 +30,7 @@ RUN /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps -r /opt/pdmux/requi
  && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps -e /opt/pdmux/sglang_engine_dev/python
 
 # Fail the build on a wrong interpreter or version, and record provenance.
-RUN /opt/sg312-venv/bin/python -c "import sys, torch, sglang; assert sys.version_info[:2]==(3,12); assert torch.__version__=='2.9.1+cu130', torch.__version__" \
+RUN /opt/sg312-venv/bin/python -c "import sys, torch, torchvision, prometheus_client, sglang, sglang.launch_server; assert sys.version_info[:2]==(3,12); assert torch.__version__=='2.9.1+cu130', torch.__version__" \
  && /opt/sg312-venv/bin/pip list --format=freeze > /opt/sg312-venv/pip_freeze.txt \
  && sha256sum /opt/sg312-venv/pip_freeze.txt | cut -d' ' -f1 > /opt/sg312-venv/pip_freeze.sha256 \
  && /opt/sg312-venv/bin/python -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/sg312-venv-meta/python_torch.txt
