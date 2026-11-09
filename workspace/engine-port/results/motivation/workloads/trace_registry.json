@@ -1,0 +1,153 @@
+{
+ "arrival": "unit-rate Poisson master, rung = t/rate prefix (ph_trace._rng key excludes the rate)",
+ "generator_sha256": "0d28a23c123a8b3f4d2f03a5199db573241f9d0418ccfe2e934930648424334e",
+ "interference": {
+  "duration_s": 300.0,
+  "long_arrivals": "Poisson conditioned on count: t_k = duration * S_k / S_(n_long+1)",
+  "long_share": 0.05,
+  "provisional": "example rates only; the rate grid is fixed by the preregistration after the pre-ladder",
+  "provisional_short_rates": [
+   2.0,
+   3.0,
+   4.0
+  ]
+ },
+ "lib_sha256": "06add7d460a61ee879b8e5561a266cbc364da705688417a6c8e22e9ef6dbb43b",
+ "master_hashes": {
+  "arxiv_summ": {
+   "20261111": "deb8905b439c28227f55f6e9d69d154bf80871485a5c74559ba21749a242d702",
+   "20261112": "e3f9b49d005fbd92e9a8c272d19b811ee1d8d32b63e79e25445a98da38d00f16",
+   "20261113": "202e09ec2f6aaf7150377d8466b1bde34b6158489a41cdb04c48a2ac298200cf",
+   "20261114": "a9641c183a733ccb85aea1e5d855558d0ea633d50c8e5c2bc8da493dee23b81e",
+   "20261115": "4be8600ebdfd319a693f6f9d3addc576842dc4c65f5e2f35759808d702ae7430",
+   "20261116": "7c6491e0864b2436f401646055ec87d9826dd15dd3252374281aff69f0c6ab05"
+  },
+  "loogle_longdep": {
+   "20261111": "edfee65cf76d09c51f089a28f2f08d86b4da105a5ae6b8eda6959b6be6800083",
+   "20261112": "87b81e66e6d124ada7e401ee02f3180591bd32972701c82c9a89a433ec2d2361",
+   "20261113": "9b74979a8bc56c4124824ffcb33a42bd29dfbf27c40affb0192a4b8c9704f069",
+   "20261114": "193bf9b1b8eb63ef2ac472d84d1ec9f4922f7676713da2f98f6d8c4a76f78238",
+   "20261115": "a1d9d072b742465c742ecd0e29a9b1474cd330381843f1761f020d24a18c433e",
+   "20261116": "176a54380f91780128e7b2b2b1e06226e69e6ad74a2ff09cfae65539588de554"
+  },
+  "openchat_rounds": {
+   "20261111": "946552dee1aa014e6223dee93d0b46669c780961cdcb0389822ad39347208a8a",
+   "20261112": "2fc27214f74ab094c127a5f812d59827db78dab9cd675d185a52c752200fce16",
+   "20261113": "70098067a6392834631d098b1e26d70ac47b043b5a3f84f76e7de70ff0c7ac1b",
+   "20261114": "4717e8932f4df3d03cf1fa8e4bb42823547f1bcf85c384895fd9db4dd4813350",
+   "20261115": "339aacff390e10ad98d88b589ec695624e77bf4e4f438d1d8102073906de465e",
+   "20261116": "3dd1d0b14e257ca8c65372ad9ae8d10eac198275259489754490cb646ef0009b"
+  },
+  "sharegpt_first": {
+   "20261111": "8ceb1350cb848a28eae9c62dbe6c1e6c8c508268030f82966f15aa12bc2d501a",
+   "20261112": "9efc8b659163d98494242b42b7cf34d5fa336b9919cdd8285e4b01d4445ff09a",
+   "20261113": "89a3a0654c1373a69d9a96a5380683e811170487fabd32438e1fcaa4cdf4b72e",
+   "20261114": "001b7fa3a4fb5c8311dd138c380a27f685c02bb85e9af0f35e5af294531fa2db",
+   "20261115": "58a72bd60abb41c31a02ad96078e3cac898002755eb223d865f138a0baf578aa",
+   "20261116": "5f2c65d8b68720fdcfdcebafc32a8c3b9fdba641eb8474eaf0bc502500b17cb6"
+  }
+ },
+ "master_n": {
+  "arxiv_summ": 5000,
+  "loogle_longdep": 2000,
+  "openchat_rounds": 20000,
+  "sharegpt_first": 20000
+ },
+ "provisional_interference_pairs": {
+  "20261111|2.0": {
+   "n_long": 32,
+   "n_short": 608,
+   "short_stream": "f91282b9f374d61275c3a743a9bc2693d024dd40728e17a76b753879e484d89c",
+   "with_long": "f6b642a3f535767cbe70af6024a94550ec51c4a26e5deb8d3ab61524998c7a3f",
+   "without_long": "af27883f912905f8f9773ebf3d5edf6072dca11064664c6bbc7c8074c1b1f1fe"
+  },
+  "20261111|3.0": {
+   "n_long": 47,
+   "n_short": 891,
+   "short_stream": "91977aec9f048f56c8a7bb392e36ba265695a9537761afa2f5d0c87ab49ea26e",
+   "with_long": "d87098807ebbb7070151f04f58c46681a2dba8f6ba3e8b451276f800c9b12a1f",
+   "without_long": "d22e520e178d61e43ad28d2ea3b4ab30546363324c270bd7d1e54687f717de13"
+  },
+  "20261111|4.0": {
+   "n_long": 63,
+   "n_short": 1213,
+   "short_stream": "73e0cfb04e32abfb565b350ec8cbb592d2feab3d869a3129ca668303fbe811bf",
+   "with_long": "fc1b0b245eac326f6e3b6256f2a3e217dd91f41de2f0402754144fc5255fe4e1",
+   "without_long": "d8c9d4d0c3442d8be1bfa0ccce5601028cb7670415b8a38e4774bddb7df48c82"
+  },
+  "20261112|2.0": {
+   "n_long": 32,
+   "n_short": 586,
+   "short_stream": "83a9508d08d7e6577e25331eb41c4cb4cc3cf63f7543cd80a4406c3bfef270c0",
+   "with_long": "197dbcfb4b330c519e1319294df6fc8d96e54a101d0b85616cfab57644ae734a",
+   "without_long": "6141a6bd7a496b7d1b5ce08d34b46bee82ed2cffe11cfcff70253b12cd89b8f8"
+  },
+  "20261112|3.0": {
+   "n_long": 47,
+   "n_short": 902,
+   "short_stream": "dce3a163e458acaad7bd884dfdf2833502ddad3d4148bf26f7d7b1445c431574",
+   "with_long": "038d39a2ea8ec14a786c547daf2c47edef880d599e0e0089221d2a0be386db4e",
+   "without_long": "b0217e44292ee951b56cd59aa9475e097ae2e88f15b67266345d68f9668eb8b2"
+  },
+  "20261112|4.0": {
+   "n_long": 63,
+   "n_short": 1180,
+   "short_stream": "5ae8edbdd4942ab0953ad7ae6333440230bb15393c3045773c5028cfb5513a2b",
+   "with_long": "8cc2dd6f7ae92580b724606c9693a6eeab5d97d9aaab89443be67b6bfb30cbb2",
+   "without_long": "0a28ab28d2f8591e311004fcbf0232c5faee58007c6d143fdcd8a2ab451b9231"
+  },
+  "20261113|2.0": {
+   "n_long": 32,
+   "n_short": 564,
+   "short_stream": "42b9d9cc54c19ad374c494cf2d48779fcb8181ff3cf68fcb7239d10fddaca520",
+   "with_long": "b1d07cb265a6a3f3c1ee13aef97d7e083eaaa5190f766caa5a8f87a77f4bba77",
+   "without_long": "28f20f26c3ae15c5295e0f74438335f1a77b327129ebaec4448ef95045c8a147"
+  },
+  "20261113|3.0": {
+   "n_long": 47,
+   "n_short": 878,
+   "short_stream": "f06cae9e70b705aaf2c421e39d1fc0d3de3428b4095b1921dae52dd392df8f74",
+   "with_long": "3b177512b4b083746a5c69c99768d69776ab4b4b70c7a035ac365e5bda6283f8",
+   "without_long": "862c317b62fc35d0f7648add0bf09bad1fd915583fe255144cf67b93401e0290"
+  },
+  "20261113|4.0": {
+   "n_long": 63,
+   "n_short": 1175,
+   "short_stream": "04215b445e925749e6169275cb2116ac8ca6078b78281e7e593d503269f6de81",
+   "with_long": "36ca4164af16b31243b6bfb39b1b7aec4442f04aa18871b6781590b5183c68e7",
+   "without_long": "63fd664fcd0453c2a536d4568cb4934603b9580c81ddcced566c0a55cc011962"
+  },
+  "20261114|2.0": {
+   "n_long": 32,
+   "n_short": 603,
+   "short_stream": "d6c26fb660a0c245e97f7b11e8f89894a42f7c5cfb61dc40b4456799b48ce828",
+   "with_long": "a653ad4cce8a24ddc30f8e7f515305a47bf0446fdd7da3577d16c1c67309a5b7",
+   "without_long": "cb3a09117dd6de169106689a92da926189f68cb3f6dc45dbeb4487299d687249"
+  },
+  "20261114|3.0": {
+   "n_long": 47,
+   "n_short": 872,
+   "short_stream": "45cbcc952fbb98b48a4acfb5cf6caf8bff533a9df43f9762098cb5b159043817",
+   "with_long": "d3fe10a868dc473012f4e711a02c38fbacfe28f0b55719d683acfe0c356ada00",
+   "without_long": "5d27f9d8e4bb741060f5353ceafa71781a72ad513a3fefc1724e59c1d713f46f"
+  },
+  "20261114|4.0": {
+   "n_long": 63,
+   "n_short": 1171,
+   "short_stream": "6184e85506a6b2a0249ab39444c1746bbce9844bc96e7dfda3fd9f3e1ed7eb63",
+   "with_long": "b2a06949a0cd6ee7ef1dfdf348a31d3731db81eb2de929b32c2c37ca12cfe20d",
+   "without_long": "eb44d202118f58da76cad8ab774ca98958c9b3e86328ca4b7e8d4b6770ee020c"
+  }
+ },
+ "schema": "pdmux-motivation-traces/v1",
+ "seeds": [
+  20261111,
+  20261112,
+  20261113,
+  20261114
+ ],
+ "spare_seeds": [
+  20261115,
+  20261116
+ ]
+}

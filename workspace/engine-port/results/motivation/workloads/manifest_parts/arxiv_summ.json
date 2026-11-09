@@ -1,0 +1,63 @@
+{
+ "input": {
+  "cv": 0.5002,
+  "max": 16379,
+  "mean": 7116.412,
+  "min": 168,
+  "n": 5906,
+  "p1": 1016,
+  "p25": 4434,
+  "p5": 2039,
+  "p50": 6484,
+  "p75": 9493,
+  "p90": 12369,
+  "p95": 13982,
+  "p99": 15722
+ },
+ "length_table": "lengths/arxiv_summ.json (doc_id, input, abstract length)",
+ "lengths_sha256": "acea3902602c7cb8d6796b8ea516dc8696d0e5da30ae276c548a3f520faf336a",
+ "n_records": 5906,
+ "observed_natural_output_cap2": {
+  "cv": 0.1274,
+  "frac_at_cap_1024": 0.9819,
+  "max": 1024,
+  "mean": 1007.251,
+  "min": 1,
+  "n": 2880,
+  "p1": 2,
+  "p25": 1024,
+  "p5": 1024,
+  "p50": 1024,
+  "p75": 1024,
+  "p90": 1024,
+  "p95": 1024,
+  "p99": 1024,
+  "source": "policy_runs/pdmux-policy-cap2-e90e233-20261029023336/raw/segments (ignore_eos=False, cap 1024)"
+ },
+ "output": {
+  "cv": 0.3844,
+  "max": 616,
+  "mean": 202.763,
+  "min": 49,
+  "n": 5906,
+  "p1": 65,
+  "p25": 143,
+  "p5": 88,
+  "p50": 195,
+  "p75": 256,
+  "p90": 312,
+  "p95": 339,
+  "p99": 399
+ },
+ "output_is": "abstract token length (reference); not the served natural output",
+ "output_mode": "ignore_eos=False, max_new_tokens = 1024 (policy harness convention, decision 47); output length is run-determined",
+ "prompt": "article token ids only, no summarization instruction",
+ "rule": "existing arxsum_x_tokens_v1.bin: 0 < input <= 16384, abstract >= 2; n_output = abstract token count",
+ "source": {
+  "dataset": "ccdv/arxiv-summarization test parquet (via mg_x_pretokenize.py)",
+  "token_file_sha256": "4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f",
+  "volume_path": "/data/datasets/arxsum_x/arxsum_x_tokens_v1.bin (already on the cluster volume)"
+ },
+ "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "workload": "arxiv_summ"
+}

@@ -1,0 +1,222 @@
+{
+ "builder_sha256": {
+  "build_pools.py": "4f583b9f160acb47ec184e27d2bd891d0888e9cfea4295d20685678157abe677",
+  "gen_traces.py": "0d28a23c123a8b3f4d2f03a5199db573241f9d0418ccfe2e934930648424334e",
+  "mw_lib.py": "06add7d460a61ee879b8e5561a266cbc364da705688417a6c8e22e9ef6dbb43b"
+ },
+ "quantile_rule": "nearest rank (mw_lib.q)",
+ "schema": "pdmux-motivation-workload-manifest/v1",
+ "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "workloads": {
+  "arxiv_summ": {
+   "input": {
+    "cv": 0.5002,
+    "max": 16379,
+    "mean": 7116.412,
+    "min": 168,
+    "n": 5906,
+    "p1": 1016,
+    "p25": 4434,
+    "p5": 2039,
+    "p50": 6484,
+    "p75": 9493,
+    "p90": 12369,
+    "p95": 13982,
+    "p99": 15722
+   },
+   "length_table": "lengths/arxiv_summ.json (doc_id, input, abstract length)",
+   "lengths_sha256": "acea3902602c7cb8d6796b8ea516dc8696d0e5da30ae276c548a3f520faf336a",
+   "n_records": 5906,
+   "observed_natural_output_cap2": {
+    "cv": 0.1274,
+    "frac_at_cap_1024": 0.9819,
+    "max": 1024,
+    "mean": 1007.251,
+    "min": 1,
+    "n": 2880,
+    "p1": 2,
+    "p25": 1024,
+    "p5": 1024,
+    "p50": 1024,
+    "p75": 1024,
+    "p90": 1024,
+    "p95": 1024,
+    "p99": 1024,
+    "source": "policy_runs/pdmux-policy-cap2-e90e233-20261029023336/raw/segments (ignore_eos=False, cap 1024)"
+   },
+   "output": {
+    "cv": 0.3844,
+    "max": 616,
+    "mean": 202.763,
+    "min": 49,
+    "n": 5906,
+    "p1": 65,
+    "p25": 143,
+    "p5": 88,
+    "p50": 195,
+    "p75": 256,
+    "p90": 312,
+    "p95": 339,
+    "p99": 399
+   },
+   "output_is": "abstract token length (reference); not the served natural output",
+   "output_mode": "ignore_eos=False, max_new_tokens = 1024 (policy harness convention, decision 47); output length is run-determined",
+   "prompt": "article token ids only, no summarization instruction",
+   "rule": "existing arxsum_x_tokens_v1.bin: 0 < input <= 16384, abstract >= 2; n_output = abstract token count",
+   "source": {
+    "dataset": "ccdv/arxiv-summarization test parquet (via mg_x_pretokenize.py)",
+    "token_file_sha256": "4c32f1af8eff07d7d0ad39006423163895181381c0d83a73a5f0f5b1ce76888f",
+    "volume_path": "/data/datasets/arxsum_x/arxsum_x_tokens_v1.bin (already on the cluster volume)"
+   },
+   "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+   "workload": "arxiv_summ"
+  },
+  "loogle_longdep": {
+   "input": {
+    "cv": 0.3979,
+    "max": 68375,
+    "mean": 32801.017,
+    "min": 13459,
+    "n": 1096,
+    "p1": 14013,
+    "p25": 18864,
+    "p5": 14621,
+    "p50": 35187,
+    "p75": 41936,
+    "p90": 48229,
+    "p95": 52995,
+    "p99": 64420
+   },
+   "length_table": "lengths/loogle_longdep.json",
+   "lengths_sha256": "24c13d8559d460602b85d3ee54f3d37ffa60240a56c5f50d4977bb224de54a00",
+   "n_docs": 140,
+   "n_excluded": 5,
+   "n_records": 1096,
+   "output": {
+    "cv": 1.7226,
+    "max": 326,
+    "mean": 14.853,
+    "min": 1,
+    "n": 1096,
+    "p1": 1,
+    "p25": 3,
+    "p5": 2,
+    "p50": 7,
+    "p75": 15,
+    "p90": 37,
+    "p95": 55,
+    "p99": 134
+   },
+   "output_mode": "ignore_eos=True, output_tokens = answer length",
+   "prompt": "real text, context + question token ids, no instruction",
+   "rule": "longdep_qa; input = context + question tokens, input <= 94800, input + output <= 96000; output = max(1, answer tokens); 5 excluded",
+   "source": {
+    "dataset": "LooGLE longdep_qa.jsonl",
+    "sha256": "6c047bc6e904e5fd632e44a2f2624d75e85fe0f871c6b74bcfffa918bf2f3624"
+   },
+   "token_file": {
+    "bytes": 18775956,
+    "n_payload_tokens": 4681689,
+    "name": "loogle_longdep_tokens_v1.bin",
+    "sha256": "9586fbbeeeb4117ef0c14b5dd6e7981bad26a320716b78d0531fa082807ceb17"
+   },
+   "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+   "workload": "loogle_longdep"
+  },
+  "openchat_rounds": {
+   "input": {
+    "cv": 0.924,
+    "max": 8152,
+    "mean": 2244.827,
+    "min": 1,
+    "n": 34512,
+    "p1": 10,
+    "p25": 542,
+    "p5": 25,
+    "p50": 1597,
+    "p75": 3512,
+    "p90": 5591,
+    "p95": 6542,
+    "p99": 7529
+   },
+   "length_table": "lengths/openchat_rounds.json",
+   "lengths_sha256": "d66d7c9cac0fdad69b83b706029312ec969f54a5fb306606e300d679a389c4b6",
+   "n_records": 34512,
+   "output": {
+    "cv": 0.6019,
+    "max": 1887,
+    "mean": 362.106,
+    "min": 1,
+    "n": 34512,
+    "p1": 5,
+    "p25": 192,
+    "p5": 38,
+    "p50": 345,
+    "p75": 513,
+    "p90": 666,
+    "p95": 764,
+    "p99": 838
+   },
+   "output_mode": "ignore_eos=True, output_tokens = reply length",
+   "prompt": "real text, conversation prefix token ids",
+   "rule": "gpt-turn rounds with cumulative input > 0 and input + reply <= 8192; turn tokens concatenated, no chat template, no special tokens",
+   "source": {
+    "dataset": "openchat/openchat_sharegpt4_dataset sharegpt_gpt4.json",
+    "sha256": "4bde74653bade4d1869a50ce0d7b253d73411ad4a44c9e737dc271d06198c4a0"
+   },
+   "token_file": {
+    "bytes": 57189571,
+    "n_payload_tokens": 14014894,
+    "name": "openchat_rounds_tokens_v1.bin",
+    "sha256": "a6fac9bc4046d581082989227e22a2d1dee0a5f911c84b949ef5cf5d4c04ee5f"
+   },
+   "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+   "workload": "openchat_rounds"
+  },
+  "sharegpt_first": {
+   "input": {
+    "cv": 2.2301,
+    "max": 3897,
+    "mean": 230.1,
+    "min": 4,
+    "n": 56132,
+    "p1": 4,
+    "p25": 14,
+    "p5": 7,
+    "p50": 33,
+    "p75": 142,
+    "p90": 693,
+    "p95": 1324,
+    "p99": 2708
+   },
+   "length_table": "lengths/sharegpt_first.json",
+   "n_records": 56132,
+   "output": {
+    "cv": 0.7121,
+    "max": 2145,
+    "mean": 285.724,
+    "min": 4,
+    "n": 56132,
+    "p1": 8,
+    "p25": 127,
+    "p5": 26,
+    "p50": 251,
+    "p75": 392,
+    "p90": 585,
+    "p95": 723,
+    "p99": 822
+   },
+   "output_mode": "ignore_eos=True, output_tokens = reply length",
+   "pool_sha256": "f3bd82bc87826c9aa06d525c6296a7a3b0a503d14d18f86184d30c8100b92255",
+   "prompt": "harness convention: [1]*n_input (length only, no text content)",
+   "rule": "first human turn -> first gpt reply; both >= 4 tokens; total <= 4000 (ph_trace.build_sharegpt_lengths)",
+   "source": {
+    "dataset": "ShareGPT_V3_unfiltered_cleaned_split.json",
+    "sha256": "35f0e213ce091ed9b9af2a1f0755e9d39f9ccec34ab281cd4ca60d70f6479ba4",
+    "volume_path": "/data/hf/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
+   },
+   "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+   "workload": "sharegpt_first"
+  }
+ }
+}
