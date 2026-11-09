@@ -1,0 +1,41 @@
+# PUBLIC stock image for the motivation baseline: the existing combined image (byte-unchanged)
+# + a SEPARATE Python 3.12 venv /opt/sg312-venv holding UNMODIFIED SGLang v0.5.10 and the same pins as the py3.14 side.
+# WHY: piecewise CUDA graph does not boot for NemotronH on the py3.14 side ('typing.Union' object has no attribute '__module__',
+# results/multigpu/RESULT_m2g_c1395d0_2026-10-12.md, Phase B A7), so the upstream default configuration has never been measured.
+# Only the interpreter changes: torch, triton and every package keep the py3.14-side versions. py3.14 shims are NOT installed
+# (env/sitecustomize.py only acts on 3.14+). It contains NO project engine code, patches, PREREG or results.
+# The py3.14 side and /opt/vllm-venv stay in place, so a piecewise OFF arm can run on both interpreters to separate the two effects.
+FROM ghcr.io/asuan99/sglang-vllm-runtime@sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b
+
+# Reuse the standalone CPython 3.12 already in the image; no new interpreter download.
+RUN /opt/vllm-python/python/bin/python3 -m venv /opt/sg312-venv \
+ && mkdir -p /opt/sg312-venv-meta
+
+ARG TORCH_INDEX=https://download.pytorch.org/whl/cu130
+RUN /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps --index-url "${TORCH_INDEX}" 'torch==2.9.1+cu130' \
+ && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps 'triton==3.5.1'
+
+# sglang-kernel 0.4.1+cu130 (canonical, abi3): same wheel and hash as the py3.14 side.
+ARG SGL_KERNEL_URL=https://github.com/sgl-project/whl/releases/download/v0.4.1/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl
+ARG SGL_KERNEL_SHA256=9164b8fc2c1652a52156f21d1a960116670c29033f686946840ef5b13558c5c0
+RUN curl -fsSL -o /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl "${SGL_KERNEL_URL}" \
+ && echo "${SGL_KERNEL_SHA256}  /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl" | sha256sum -c - \
+ && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps /tmp/sglang_kernel-0.4.1+cu130-cp310-abi3-manylinux2014_x86_64.whl \
+ && rm /tmp/sglang_kernel-*.whl
+
+# Same pin list as the py3.14 side, already in the base image. Same source tree: engine_tree.py selects the tree at boot.
+RUN /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps -r /opt/pdmux/requirements.pdmux-sglang.txt \
+ && (/opt/sg312-venv/bin/pip check > /opt/sg312-venv-meta/pip_check.txt 2>&1 || true) \
+ && /opt/sg312-venv/bin/pip install --no-cache-dir --no-deps -e /opt/pdmux/sglang_engine_dev/python
+
+# Fail the build on a wrong interpreter or version, and record provenance.
+RUN /opt/sg312-venv/bin/python -c "import sys, torch, sglang; assert sys.version_info[:2]==(3,12); assert torch.__version__=='2.9.1+cu130', torch.__version__" \
+ && /opt/sg312-venv/bin/pip list --format=freeze > /opt/sg312-venv/pip_freeze.txt \
+ && sha256sum /opt/sg312-venv/pip_freeze.txt | cut -d' ' -f1 > /opt/sg312-venv/pip_freeze.sha256 \
+ && /opt/sg312-venv/bin/python -c 'import sys, torch; print(sys.version); print(torch.__version__, torch.version.cuda)' > /opt/sg312-venv-meta/python_torch.txt
+
+ARG REPO_COMMIT=unknown
+LABEL org.opencontainers.image.title="sglang-py312-runtime" \
+      runtime.sglang_tag="v0.5.10" \
+      runtime.recipe_commit="${REPO_COMMIT}" \
+      runtime.base_digest="sha256:a5f9bf0f742de31f0de3f1cc2bc9fb352eec537dd4c746d9753d6d104087ea2b"
