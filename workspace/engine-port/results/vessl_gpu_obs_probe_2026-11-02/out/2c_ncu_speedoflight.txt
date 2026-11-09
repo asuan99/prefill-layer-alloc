@@ -1,0 +1,8 @@
+$ /data/tools/nsight/root/opt/nvidia/nsight-compute/2025.3.1/target/linux-desktop-glibc_2_11_3-x64/ncu --section SpeedOfLight -f -o /tmp/gpuobs/out/2c_ncu /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 4 --size 1024
+/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+==PROF== Connected to process 985 (/opt/conda/bin/python3.14)
+==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM
+torch 2.9.1+cu130 cuda 13.0 NVIDIA A100-SXM4-80GB
+elapsed_s 0.369
+==PROF== Disconnected from process 985

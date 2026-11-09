@@ -1,0 +1,16 @@
+{
+  "cmd": [
+    "/usr/local/cuda/bin/ncu",
+    "--section",
+    "LaunchStats",
+    "--launch-count",
+    "1",
+    "/opt/conda/bin/python3",
+    "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/ctrl2_pdmux-opchar-050483c-20261013065012/probe/probe_gemm.py"
+  ],
+  "rc": 1,
+  "stdout": "==PROF== Connected to process 615 (/opt/conda/bin/python3.14)\n==ERROR== ERR_NVGPUCTRPERM - The user does not have permission to access NVIDIA GPU Performance Counters on the target device 0. For instructions on enabling permissions and to get more information see https://developer.nvidia.com/ERR_NVGPUCTRPERM\ngemm ok\n==PROF== Disconnected from process 615\n",
+  "stderr": "/opt/conda/lib/python3.14/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.\n  import pynvml  # type: ignore[import]\n",
+  "mentions_ERR_NVGPUCTRPERM": true,
+  "has_grid_size_line": false
+}

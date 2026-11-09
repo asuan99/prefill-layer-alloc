@@ -1,0 +1,3 @@
+$ nvidia-smi -i 0 -pl 400.00
+Failed to set power management limit for GPU 00000000:A0:1C.0: Insufficient Permissions
+Terminating early due to previous errors.

@@ -1,0 +1,7 @@
+$ /data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys profile --gpu-metrics-devices=0 --force-overwrite=true -o /tmp/gpuobs/out/2b_metrics /opt/conda/bin/python /tmp/gpuobs/scripts/gpu_obs_matmul.py --iters 100
+Illegal --gpu-metrics-devices argument: 0.
+Insufficient privilege, see https://developer.nvidia.com/ERR_NVGPUCTRPERM.
+Use the '--gpu-metrics-devices=help' switch to see the full list of values.
+
+usage: nsys profile [<args>] [application] [<application args>]
+Try 'nsys profile --help' for more information.

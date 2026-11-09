@@ -1,0 +1,87 @@
+{
+ "arms": {
+  "plain_eager": {
+   "elapsed_s": 0.029552133986726403,
+   "expected_kernels": 30
+  },
+  "green_p_eager": {
+   "elapsed_s": 0.18295938591472805,
+   "expected_kernels": 30
+  },
+  "green_d_eager": {
+   "elapsed_s": 0.03569814492948353,
+   "expected_kernels": 30
+  },
+  "green_concurrent": {
+   "elapsed_s": 0.186530594015494,
+   "expected_kernels": 60
+  },
+  "graph_replay_d": {
+   "elapsed_s": 0.11709028389304876,
+   "expected_kernels": 150
+  },
+  "graph_replay_p": {
+   "elapsed_s": 0.6089461110532284,
+   "expected_kernels": 150
+  },
+  "small_launch_heavy": {
+   "elapsed_s": 0.03253318788483739,
+   "expected_kernels": 2000
+  },
+  "triton_eager": {
+   "elapsed_s": 0.0008635211270302534,
+   "expected_kernels": 30
+  },
+  "triton_graph_replay": {
+   "elapsed_s": 0.0007966749835759401,
+   "expected_kernels": 50
+  }
+ },
+ "errors": {},
+ "readout": {
+  "plain": {
+   "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+   "cuStreamGetGreenCtx_rc": 0,
+   "green_ctx_is_null": true
+  },
+  "prefill": {
+   "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+   "cuStreamGetGreenCtx_rc": 0,
+   "green_ctx_is_null": false,
+   "cuGreenCtxGetDevResource_rc": 0,
+   "green_sm": {
+    "smCount": 16,
+    "minSmPartitionSize": 4,
+    "smCoscheduledAlignment": 2
+   }
+  },
+  "decode": {
+   "channel": "cuStreamGetGreenCtx + cuGreenCtxGetDevResource",
+   "cuStreamGetGreenCtx_rc": 0,
+   "green_ctx_is_null": false,
+   "cuGreenCtxGetDevResource_rc": 0,
+   "green_sm": {
+    "smCount": 92,
+    "minSmPartitionSize": 2,
+    "smCoscheduledAlignment": 2
+   }
+  }
+ },
+ "split": [
+  16,
+  92
+ ],
+ "replays": 50,
+ "census_d": [
+  "kernel",
+  "kernel",
+  "kernel"
+ ],
+ "kernels_per_replay_d": 3,
+ "census_p": [
+  "kernel",
+  "kernel",
+  "kernel"
+ ],
+ "kernels_per_replay_p": 3
+}

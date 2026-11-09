@@ -1,0 +1,40 @@
+{
+  "argv": [
+    "/opt/pdmux/prefill-layer-alloc/workspace/characterization/experiments/opchar/worker.py",
+    "--model",
+    "nemotron_nano_9b_v2",
+    "--phase",
+    "prefill",
+    "--sizes",
+    "16384",
+    "--sm",
+    "108",
+    "--graph-census",
+    "--out-dir",
+    "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/opchar/ctrl2_pdmux-opchar-050483c-20261013065012/data/order/o08"
+  ],
+  "versions": {
+    "python": "3.14.6",
+    "torch": "2.9.1+cu130",
+    "flashinfer": "0.6.10",
+    "sgl_kernel": "0.4.1",
+    "sglang": "0.0.0.dev0",
+    "triton": "3.5.1"
+  },
+  "device": "NVIDIA A100-SXM4-80GB",
+  "partition": {
+    "mode": "plain",
+    "n_sm_req": 108,
+    "n_sm_realized": 108,
+    "device_sm": 108
+  },
+  "notes": [
+    {
+      "size": 16384,
+      "meta": {
+        "fidelity": "engine-kernels;eager;tp1;contig-kv;single-request-prefill"
+      }
+    }
+  ],
+  "wall_s": 11.174808263778687
+}

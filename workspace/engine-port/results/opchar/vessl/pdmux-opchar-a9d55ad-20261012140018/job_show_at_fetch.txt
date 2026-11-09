@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-opchar-a9d55ad-20261012140018
+Slug:                 job-3fdczheaizqq
+State:                failed
+Image:                ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d
+Command:              bash /io/code/a9d55ada65ad606c9a86a1999104938ec5d17b2c/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-10-12T14:00:25Z
+Started At:           2026-10-12T14:00:27Z
+Completed At:         2026-10-12T14:03:44Z
+Duration:             3m17s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=a9d55ada65ad606c9a86a1999104938ec5d17b2c, PDMUX_JOB_NAME=pdmux-opchar-a9d55ad-20261012140018, PDMUX_CAMPAIGN=opchar, PDMUX_TARGET=workspace/engine-port/results/opchar/opchar_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-runtime@sha256:1e0d335b2e68571c6bc424bed69ad78b481e4f418fc9222a924b4aa302a6867d, PDMUX_SPEC=resourcespec-a100x1, PDMUX_OPCHAR_MODE=probe
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

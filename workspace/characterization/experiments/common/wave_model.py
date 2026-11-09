@@ -30,7 +30,7 @@ from __future__ import annotations
 
 import math
 
-__all__ = ["n_blocks", "waves", "grid_saturation_sm"]
+__all__ = ["n_blocks", "waves", "grid_saturation_sm", "wave_quantization", "gemm_tile_blocks"]
 
 
 def n_blocks(batch: int, seq: int, n_heads: int, chunk: int = 256) -> int:
@@ -103,3 +103,35 @@ def grid_saturation_sm(n_blocks: int, blocks_per_sm: int = 1) -> int:
         int minimum saturating SM count (DERIVED). Always ≥ 1.
     """
     return max(1, math.ceil(n_blocks / max(1, blocks_per_sm)))
+
+
+def wave_quantization(grid_blocks: int, sm_count: int, blocks_per_sm: int = 1) -> dict:
+    """Tail-wave SM idle ratio of ONE kernel launch (DERIVED) -- Bullet (ASPLOS'26) §2.2.1.
+
+    With g thread blocks, N SMs and b resident blocks per SM:
+        w    = ceil(g / (b·N))              waves
+        tail = ceil(g / b − N·(w − 1))      SMs active in the last wave
+        idle = (N − tail) / (N·w)           share of SM-wave slots left idle
+
+    Unlike :func:`waves` this is the *discrete* wave count, so it answers "how much of
+    the launch's SM time is lost to the ragged last wave", not "is the grid big enough".
+    ``grid_blocks`` and ``blocks_per_sm`` should come from the RECORDED launch (CUPTI /
+    Kineto ``grid`` and ``blocks per SM``), never from a guessed tile shape, except in the
+    positive-control test that reproduces Bullet's Table 2.  Kernels that size their grid
+    from the device SM count (persistent kernels) are not described by this formula when
+    run on a green-context partition -- flag those separately.
+    """
+    if grid_blocks < 1 or sm_count < 1 or blocks_per_sm < 1:
+        raise ValueError(f"wave_quantization needs positive ints: g={grid_blocks} "
+                         f"N={sm_count} b={blocks_per_sm}")
+    g, N, b = grid_blocks, sm_count, blocks_per_sm
+    w = math.ceil(g / (b * N))
+    tail = math.ceil(g / b - N * (w - 1))
+    return {"waves": w, "tail_sms": tail, "idle_ratio": (N - tail) / (N * w)}
+
+
+def gemm_tile_blocks(m: int, n: int, tile_m: int, tile_n: int) -> int:
+    """Output-tile count of a non-split-K GEMM (DERIVED): ceil(m/tile_m)·ceil(n/tile_n)."""
+    if min(m, n, tile_m, tile_n) < 1:
+        raise ValueError("gemm_tile_blocks needs positive ints")
+    return math.ceil(m / tile_m) * math.ceil(n / tile_n)

@@ -1,0 +1,47 @@
+$ /data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/target-linux-x64/nsys stats --force-export=true --report cuda_gpu_kern_sum --report cuda_api_sum --report nvtx_sum /tmp/gpuobs/out/2a_trace.nsys-rep
+Generating SQLite file /tmp/gpuobs/out/2a_trace.sqlite from /tmp/gpuobs/out/2a_trace.nsys-rep
+Processing [/tmp/gpuobs/out/2a_trace.sqlite] with [/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/host-linux-x64/reports/cuda_gpu_kern_sum.py]... 
+
+ ** CUDA GPU Kernel Summary (cuda_gpu_kern_sum):
+
+ Time (%)  Total Time (ns)  Instances  Avg (ns)   Med (ns)   Min (ns)  Max (ns)  StdDev (ns)                                                  Name                                                
+ --------  ---------------  ---------  ---------  ---------  --------  --------  -----------  ----------------------------------------------------------------------------------------------------
+     98.2       1446073988        200  7230369.9  7234670.0   7153261   7290958      15283.8  ampere_sgemm_128x64_nn                                                                              
+      1.2         17258589        200    86292.9    86272.0     85632     86688        145.4  void at::native::elementwise_kernel<(int)128, (int)2, void at::native::gpu_kernel_impl_nocast<at::n…
+      0.6          8836708        200    44183.5    44096.0     43520     56352        897.3  void at::native::reduce_kernel<(int)512, (int)1, at::native::ReduceOp<float, at::native::NormTwoOps…
+      0.0           143648          2    71824.0    71824.0     71808     71840         22.6  void at::native::<unnamed>::distribution_elementwise_grid_stride_kernel<float, (int)4, void at::nat…
+
+Processing [/tmp/gpuobs/out/2a_trace.sqlite] with [/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/host-linux-x64/reports/cuda_api_sum.py]... 
+
+ ** CUDA API Summary (cuda_api_sum):
+
+ Time (%)  Total Time (ns)  Num Calls  Avg (ns)   Med (ns)   Min (ns)  Max (ns)  StdDev (ns)                   Name                  
+ --------  ---------------  ---------  ---------  ---------  --------  --------  -----------  ---------------------------------------
+     93.3       1442839760        200  7214198.8  7266759.0     18770   7558510     515211.5  cudaDeviceSynchronize                  
+      4.3         66252097          7  9464585.3  6698507.0   1361978  31483636   10219171.5  cuLibraryLoadData                      
+      2.1         32720288        602    54352.6     9513.0      5674  19715970     821790.9  cudaLaunchKernel                       
+      0.1          2064101        200    10320.5     8227.5      6692     37968       5629.2  cudaMemsetAsync                        
+      0.1          1514252          8   189281.5   191348.0      5158    339274      95731.6  cudaMalloc                             
+      0.0           298288        880      339.0      234.0       125      9459        509.2  cuGetProcAddress_v2                    
+      0.0           160503        602      266.6      227.0       140      1475        137.1  cuKernelGetName                        
+      0.0            59481          1    59481.0    59481.0     59481     59481          0.0  cudaFree                               
+      0.0            46968          7     6709.7     8408.0       789     10232       4109.6  cuLibraryGetKernel                     
+      0.0            31810          9     3534.4     1587.0       278     20000       6232.4  cudaStreamIsCapturing_v10000           
+      0.0            29520         18     1640.0      741.0       614     15636       3498.6  cudaEventCreateWithFlags               
+      0.0            10966          3     3655.3      206.0       150     10610       6023.0  cuModuleGetLoadingMode                 
+      0.0             9484          4     2371.0     2531.0      1546      2876        627.2  cuInit                                 
+      0.0             5792          2     2896.0     2896.0       886      4906       2842.6  cudaEventCreate                        
+      0.0             2115          2     1057.5     1057.5       544      1571        726.2  cudaGetDriverEntryPointByVersion_v12050
+      0.0             1564          1     1564.0     1564.0      1564      1564          0.0  cudaGetDeviceProperties_v12000         
+
+Processing [/tmp/gpuobs/out/2a_trace.sqlite] with [/data/tools/nsight/root/opt/nvidia/nsight-systems/2025.5.2/host-linux-x64/reports/nvtx_sum.py]... 
+
+ ** NVTX Range Summary (nvtx_sum):
+
+ Time (%)  Total Time (ns)  Instances  Avg (ns)   Med (ns)  Min (ns)  Max (ns)   StdDev (ns)   Style     Range  
+ --------  ---------------  ---------  ---------  --------  --------  ---------  -----------  -------  ---------
+     86.5        162463135         50  3249262.7  140562.0    121257  153315084   21655891.9  PushPop  :matmul_0
+      4.8          9050878         50   181017.6  140318.0    118803     574585     101490.6  PushPop  :matmul_1
+      4.4          8253846         50   165076.9  136082.5    118752     388065      63808.5  PushPop  :matmul_2
+      4.3          8103940         50   162078.8  143753.5    115826     364320      58878.5  PushPop  :matmul_3
+

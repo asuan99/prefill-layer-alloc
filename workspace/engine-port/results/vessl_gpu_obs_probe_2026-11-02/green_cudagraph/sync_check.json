@@ -1,0 +1,50 @@
+{
+ "plain/eager/sync_inside_stream_ctx": {
+  "device_sync_ms": 1.012,
+  "residual_ms": 0.004
+ },
+ "plain/eager/sync_outside_stream_ctx": {
+  "device_sync_ms": 1.011,
+  "residual_ms": 0.004
+ },
+ "plain/graph/sync_inside_stream_ctx": {
+  "device_sync_ms": 0.997,
+  "residual_ms": 0.004
+ },
+ "plain/graph/sync_outside_stream_ctx": {
+  "device_sync_ms": 0.996,
+  "residual_ms": 0.003
+ },
+ "green_p16/eager/sync_inside_stream_ctx": {
+  "device_sync_ms": 6.12,
+  "residual_ms": 0.005
+ },
+ "green_p16/eager/sync_outside_stream_ctx": {
+  "device_sync_ms": 6.118,
+  "residual_ms": 0.005
+ },
+ "green_p16/graph/sync_inside_stream_ctx": {
+  "device_sync_ms": 0.031,
+  "residual_ms": 6.064
+ },
+ "green_p16/graph/sync_outside_stream_ctx": {
+  "device_sync_ms": 0.031,
+  "residual_ms": 6.064
+ },
+ "green_d92/eager/sync_inside_stream_ctx": {
+  "device_sync_ms": 1.201,
+  "residual_ms": 0.004
+ },
+ "green_d92/eager/sync_outside_stream_ctx": {
+  "device_sync_ms": 1.199,
+  "residual_ms": 0.004
+ },
+ "green_d92/graph/sync_inside_stream_ctx": {
+  "device_sync_ms": 0.028,
+  "residual_ms": 1.155
+ },
+ "green_d92/graph/sync_outside_stream_ctx": {
+  "device_sync_ms": 0.027,
+  "residual_ms": 1.156
+ }
+}

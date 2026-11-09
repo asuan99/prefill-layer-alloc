@@ -1,0 +1,11 @@
+# >1 MB nsys/sqlite traces kept on disk, not committed (sha256 in SHA256SUMS.remote)
+green_cudagraph/out/graph_r1.sqlite
+green_cudagraph/out/graph_r2.sqlite
+green_cudagraph/out/graph_r3.sqlite
+green_cudagraph/out/node_r1.sqlite
+green_cudagraph/out/node_r2.sqlite
+green_cudagraph/out/node_r3.sqlite
+green_cudagraph/pilot_r1/graph_r1.sqlite
+green_cudagraph/pilot_r1/node_r1.sqlite
+out/2a_trace.sqlite
+wf/trace.sqlite
