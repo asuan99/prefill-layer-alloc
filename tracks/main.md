@@ -21,6 +21,7 @@
 - **opchar main 병합 완료**(`3fcd52c7`, 인용 정지 오탐 17건 커밋 메시지 공시, 사용자 결정 2026-11-09) · 워크로드 대조·LooGLE 실측·모델별 메모리 교차점 = `reports/motivation_gap_2026-11-09/workload_comparison.html`(artifact 2oUyLhRusZDddR5rbDNeyq)
 - **워크로드·모델 범위 결정(사용자, 2026-11-09)**: 주 측정 = 사용자 첫 발화 ShareGPT · openchat_sharegpt4 · arXiv 요약(자연 출력) 단일 분포 셀 + 짧은 요청 rate를 고정하고 LooGLE 5%를 얹는 짝 비교 간섭 셀(부류별 보고, 합산 attainment 주 지표 금지). Mooncake 연기. 상위 용어 = "linear 층"(재귀 상태 층, 합성곱형 LFM2 제외), 주 줄기 Nano-9B-v2(Mamba2), 대조 = Qwen3.5-9B(Gated DeltaNet, L* 약 1.6k) — `reports/motivation_gap_2026-11-09/linear_models.html`(artifact 7PBTQnFiCSybRd85cYgUfB)
 - **실험 순서·재반복 방지 결정(사용자, 2026-11-10)**: piecewise 부팅만 motivation 앞, nsys는 층별 decode 측정의 첫 단계, Qwen3.5-9B는 motivation 뒤(Nano 앵커 포함). 실행 전 자동 검사(구성 카드, 완주 리허설, 원자료 스키마) + PREREG 양식(결과별 다음 행동표, 격자 밖 규칙, arm 묶음 명시, 순서 무작위, 측정 계층까지만 결론)을 계측 단계에 포함
+- **Phase B 세 번째·네 번째 Job 종결(사용자, 2026-11-10)**: 새 motivation 1단계로 대체. 무패치 대 패치 OFF 동등성 확인은 새 설계에 패치 OFF arm 1개로 흡수, SG 정지 비율 예측 검증은 도착 시 정지 측정이 대신
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
@@ -35,8 +36,7 @@
 - **motivation Job 규모** / Nano·W1만 5 arm × 6 rung × 4 seed × 600 s = 부하 구간 20 h, W3·attention 대조는 별도 / 권고: W1에서 mixed 2048 제외(W3에서만), rung 6개 유지, run 300 s, seed별 Job 블록 = 8 h(블록당 2 h). 600 s 원자료 절단(n=1, 기술값): 용량 아래는 120 s로 충분, 경계 점은 300 s에서 통과·600 s에서 탈락 가능
 - **비용 수식 linear 일반화** / FLOPs·decode 항은 Mamba2 전용, s·k 형태만 공통 / 수식 v2로 층별 상태 항 분리(코드·문서·버전 동시, 대조 모델 측정 뒤 권고) · 보류
 - **Flex(2610.37432) 위치 확인** / Attention·SSM 서브배치에 SM 단위 분할, 프로젝트의 층 종류 SM 분할과 직접 인접 / venue-strategist 비교 검토(권고) · 보류
-- **motivation 잔여 결정** / 메모리·cap 범위(아래 결정 13과 묶음) · 실행 이미지(py3.12 권고 대 shim) · attention 대조 모델(Llama-8B 대 a31) · hybrid 고유 여지 측정이 Phase B 세 번째 Job (나)를 대체하는지(권고: 대체)
-- **Phase B 세 번째·네 번째 Job** / 등록 셀 1.82·2.92 req/s는 포화 예보 / (가) 그대로 (나) 용량 근처 rev4 (다) 종결 — hybrid 고유 여지 측정으로 흡수 권고
+- **motivation 잔여 결정** / 메모리·cap 범위(아래 결정 13과 묶음) · 실행 이미지(py3.12 권고 대 shim) · attention 대조 모델(Llama-8B 대 a31)
 - **HE0 셀 부하 재정의** / 동적 arm 혼잡 가드 고정, 원칙 a–d(`policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`) / 2026-11-09 감사: (a)는 주 용량 규칙과 같은 결정·(c)는 cap 결정·(b)(d)는 정책 단계. 결정 전 정책 판정 셀 Job 제출 금지
 - **결정 13 mem 범위** / 0.6이 cap 상향을 막음 / (A) 장문만 0.6, cap 스윕은 mem 0.75 이상(권고, 감사 r1: 0.75는 평균 약 2k 이하에서만 cap 256 수용[유도·하한], 부팅 측정 필요) (B) 0.6 유지
 - **보고서 후속** / (a) HE0 그림의 SG 환산 막대·동적 예상치 표 삭제(권고) (b) 사후 기준 그림 감사 1회 (c) 정지 지표 PREREG 등록(감사 r1: 보조 지표로만, L 격자 사전 고정·n≥4·같은 Job) (d) 수식 v2(causal 계수·ReplaySSM 인용·2s 커널 종속)
