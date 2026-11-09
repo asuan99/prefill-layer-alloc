@@ -30,12 +30,12 @@
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 - 엔진 수정 브랜치 `impl-defects-e123`(worktree `prefill-layer-alloc-implfix`) main 미병합 · 동결 설계 V-O·H-D(`cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4)
 ## 다음 행동
-1. **(다음 시작점)** py3.12 SGLang 이미지(Job 밖 빌드, digest 고정) → piecewise ON Nemotron 부팅 + cap·mem 조합 + 문맥 256k 채우기 부팅 확인 프로브. 이어서 재반복 방지 장치(구성 카드 자동 대조, 완주 리허설, 원자료 스키마)와 새 계측 구현 → 사전 사다리 → motivation PREREG. 순서 전체 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz)
+1. **(다음 시작점)** py3.12 SGLang 이미지 완료(`PDMUX_VESSL_IMAGE_SG312`, sha256:4414b5f9, 공개) → 하네스에서 SG 서버만 py3.12로 띄우도록 수정 후 piecewise ON Nemotron 부팅 + cap·mem 조합 + 문맥 256k 채우기 부팅 확인 프로브. 이어서 재반복 방지 장치(구성 카드 자동 대조, 완주 리허설, 원자료 스키마)와 새 계측 구현 → 사전 사다리 → motivation PREREG. 순서 전체 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz)
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
 3. 아래 결정 뒤 motivation PREREG 초안(감사 2회), 새 probe 구현
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
 ## 사용자 결정 대기
-- **motivation Job 규모** / Nano·W1만 5 arm × 6 rung × 4 seed × 600 s = 부하 구간 20 h, W3·attention 대조는 별도 / 권고: W1에서 mixed 2048 제외(W3에서만), rung 6개 유지, run 300 s, seed별 Job 블록 = 8 h(블록당 2 h). 600 s 원자료 절단(n=1, 기술값): 용량 아래는 120 s로 충분, 경계 점은 300 s에서 통과·600 s에서 탈락 가능
+- **motivation 측정 규모** / 전체 약 163시간(재시도 여유 포함 약 190, Job 시작·부팅·drain 포함, 조건부 일반화·정책 제외) · 준비+상한+1단계 약 63시간 / 1단계까지 먼저 수행 후 재판단(권고) · 전체 일괄. 산출 = `reports/motivation_gap_2026-11-09/roadmap.html`
 - **비용 수식 linear 일반화** / FLOPs·decode 항은 Mamba2 전용, s·k 형태만 공통 / 수식 v2로 층별 상태 항 분리(코드·문서·버전 동시, 대조 모델 측정 뒤 권고) · 보류
 - **Flex(2610.37432) 위치 확인** / Attention·SSM 서브배치에 SM 단위 분할, 프로젝트의 층 종류 SM 분할과 직접 인접 / venue-strategist 비교 검토(권고) · 보류
 - **motivation 잔여 결정** / 실행 이미지(py3.12 권고 대 shim)
