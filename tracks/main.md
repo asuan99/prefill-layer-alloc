@@ -20,13 +20,14 @@
 - **측정 셀·지표 시점**: 전체 연기는 감사 REFUTED, 항목별 연기 GO-with-edits. SLO는 전체 결과 수집 후 사후 계산(tight·loose 별도 측정 불필요, 사용자 지적). 측정 전 고정 = rate 격자·run 길이·도착 과정·cap·고정 D·SLO 평가 범위·읽기 규칙. 동적 컨트롤러는 게이트 8 예외 · HI 배율·수정 비교 방식은 정책 단계
 - **opchar main 병합 완료**(`3fcd52c7`, 인용 정지 오탐 17건 커밋 메시지 공시, 사용자 결정 2026-11-09) · 워크로드 대조·LooGLE 실측·모델별 메모리 교차점 = `reports/motivation_gap_2026-11-09/workload_comparison.html`(artifact 2oUyLhRusZDddR5rbDNeyq)
 - **워크로드·모델 범위 결정(사용자, 2026-11-09)**: 주 측정 = 사용자 첫 발화 ShareGPT · openchat_sharegpt4 · arXiv 요약(자연 출력) 단일 분포 셀 + 짧은 요청 rate를 고정하고 LooGLE 5%를 얹는 짝 비교 간섭 셀(부류별 보고, 합산 attainment 주 지표 금지). Mooncake 연기. 상위 용어 = "linear 층"(재귀 상태 층, 합성곱형 LFM2 제외), 주 줄기 Nano-9B-v2(Mamba2), 대조 = Qwen3.5-9B(Gated DeltaNet, L* 약 1.6k) — `reports/motivation_gap_2026-11-09/linear_models.html`(artifact 7PBTQnFiCSybRd85cYgUfB)
+- **실험 순서·재반복 방지 결정(사용자, 2026-11-10)**: piecewise 부팅만 motivation 앞, nsys는 층별 decode 측정의 첫 단계, Qwen3.5-9B는 motivation 뒤(Nano 앵커 포함). 실행 전 자동 검사(구성 카드, 완주 리허설, 원자료 스키마) + PREREG 양식(결과별 다음 행동표, 격자 밖 규칙, arm 묶음 명시, 순서 무작위, 측정 계층까지만 결론)을 계측 단계에 포함
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 - 엔진 수정 브랜치 `impl-defects-e123`(worktree `prefill-layer-alloc-implfix`) main 미병합 · 동결 설계 V-O·H-D(`cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4)
 ## 다음 행동
-1. **(다음 시작점)** py3.12 이미지 부팅 프로브 1회(Workspace): piecewise ON NemotronH(기준선 확정의 선행) + Qwen3.5-9B 부팅·PD-mux·cudagraph(대조 모델 성립 조건) + Nano decode graph 짧은 nsys node 트레이스(층 종류 분리 가능성)
+1. **(다음 시작점)** py3.12 SGLang 이미지(Job 밖 빌드, digest 고정) → piecewise ON Nemotron 부팅 + 메모리·cap 부팅 확인 프로브. 이어서 재반복 방지 장치(구성 카드 자동 대조, 완주 리허설, 원자료 스키마)와 새 계측 구현 → 사전 사다리 → motivation PREREG. 순서 전체 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz)
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
 3. 아래 결정 뒤 motivation PREREG 초안(감사 2회), 새 probe 구현
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
