@@ -685,3 +685,29 @@ GPU gate prepared, NOT RUN / NOT SUBMITTED: `scripts/vessl/engine_gate_diag.{sh,
       `092e5a10...`). Observer cost unmeasured: instrumentation boot only, never a measurement arm.
     - Fail-closed (intended): every plan sealed on `65cbb49d...` (policy_* `policy_harness/ENGINE_DIGEST.txt`,
       cap_char HD, lockstep_diag) ABORTs on a tree built from this change; those campaigns run from their own commits.
+
+## Motivation observation records, four default-OFF flags (2026-11-10, GPU 0, user approved CPU-only)
+
+40. `multiplex/{decode_probe,admission_probe,multiplexing_mixin}.py` <- `src/multiplex/` (manifest entries 30, 28, 3; entry
+    count stays 30; no new file, no patch, `devtree_manual_edits.patch` and scheduler.py bytes unchanged). File sha256:
+    decode_probe `5e866e36...` -> `c4532328...`, admission_probe -> `4401d3dd...`, mixin -> `b49a51e8...`.
+    **ENGINE_DIGEST `2836112b...` -> `8d8f67201199bd181f64aae043b6a8ec5c6772799dbf964081584684e9e9c858`** (scratch install by
+    `tests/run_diag_tests_with_stub.sh`; the same script on the commit before this change reproduced `2836112b...`).
+    - `PDMUX_PROBE_FORWARD_INTERIOR=1` (needs `PDMUX_DECODE_PROBE_PATH`): `forward_interior` record per DECODE / MIXED / plain
+      EXTEND forward, host-clock stamps at forward entry and return, around `init_forward_metadata` (and the replay variant),
+      around the hybrid backend's `linear_attn_backend.init_forward_metadata` (holds `prepare_mixed` and its `.item()`), and at
+      the model call; joined by `seq`. Instance-level shadows on the backends, `runner.model.forward` and
+      `graph_runner.replay_prepare`, installed only when ON; piecewise and eager paths reach the same objects.
+    - `PDMUX_ADMISSION_REQ_RECORDS=1` (needs `PDMUX_ADMISSION_PATH`): `admission_request` per add and per blocked queue head
+      (rid, t_mono, stop reason kv / cap / other; no slot reason, see `cap_slot_relation`; rem_total, required tokens + basis).
+    - `PDMUX_ADMISSION_MIXED_RATIO=1`: `mixed_opportunity` per decision that produced a batch;
+      `admission_probe.mixed_forward_ratio(records, t_window)` = MIXED among those with running_bs >= 1.
+    - `PDMUX_PHASE_DECODE_SHARE=1` (needs `PDMUX_PHASE_EVENTS=1`): `t_issue_start` on `decode_iteration` via an instance-level
+      `run_batch` shadow installed only when ON; `decode_probe.decode_sm_time_share(records, t_window)`. Two same-line mixin
+      edits outside every cited range; the hook block sits before the M2 block, which must stay last (`test_multigpu_guard`).
+    - cudagraph: host-side Python outside capture (capture is skipped); no new stream group, capture shape, sync or eager path.
+      Observer cost unmeasured: instrumentation boots only, never a measurement arm.
+    - Fail-closed (intended): every plan sealed on `2836112b...` ABORTs on a tree built from this change.
+CPU regression: `tests/test_forward_admission_records.py` (hand tables on fake runners with the real call structure, OFF parity
+incl. the frozen decode-probe golden, probe failure isolation, upstream call structure, 18 source-level mutants killed).
+GPU correctness gate: NOT RUN.

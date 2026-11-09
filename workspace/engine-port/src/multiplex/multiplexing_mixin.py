@@ -2160,7 +2160,7 @@ class SchedulerMultiplexMixin:
     # The observer cost is NOT claimed to be zero: a campaign that turns this
     # on measures it with a symmetric on/off arm (E-1 prereg sec 5).
     def _init_phase_events(self: Scheduler, trace_path: str) -> bool:
-        self.pdmux_phase_events = resolve_phase_events(trace_path); self._init_phase_diag(trace_path)  # PDMUX_PHASE_DIAG (default OFF)
+        self.pdmux_phase_events = resolve_phase_events(trace_path); self._init_phase_diag(trace_path); self._phase_share_init()  # PDMUX_PHASE_DIAG, PDMUX_PHASE_DECODE_SHARE (default OFF)
         self._phase_span_seq = 0
         self._phase_decode_mark = None
         self._phase_events_error_logged = False
@@ -2267,7 +2267,7 @@ class SchedulerMultiplexMixin:
         except (AttributeError, TypeError, ValueError, IndexError) as exc:
             self._phase_events_disable(exc)
             return
-        self._phase_emit("decode_iteration", fields)
+        self._phase_emit("decode_iteration", self._phase_share_fields(fields))  # +t_issue_start iff PDMUX_PHASE_DECODE_SHARE
 
 
 PHASE_EVENT_TYPES = ("prefill_span_start", "prefill_span_end", "decode_iteration")
@@ -2717,6 +2717,96 @@ class _PhaseDiagHooks:
 
 for _name, _fn in list(vars(_PhaseDiagHooks).items()):
     if callable(_fn) and _name.startswith(("_phase_", "_init_phase_diag")):
+        assert not hasattr(SchedulerMultiplexMixin, _name), _name  # never shadow an existing hook
+        setattr(SchedulerMultiplexMixin, _name, _fn)
+del _name, _fn
+
+
+# ----------------------------------------------------------------------------
+# PDMUX_PHASE_DECODE_SHARE  (default OFF; realized decode SM time-share)
+# ----------------------------------------------------------------------------
+# WHAT.  One extra field on the existing `decode_iteration` record:
+# `t_issue_start`, the host clock right BEFORE the decode forward is issued.
+# `t_launch` is stamped AFTER the issue returned (`_phase_on_decode_launch`), so
+# `t_sync - t_launch` leaves out the host issue of every step and cannot be used
+# as a step's dwell time.  `t_sync - t_issue_start` is the step's bracket, and
+# `decode_probe.decode_sm_time_share` turns those brackets into a time-share per
+# `decode_sms`.
+#
+# WHAT `decode_sms` IS.  `sm_counts[stream_idx]` of the stream group the step was
+# issued on: the configured division, not a per-step hardware read-out
+# (PDMUX_GREEN_READOUT is the boot-time read-out).  Index 0 is the unpartitioned
+# prefill group and reads (total, 0), so a decode step there reports
+# decode_sms=0 although it ran on a plain stream; the time-share keeps those
+# steps out of the shares and counts them.
+#
+# SAMPLING GAPS.  (1) Iterations with no decode batch produce no record by design.
+# (2) A telemetry queue overflow drops records: `iter_seq` shows a hole and
+# `dropped_events` is on every later record.  (3) A failed emit disables the phase
+# events for the rest of the boot, which truncates the tail.  (4) Host time between
+# one step's sync and the next issue belongs to no step.  The time-share reports
+# holes, drops and coverage rather than filling any of them in.
+#
+# HOW.  Instance-level shadow of `run_batch`, installed only when the flag is ON,
+# so the OFF path runs no added code in the loop.  It dispatches through the class
+# on every call, so class-level wrappers installed later (chunk/holb probes) stay
+# in the path.  Requires PDMUX_PHASE_EVENTS=1 (refused at boot otherwise).
+def resolve_phase_decode_share(phase_events_on, env=None) -> bool:
+    env = os.environ if env is None else env
+    raw = (env.get("PDMUX_PHASE_DECODE_SHARE", "") or "").strip()
+    if raw in ("", "0"):
+        return False
+    if raw != "1":
+        raise ValueError(
+            f"PDMUX_PHASE_DECODE_SHARE={raw!r}: only unset, '0' or '1' are defined"
+        )
+    if not phase_events_on:
+        raise RuntimeError(
+            "PDMUX_PHASE_DECODE_SHARE=1 requires PDMUX_PHASE_EVENTS=1 (it extends "
+            "the decode_iteration record)"
+        )
+    return True
+
+
+class _PhaseDecodeShareHooks:
+    """Methods attached to SchedulerMultiplexMixin below (see block comment)."""
+
+    def _phase_share_init(self: Scheduler) -> None:
+        self.pdmux_phase_decode_share = resolve_phase_decode_share(
+            getattr(self, "pdmux_phase_events", False)
+        )
+        self._phase_share_t_issue = None
+        if self.pdmux_phase_decode_share:
+            self._phase_share_install()
+
+    def _phase_share_install(self: Scheduler) -> None:
+        shadow = self.__dict__.get("run_batch")
+
+        def run_batch(batch, *args, **kwargs):
+            self._phase_share_stamp(batch)
+            if shadow is not None:
+                return shadow(batch, *args, **kwargs)
+            return type(self).run_batch(self, batch, *args, **kwargs)
+
+        self.run_batch = run_batch
+
+    def _phase_share_stamp(self: Scheduler, batch) -> None:
+        try:
+            if batch is self.running_batch:
+                self._phase_share_t_issue = time.perf_counter()
+        except Exception as exc:  # observation only: never reach the serving path
+            self.pdmux_phase_decode_share = False
+            logger.warning("PDMUX_PHASE_DECODE_SHARE disabled after failure: %s", exc)
+
+    def _phase_share_fields(self: Scheduler, fields: dict) -> dict:
+        if getattr(self, "pdmux_phase_decode_share", False):
+            fields["t_issue_start"] = getattr(self, "_phase_share_t_issue", None)
+            self._phase_share_t_issue = None
+        return fields
+
+
+for _name, _fn in list(vars(_PhaseDecodeShareHooks).items()):
+    if callable(_fn) and _name.startswith("_phase_"):
         assert not hasattr(SchedulerMultiplexMixin, _name), _name  # never shadow an existing hook
         setattr(SchedulerMultiplexMixin, _name, _fn)
 del _name, _fn

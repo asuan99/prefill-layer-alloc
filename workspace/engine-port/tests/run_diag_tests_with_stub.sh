@@ -24,4 +24,4 @@ echo "workdir ${work}"
 cd "${here}"
 SGLANG_ENGINE_DEV="${work}/tree/python" PYTHONPATH="${here}/cpu_stub:${work}/tree/python" \
   python3 -m unittest -v test_phase_diag test_engine_gate_diag test_loadgen_abs_mono test_decode_probe \
-  test_phase_events test_multigpu_guard 2>&1 | tee "${work}/tests.log" | grep -E "^(Ran|OK|FAILED)|\.\.\. (FAIL|ERROR)"
+  test_phase_events test_multigpu_guard test_admission_probe test_forward_admission_records 2>&1 | tee "${work}/tests.log" | grep -E "^(Ran|OK|FAILED)|\.\.\. (FAIL|ERROR)"
