@@ -4,6 +4,7 @@
 > 공유 문서: claude.ai Doc "Motivation 측정 공백 점검"(artifact 2wMCeLCGjjRN9WFJjWTXsC). 증거 사슬 그림, 고리별 현황, 측정별 예상 값과 차트 4개가 들어 있다.
 > 예상 값 계산: 이 디렉터리의 `predict.py`·`predict.json`. `workspace/engine-port`에서 실행한다(CPU, dstar_model·analytic_terms 사용).
 > **다음 세션 과제**: 아래 3절의 각 측정이 **엔진 워크플로우의 어느 지점에서 관측되는가**를 확정한다. 4절은 후보만 적었고 미확정이다.
+> **2026-11-09 사용자 지시**: 이후 보고서는 HTML로 작성하고 측정은 관측 내용으로 부른다. 관측 지점 확정 결과와 측정 이름은 `observation_map.html`이 대체한다. 이 파일은 이력으로 둔다.
 
 ## 1. 증거 사슬 (anchor 주장이 서려면)
 

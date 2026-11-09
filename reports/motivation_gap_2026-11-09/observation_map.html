@@ -1,0 +1,396 @@
+<title>Motivation 관측 지도</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500&family=IBM+Plex+Sans+KR:wght@400;500;700&display=swap">
+<style>
+/* Layout: 엔진 경로를 가로축으로 둔 관측 격자 하나, 그 아래 관측마다 동작 시나리오 도면 한 장 */
+:root{
+  --bg:#f2f5f7; --panel:#ffffff; --fg:#17222b; --muted:#566673; --rule:#cfd9e0;
+  --decode:#2467a8; --decode-tint:#d6e6f5; --prefill:#b5651d; --prefill-tint:#f7e4cf;
+  --ok:#17785f; --ok-tint:#d4efe6; --flag:#96700a; --flag-tint:#f7ecc4; --new:#b02f49; --new-tint:#fadde3;
+  --body:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,Menlo,monospace;
+}
+@media (prefers-color-scheme:dark){:root:not([data-theme="light"]){
+  --bg:#10181f; --panel:#18232c; --fg:#e4ebf0; --muted:#9db0bd; --rule:#33434f;
+  --decode:#74b1ea; --decode-tint:#1c3a55; --prefill:#e6a667; --prefill-tint:#4a3320;
+  --ok:#5fd0ae; --ok-tint:#143f35; --flag:#e3c25a; --flag-tint:#433710; --new:#f28ba0; --new-tint:#4e1f2b;
+  color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#10181f; --panel:#18232c; --fg:#e4ebf0; --muted:#9db0bd; --rule:#33434f;
+  --decode:#74b1ea; --decode-tint:#1c3a55; --prefill:#e6a667; --prefill-tint:#4a3320;
+  --ok:#5fd0ae; --ok-tint:#143f35; --flag:#e3c25a; --flag-tint:#433710; --new:#f28ba0; --new-tint:#4e1f2b;
+  color-scheme:dark}
+body{background:var(--bg);color:var(--fg);font-family:var(--body);font-size:16px;line-height:1.65}
+.wrap{max-width:1000px;margin:0 auto;padding-inline:20px;padding-block:36px 64px;display:grid;gap:36px}
+h1,h2,h3{line-height:1.3;text-wrap:balance;margin:0}
+h1{font-size:30px;font-weight:700}
+h2{font-size:21px;font-weight:700}
+h3{font-size:18px;font-weight:700}
+p{margin:0;max-width:68ch}
+code,.mono{font-family:var(--mono);font-size:.88em}
+.lede{display:grid;gap:10px}
+.note{color:var(--muted);font-size:14.5px}
+section{display:grid;gap:14px;min-width:0}
+figure{margin:0;display:grid;gap:8px;min-width:0}
+figcaption{color:var(--muted);font-size:14px;max-width:72ch}
+.scroll{overflow-x:auto}
+svg{display:block;width:100%;height:auto;color:var(--fg)}
+.wide svg{min-width:860px}
+.scene svg{min-width:640px}
+svg text{font-family:var(--body);font-size:12.5px;fill:currentColor}
+svg text.small{font-size:11.5px}
+svg text.dim{fill:var(--muted)}
+svg text.m{font-family:var(--mono);font-size:11.5px}
+.s-ok{fill:var(--ok-tint);stroke:var(--ok);stroke-width:1.4}
+.s-flag{fill:var(--flag-tint);stroke:var(--flag);stroke-width:1.4;stroke-dasharray:6 3}
+.s-new{fill:var(--new-tint);stroke:var(--new);stroke-width:1.6;stroke-dasharray:2 3}
+.stage{fill:var(--panel);stroke:var(--fg);stroke-width:1.2}
+.grid{stroke:var(--rule);stroke-width:1}
+.line{stroke:currentColor;stroke-width:1.3;fill:none}
+.d{fill:var(--decode-tint);stroke:var(--decode);stroke-width:1.2}
+.p{fill:var(--prefill-tint);stroke:var(--prefill);stroke-width:1.2}
+.n{fill:var(--panel);stroke:var(--muted);stroke-width:1.2}
+.legend{display:flex;flex-wrap:wrap;gap:10px 22px;font-size:14px;color:var(--muted)}
+.legend span{display:inline-flex;align-items:center;gap:7px}
+.chip{width:26px;height:14px;border-radius:3px;display:inline-block}
+.c-ok{background:var(--ok-tint);border:1.4px solid var(--ok)}
+.c-flag{background:var(--flag-tint);border:1.4px dashed var(--flag)}
+.c-new{background:var(--new-tint);border:1.6px dotted var(--new)}
+.scene{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:20px;display:grid;gap:14px;min-width:0}
+.head{display:flex;flex-wrap:wrap;gap:6px 12px;align-items:baseline;justify-content:space-between}
+.pill{font-size:13px;padding:1px 10px;border-radius:99px;white-space:nowrap}
+.pill.ok{background:var(--ok-tint);color:var(--ok)}
+.pill.flag{background:var(--flag-tint);color:var(--flag)}
+.pill.new{background:var(--new-tint);color:var(--new)}
+dl{display:grid;grid-template-columns:7.5em minmax(0,1fr);gap:7px 14px;margin:0;font-size:15px}
+dt{color:var(--muted)}
+dd{margin:0;min-width:0;overflow-wrap:anywhere}
+.base{display:grid;grid-template-columns:repeat(auto-fit,minmax(230px,1fr));gap:12px}
+.base div{background:var(--panel);border:1px solid var(--rule);border-radius:6px;padding:14px 16px;display:grid;gap:4px;align-content:start;min-width:0}
+.base div.primary{border:1.6px solid var(--decode)}
+.base b{font-size:16px}
+.base small{color:var(--muted);font-size:13.5px}
+details{font-size:14.5px;color:var(--muted)}
+summary{cursor:pointer}
+summary:focus-visible{outline:2px solid var(--decode);outline-offset:2px}
+table{border-collapse:collapse;margin-top:8px;font-size:14px}
+th,td{border-bottom:1px solid var(--rule);padding:5px 14px 5px 0;text-align:left;vertical-align:top}
+th{font-weight:500}
+@media (max-width:520px){h1{font-size:25px} dl{grid-template-columns:minmax(0,1fr);gap:2px} dd{margin-bottom:8px}}
+</style>
+
+<div class="wrap">
+
+<header class="lede">
+  <h1>Motivation 관측 지도</h1>
+  <p>앞으로 할 측정 일곱 가지가 엔진 안의 어떤 동작을 보려는 것인지, 그 동작을 지금 계측으로 볼 수 있는지를 한 장에 모았다. 측정은 이제 번호 대신 보려는 동작의 이름으로 부른다.</p>
+  <p class="note">2026-11-09 코드 대조 결과다. GPU 실행은 없고 새 판정도 없다. 확인하지 못한 것: vLLM 0.31.0 내부 코드(로컬에는 0.12.0만 있음), Nano decode graph의 실제 nsys 트레이스(합성 부하만 있음), NemotronH의 piecewise 캡처 성공 여부.</p>
+</header>
+
+<section>
+  <h2>엔진 경로 위의 관측 위치</h2>
+  <div class="legend">
+    <span><i class="chip c-ok"></i>지금 계측으로 볼 수 있음</span>
+    <span><i class="chip c-flag"></i>계측은 있고 플래그를 켜야 함</span>
+    <span><i class="chip c-new"></i>새 probe가 필요함</span>
+  </div>
+  <figure>
+    <div class="scroll wide">
+    <svg viewBox="0 0 940 410" role="img" aria-label="요청이 부팅, 수신과 입장, PD-mux 반복, forward, 출력의 다섯 단계를 지나는 경로 위에 일곱 관측의 위치와 계측 상태를 표시한 격자">
+      <defs><marker id="a0" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+      <g class="stages">
+        <rect class="stage" x="188" y="12" width="132" height="40" rx="4"/><text x="254" y="37" text-anchor="middle">부팅</text>
+        <rect class="stage" x="338" y="12" width="132" height="40" rx="4"/><text x="404" y="37" text-anchor="middle">수신·입장</text>
+        <rect class="stage" x="488" y="12" width="132" height="40" rx="4"/><text x="554" y="37" text-anchor="middle">PD-mux 반복</text>
+        <rect class="stage" x="638" y="12" width="132" height="40" rx="4"/><text x="704" y="37" text-anchor="middle">forward</text>
+        <rect class="stage" x="788" y="12" width="140" height="40" rx="4"/><text x="858" y="37" text-anchor="middle">출력·해제</text>
+        <line class="line" x1="320" y1="32" x2="337" y2="32" marker-end="url(#a0)"/>
+        <line class="line" x1="470" y1="32" x2="487" y2="32" marker-end="url(#a0)"/>
+        <line class="line" x1="620" y1="32" x2="637" y2="32" marker-end="url(#a0)"/>
+        <line class="line" x1="770" y1="32" x2="787" y2="32" marker-end="url(#a0)"/>
+      </g>
+      <line class="grid" x1="0" y1="72" x2="930" y2="72"/><line class="grid" x1="0" y1="120" x2="930" y2="120"/><line class="grid" x1="0" y1="168" x2="930" y2="168"/><line class="grid" x1="0" y1="216" x2="930" y2="216"/><line class="grid" x1="0" y1="264" x2="930" y2="264"/><line class="grid" x1="0" y1="312" x2="930" y2="312"/><line class="grid" x1="0" y1="360" x2="930" y2="360"/><line class="grid" x1="0" y1="408" x2="930" y2="408"/>
+
+      <text x="4" y="101">부팅 메모리 분할</text>
+      <rect class="s-ok" x="188" y="81" width="132" height="30" rx="4"/><text class="small" x="254" y="101" text-anchor="middle">배너의 정적 상한</text>
+      <rect class="s-flag" x="338" y="81" width="132" height="30" rx="4"/><text class="small" x="404" y="101" text-anchor="middle">실제 구속 여부</text>
+
+      <text x="4" y="149">도착 시 decode 정지</text>
+      <rect class="s-new" x="488" y="129" width="132" height="30" rx="4"/><text class="small" x="554" y="149" text-anchor="middle">prefill 발행 비용</text>
+      <rect class="s-new" x="638" y="129" width="132" height="30" rx="4"/><text class="small" x="704" y="149" text-anchor="middle">동기화·launch</text>
+      <rect class="s-ok" x="788" y="129" width="140" height="30" rx="4"/><text class="small" x="858" y="149" text-anchor="middle">클라이언트 토큰 간극</text>
+
+      <text x="4" y="197">층 종류별 decode 시간</text>
+      <rect class="s-new" x="638" y="177" width="132" height="30" rx="4"/><text class="small" x="704" y="197" text-anchor="middle">층별 커널 시간</text>
+
+      <text x="4" y="245">hybrid 고유 여지</text>
+      <rect class="s-new" x="338" y="225" width="132" height="30" rx="4"/><text class="small" x="404" y="245" text-anchor="middle">엔진별 대기·거절</text>
+      <rect class="s-new" x="788" y="225" width="140" height="30" rx="4"/><text class="small" x="858" y="245" text-anchor="middle">엔진 간 ITL 동등성</text>
+
+      <text x="4" y="293">실제 분할 체류 시간</text>
+      <rect class="s-flag" x="488" y="273" width="132" height="30" rx="4"/><text class="small" x="554" y="293" text-anchor="middle">step별 decode SM</text>
+      <rect class="s-ok" x="788" y="273" width="140" height="30" rx="4"/><text class="small" x="858" y="293" text-anchor="middle">TTFT·ITL</text>
+
+      <text x="4" y="341">구속 자원 전환</text>
+      <rect class="s-ok" x="188" y="321" width="132" height="30" rx="4"/><text class="small" x="254" y="341" text-anchor="middle">풀 크기</text>
+      <rect class="s-new" x="338" y="321" width="132" height="30" rx="4"/><text class="small" x="404" y="341" text-anchor="middle">요청별 KV·cap 사유</text>
+      <rect class="s-flag" x="638" y="321" width="132" height="30" rx="4"/><text class="small" x="704" y="341" text-anchor="middle">decode batch 분포</text>
+
+      <text x="4" y="389">분할 전환 대기</text>
+      <rect class="s-flag" x="488" y="369" width="132" height="30" rx="4"/><text class="small" x="554" y="389" text-anchor="middle">drain 대기 시간</text>
+    </svg>
+    </div>
+    <figcaption>새 probe가 가장 많이 필요한 곳은 forward 안쪽과 입장 단계다. 패치 트리 전용 계측은 손대지 않은 SGLang에서 켤 수 없으므로, 기준선 성능 측정과 원인 측정은 서로 다른 boot로 나눈다.</figcaption>
+  </figure>
+</section>
+
+<section>
+  <h2>관측별 동작 시나리오</h2>
+
+  <article class="scene">
+    <div class="head"><h3>도착 시 decode 정지 원인</h3><span class="pill new">새 probe 필요</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 210" role="img" aria-label="decode 토큰이 일정 간격으로 나오다 새 요청 도착 때 긴 간극이 생기고, 그 간극을 host 발행, metadata 동기화, launch, 기타로 나누어 보려는 도식">
+        <defs><marker id="a1" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+        <text x="216" y="16" text-anchor="middle">새 요청 도착</text>
+        <line class="line" x1="216" y1="22" x2="216" y2="50" marker-end="url(#a1)"/>
+        <rect class="d" x="40" y="54" width="40" height="34"/><rect class="d" x="84" y="54" width="40" height="34"/><rect class="d" x="128" y="54" width="40" height="34"/><rect class="d" x="172" y="54" width="40" height="34"/>
+        <rect class="s-new" x="216" y="54" width="122" height="34"/><text class="small" x="277" y="75" text-anchor="middle">토큰 간극</text>
+        <rect class="d" x="342" y="54" width="40" height="34"/><rect class="d" x="386" y="54" width="40" height="34"/><rect class="d" x="430" y="54" width="40" height="34"/>
+        <text x="490" y="68">기본 step 약 21 ms</text>
+        <text x="490" y="86">간극 약 64 ms, ITL SLO 60 ms 바로 위</text>
+        <line class="line" x1="216" y1="88" x2="40" y2="130"/><line class="line" x1="338" y1="88" x2="760" y2="130"/>
+        <rect class="s-new" x="40" y="130" width="180" height="40"/><text x="130" y="155" text-anchor="middle">prefill host 발행</text>
+        <rect class="s-new" x="220" y="130" width="180" height="40"/><text x="310" y="155" text-anchor="middle">Mamba metadata 동기화</text>
+        <rect class="s-new" x="400" y="130" width="180" height="40"/><text x="490" y="155" text-anchor="middle">kernel launch</text>
+        <rect class="s-new" x="580" y="130" width="180" height="40"/><text x="670" y="155" text-anchor="middle">그 외 host 작업</text>
+        <text class="small dim" x="40" y="194">지금 계측은 이 네 칸을 forward 전체 한 구간으로만 잰다. 칸 폭은 미측정이라 균등하게 그렸다.</text>
+      </svg>
+      </div>
+      <figcaption>PD-mux를 켜지 않은 SGLang에서 요청이 도착할 때마다 진행 중인 응답의 토큰이 멈추는 현상이 있다. 그 멈춤 안에서 무엇이 시간을 쓰는지 본다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>모델, 부하, 짧은 프롬프트 구간</dd>
+      <dt>바꾸는 것</dt><dd>piecewise CUDA graph ON과 OFF</dd>
+      <dt>보려는 것</dt><dd>간극 길이와 네 구간의 비중. 기준선의 ITL 점수가 실제로 어디서 깎이는지 알 수 있다.</dd>
+      <dt>더 필요한 것</dt><dd>forward 진입, <code>init_forward_metadata</code> 전후, 첫 launch 시각을 host clock으로 기록하는 probe. 패치 트리의 별도 boot에서 돌린다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>층 종류별 decode 시간과 SM 민감도</h3><span class="pill new">옵션 추가 + 매핑 도구 필요</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 170" role="img" aria-label="decode 한 step의 커널 나열에서 Mamba 전용 커널은 이름으로 구분되지만 공용 커널은 층 매핑이 있어야 구분된다는 도식">
+        <defs><marker id="a2" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+        <text x="20" y="20">decode step 한 번의 커널 순서 (예시 배열)</text>
+        <rect class="d" x="20" y="34" width="100" height="40"/><text class="small" x="70" y="58" text-anchor="middle">Mamba conv</text>
+        <rect class="d" x="124" y="34" width="100" height="40"/><text class="small" x="174" y="58" text-anchor="middle">Mamba SSU</text>
+        <rect class="s-new" x="228" y="34" width="70" height="40"/><text class="small" x="263" y="58" text-anchor="middle">GEMM</text>
+        <rect class="s-new" x="302" y="34" width="84" height="40"/><text class="small" x="344" y="58" text-anchor="middle">RMSNorm</text>
+        <rect class="n" x="390" y="34" width="100" height="40"/><text class="small" x="440" y="58" text-anchor="middle">attention</text>
+        <rect class="s-new" x="494" y="34" width="70" height="40"/><text class="small" x="529" y="58" text-anchor="middle">GEMM</text>
+        <rect class="s-new" x="568" y="34" width="84" height="40"/><text class="small" x="610" y="58" text-anchor="middle">RMSNorm</text>
+        <rect class="d" x="656" y="34" width="100" height="40"/><text class="small" x="706" y="58" text-anchor="middle">Mamba conv</text>
+        <line class="line" x1="344" y1="78" x2="344" y2="108" marker-end="url(#a2)"/>
+        <text x="20" y="128">파란 칸은 커널 이름으로 층 종류를 안다.</text>
+        <text x="20" y="150">점선 칸은 이름이 같아 <tspan class="m">graphNodeId</tspan> → 층 번호 대응표가 있어야 한다. 이 대응 자체가 아직 검증되지 않았다.</text>
+      </svg>
+      </div>
+      <figcaption>SM을 줄였을 때 attention 층과 Mamba 층의 decode 시간이 서로 다르게 늘어나는지 본다. 같은 step을 SM 격자마다 반복해 층 종류별 합을 낸다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>Nano-9B-v2, 배치 크기, 문맥 길이</dd>
+      <dt>바꾸는 것</dt><dd>decode SM 수. arm 순서는 무작위, n≥4</dd>
+      <dt>보려는 것</dt><dd>층 종류별 스케일링 곡선이 갈라지는가. 철회된 KISTI 결과를 대체한다.</dd>
+      <dt>더 필요한 것</dt><dd>nsys 스크립트에 <code>--cuda-graph-trace=node</code> 추가, 매핑 도구. 본 측정 전에 Nano decode graph를 짧게 트레이스하는 확인이 먼저다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>hybrid 고유 여지: 기준선 대 PD-mux</h3><span class="pill new">엔진 간 동등성 확인 필요</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 220" role="img" aria-label="같은 부하 생성기가 네 엔진 구성에 요청을 보내고 엔진마다 다른 토큰 수 필드에서 클라이언트가 같은 방식으로 시각을 찍는 도식">
+        <defs><marker id="a3" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+        <rect class="n" x="10" y="80" width="130" height="60" rx="4"/><text x="75" y="106" text-anchor="middle">같은 trace·seed</text><text x="75" y="125" text-anchor="middle">부하 생성기</text>
+        <rect class="d" x="240" y="10" width="190" height="42" rx="4"/><text x="335" y="36" text-anchor="middle">SGLang mixed (주 기준선)</text>
+        <rect class="n" x="240" y="62" width="190" height="42" rx="4"/><text x="335" y="88" text-anchor="middle">SGLang chunk</text>
+        <rect class="n" x="240" y="114" width="190" height="42" rx="4"/><text x="335" y="140" text-anchor="middle">vLLM 0.31.0</text>
+        <rect class="p" x="240" y="166" width="190" height="42" rx="4"/><text x="335" y="192" text-anchor="middle">PD-mux 구성 묶음</text>
+        <path class="line" d="M140 110L190 31L238 31" marker-end="url(#a3)"/><path class="line" d="M140 110L190 83L238 83" marker-end="url(#a3)"/><path class="line" d="M140 110L190 135L238 135" marker-end="url(#a3)"/><path class="line" d="M140 110L190 187L238 187" marker-end="url(#a3)"/>
+        <text class="small" x="150" y="24">요청</text>
+        <rect class="s-new" x="610" y="70" width="180" height="80" rx="4"/><text x="700" y="100" text-anchor="middle">토큰 수 증가 시각</text><text x="700" y="120" text-anchor="middle">TTFT·ITL 계산</text>
+        <path class="line" d="M430 31L520 31L608 90" marker-end="url(#a3)"/><path class="line" d="M430 187L520 187L608 130" marker-end="url(#a3)"/><path class="line" d="M430 83L520 83L608 102" marker-end="url(#a3)"/><path class="line" d="M430 135L520 135L608 118" marker-end="url(#a3)"/>
+        <text class="m" x="440" y="22">meta_info 토큰 수</text>
+        <text class="m" x="440" y="156">usage 토큰 수</text>
+        <text class="small dim" x="610" y="170">묶여 온 토큰은 ITL 0이 된다.</text>
+        <text class="small dim" x="610" y="188">엔진별 묶음 분포는 비교된 적 없다.</text>
+      </svg>
+      </div>
+      <figcaption>용량 근처 부하에서 PD-mux가 기준선보다 나은 만큼의 여지가 attention 모델과 hybrid 모델에서 다른지 본다. 클라이언트 계산식은 같지만, 토큰 시각이 엔진 간에 같은 사건인지는 확인되지 않았다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>trace, seed, 같은 Job, n≥4</dd>
+      <dt>바꾸는 것</dt><dd>모델(Nano 대 attention 대조)과 엔진 구성 네 가지</dd>
+      <dt>보려는 것</dt><dd>SLO goodput 차이의 크기, 그 차이가 hybrid에서 달라지는가</dd>
+      <dt>더 필요한 것</dt><dd>같은 부하에서 엔진별 토큰 묶음 분포 비교, 부하 중 TTFT 오프셋 판정. vLLM의 대기·거절 계측도 없다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>실제 분할 체류 시간과 분할 선택</h3><span class="pill flag">플래그 필요</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 210" role="img" aria-label="prefill과 decode가 함께 있을 때만 SM을 나누고 나머지 구간은 전체 SM을 쓰는 동작과, 하네스 기록이 전체 시간을 목표 분할로 적는 차이를 보이는 도식">
+        <text x="0" y="50">SM</text>
+        <rect class="d" x="60" y="20" width="170" height="90"/><text x="145" y="70" text-anchor="middle">decode 108</text>
+        <rect class="p" x="230" y="20" width="200" height="53"/><text x="330" y="51" text-anchor="middle">prefill 64</text>
+        <rect class="d" x="230" y="73" width="200" height="37"/><text x="330" y="96" text-anchor="middle">decode 44</text>
+        <rect class="d" x="430" y="20" width="130" height="90"/><text x="495" y="70" text-anchor="middle">decode 108</text>
+        <rect class="p" x="560" y="20" width="130" height="53"/><text x="625" y="51" text-anchor="middle">prefill 64</text>
+        <rect class="d" x="560" y="73" width="130" height="37"/><text x="625" y="96" text-anchor="middle">decode 44</text>
+        <rect class="d" x="690" y="20" width="100" height="90"/><text x="740" y="70" text-anchor="middle">decode 108</text>
+        <text x="0" y="146" class="small">하네스</text>
+        <rect class="s-new" x="60" y="130" width="730" height="24"/><text class="small" x="425" y="147" text-anchor="middle">전 구간을 목표값 D44로 기록</text>
+        <text x="0" y="186" class="small">실제</text>
+        <rect class="d" x="60" y="170" width="170" height="24"/><rect class="s-flag" x="230" y="170" width="200" height="24"/><rect class="d" x="430" y="170" width="130" height="24"/><rect class="s-flag" x="560" y="170" width="130" height="24"/><rect class="d" x="690" y="170" width="100" height="24"/>
+        <text class="small" x="145" y="187" text-anchor="middle">108</text><text class="small" x="330" y="187" text-anchor="middle">44</text><text class="small" x="495" y="187" text-anchor="middle">108</text><text class="small" x="625" y="187" text-anchor="middle">44</text><text class="small" x="740" y="187" text-anchor="middle">108</text>
+      </svg>
+      </div>
+      <figcaption>정적 분할이라도 분할은 prefill과 decode가 함께 있을 때만 적용된다. D를 바꿨을 때 결과가 달라지려면 그 D가 실제로 쓰인 시간이 있어야 하므로, 체류 비율을 먼저 재고 그 위에서 hybrid 항이 최적 D를 바꾸는지 비교한다. 구간 길이는 예시다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>hybrid 항 유무로 D 예측이 갈리는 셀, 부하, 같은 Job</dd>
+      <dt>바꾸는 것</dt><dd>decode SM 수 D 두 값</dd>
+      <dt>보려는 것</dt><dd>실제 D 체류 비율과 goodput 차이. hybrid 차이가 분할 결정을 바꾸는가를 답한다.</dd>
+      <dt>더 필요한 것</dt><dd><code>PDMUX_TELEMETRY_PATH</code>와 <code>PDMUX_PHASE_EVENTS=1</code>. 지금 정책 하네스는 이 플래그를 금지하므로 계측용 boot를 따로 둔다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>구속 자원 전환: KV 메모리 대 동시 실행 상한</h3><span class="pill new">요청 단위 probe 필요</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 190" role="img" aria-label="대기열의 요청이 동시 실행 상한과 KV 메모리 검사를 통과해야 실행되며, 막히면 대기열에 남는데 그 사유를 요청별로 기록하려는 도식">
+        <defs><marker id="a4" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+        <rect class="n" x="10" y="30" width="120" height="50" rx="4"/><text x="70" y="60" text-anchor="middle">대기열</text>
+        <rect class="n" x="200" y="30" width="170" height="50" rx="4"/><text x="285" y="52" text-anchor="middle">동시 실행 상한</text><text class="small" x="285" y="70" text-anchor="middle">running &lt; cap</text>
+        <rect class="n" x="440" y="30" width="170" height="50" rx="4"/><text x="525" y="52" text-anchor="middle">KV 메모리</text><text class="small" x="525" y="70" text-anchor="middle">입력 + 출력 예약</text>
+        <rect class="d" x="680" y="30" width="110" height="50" rx="4"/><text x="735" y="60" text-anchor="middle">실행</text>
+        <line class="line" x1="130" y1="55" x2="198" y2="55" marker-end="url(#a4)"/><line class="line" x1="370" y1="55" x2="438" y2="55" marker-end="url(#a4)"/><line class="line" x1="610" y1="55" x2="678" y2="55" marker-end="url(#a4)"/>
+        <line class="line" x1="285" y1="80" x2="285" y2="118" marker-end="url(#a4)"/><line class="line" x1="525" y1="80" x2="525" y2="118" marker-end="url(#a4)"/>
+        <rect class="s-new" x="205" y="120" width="160" height="34" rx="4"/><text class="small" x="285" y="141" text-anchor="middle">대기 잔류, 사유 cap</text>
+        <rect class="s-new" x="445" y="120" width="160" height="34" rx="4"/><text class="small" x="525" y="141" text-anchor="middle">대기 잔류, 사유 KV</text>
+        <text class="small dim" x="10" y="178">radix OFF에서 cap을 지정하면 Mamba 슬롯 수 = cap이라 슬롯은 별도 사유가 되지 못한다. 검사 순서는 도식이다.</text>
+      </svg>
+      </div>
+      <figcaption>문맥이 짧으면 동시 실행 상한이, 길면 KV 메모리가 입장을 막을 것으로 본다. 그 전환점이 어디인지, 요청 하나하나가 왜 대기했는지를 본다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>cap, 메모리 비율, radix OFF</dd>
+      <dt>바꾸는 것</dt><dd>문맥 길이 분포(전환점 양쪽 셀)</dd>
+      <dt>보려는 것</dt><dd>구속 자원별 goodput, 전환점의 위치. 기존 계획의 "슬롯 대 KV"는 "cap 대 KV"로 바꾼다.</dd>
+      <dt>더 필요한 것</dt><dd>요청 ID, 결정 시각, 정지 사유, 남은 토큰, 필요 토큰을 남기는 요청 단위 레코드. 지금 probe는 1초 창 집계라 요청을 구분하지 못한다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>분할 전환 대기와 동적 정책 여지</h3><span class="pill flag">플래그만 켜면 됨</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 150" role="img" aria-label="컨트롤러가 목표 분할을 바꾸면 진행 중인 prefill과 decode 완료를 기다린 뒤 스트림을 재구성하고 새 분할로 재개하는 시간선">
+        <defs><marker id="a5" viewBox="0 0 8 8" refX="7" refY="4" markerWidth="7" markerHeight="7" orient="auto"><path d="M0 0L8 4L0 8z" fill="currentColor"/></marker></defs>
+        <line class="line" x1="30" y1="20" x2="30" y2="62" marker-end="url(#a5)"/><text x="10" y="14">목표 변경</text>
+        <rect class="p" x="30" y="66" width="240" height="40"/><text x="150" y="91" text-anchor="middle">진행 중 prefill 대기</text>
+        <rect class="d" x="270" y="66" width="160" height="40"/><text x="350" y="91" text-anchor="middle">decode 대기</text>
+        <rect class="n" x="430" y="66" width="180" height="40"/><text x="520" y="91" text-anchor="middle">스트림 재구성</text>
+        <rect class="d" x="610" y="66" width="180" height="40"/><text x="700" y="91" text-anchor="middle">새 분할로 재개</text>
+        <path class="line" d="M30 118V128H430V118"/><text class="small" x="230" y="145" text-anchor="middle">drain 이벤트가 재는 구간</text>
+        <text class="small dim" x="440" y="145">재구성 시간은 포함되지 않는다.</text>
+      </svg>
+      </div>
+      <figcaption>동적 정책이 분할을 바꿀 때 치르는 대기를 본다. 정적 분할보다 나을 여지가 3%를 넘을 때만 진행하는 측정이다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>변화 trace, 컨트롤러 튜닝은 평가 SLO에 맞춰 재수행</dd>
+      <dt>바꾸는 것</dt><dd>정적 분할 대 동적 정책</dd>
+      <dt>보려는 것</dt><dd>전환 횟수, drain 대기, 분할 체류, goodput 차이</dd>
+      <dt>더 필요한 것</dt><dd><code>PDMUX_TELEMETRY_PATH</code>, <code>PDMUX_PHASE_EVENTS=1</code>, <code>PDMUX_PHASE_DIAG=1</code>. 기존 <code>switch_count</code>는 목표 변경 수이며 drain 횟수가 아니다.</dd>
+    </dl>
+  </article>
+
+  <article class="scene">
+    <div class="head"><h3>부팅 메모리 분할과 동시 실행 상한 범위</h3><span class="pill ok">정적 값은 지금 가능</span></div>
+    <figure>
+      <div class="scroll">
+      <svg viewBox="0 0 800 130" role="img" aria-label="GPU 메모리 중 메모리 비율 안쪽이 KV 토큰 풀과 Mamba 슬롯 풀로 나뉘고, 나머지가 모델과 graph 몫이라는 도식">
+        <rect class="n" x="20" y="30" width="760" height="44"/>
+        <rect class="d" x="20" y="30" width="360" height="44"/><text x="200" y="57" text-anchor="middle">KV 토큰 풀</text>
+        <rect class="p" x="380" y="30" width="170" height="44"/><text x="465" y="57" text-anchor="middle">Mamba 슬롯 풀</text>
+        <text x="665" y="57" text-anchor="middle">모델·graph·기타</text>
+        <path class="line" d="M20 84V92H550V84"/><text class="small" x="285" y="110" text-anchor="middle">메모리 비율 (후보 0.70·0.75·0.80) 안에서 나뉘는 몫</text>
+        <text class="small dim" x="20" y="20">폭은 예시다.</text>
+      </svg>
+      </div>
+      <figcaption>메모리 비율을 올렸을 때 동시 실행 상한 256으로 부팅되는지, 실제로 어느 자원이 먼저 막히는지 본다.</figcaption>
+    </figure>
+    <dl>
+      <dt>고정</dt><dd>모델, 컨텍스트 길이, radix OFF</dd>
+      <dt>바꾸는 것</dt><dd>메모리 비율, 동시 실행 상한</dd>
+      <dt>보려는 것</dt><dd>부팅 가능 여부와 실효 상한. 다른 측정이 쓸 승계 상수를 정한다.</dd>
+      <dt>더 필요한 것</dt><dd>하네스 파서에 <code>max_total_num_tokens</code> 추가. 실제 구속 여부는 <code>PDMUX_ADMISSION_PATH</code>로 본다.</dd>
+    </dl>
+  </article>
+</section>
+
+<section>
+  <h2>비교 기준선</h2>
+  <p>2026-11-09 결정: SGLang v0.5.10과 vLLM 0.31.0으로 버전을 고정하고, chunk와 mixed를 모두 기준선으로 두며, 주 비교 대상은 SGLang mixed다. 리뷰어 관점 감사(1회차)는 이 결정을 조건부로 유지할 수 있다고 봤다.</p>
+  <div class="base">
+    <div class="primary"><b>SGLang mixed</b><small>주 비교 대상</small><span><code>--enable-mixed-chunk</code>, chunk 8192. upstream 기본은 OFF이므로 "SGLang 기본"이라고 쓰지 않는다.</span></div>
+    <div><b>SGLang chunked</b><small>기준선, 같은 그림에 필수 병기</small><span>chunk 8192. 이쪽이 upstream 기본 구성이다.</span></div>
+    <div><b>SGLang mixed 2048</b><small>감사 권고 추가</small><span>조율되지 않았다는 비판을 막는다. 판독은 긴 입력 워크로드에서.</span></div>
+    <div><b>vLLM</b><small>대표 기준선</small><span>0.31.0 기본 구성</span></div>
+  </div>
+  <h3>감사가 요구한 변경 (사용자 확인 대기)</h3>
+  <dl>
+    <dt>이득 표기</dt><dd>각 부하점에서 네 기준선 중 최선과 비교한다. Phase B(piecewise OFF)를 예시로 대입하면 기준선 선택만으로 PD-mux 이득이 약 1배에서 약 80배까지 움직인다. 이 배수는 인용 금지 예시값이다.</dd>
+    <dt>근거 문장</dt><dd>"코드베이스가 SGLang을 따른다"는 엔진 선택의 이유이며 플래그 선택의 이유는 되지 못한다. 주 비교 대상으로 둔 이유는 "공간 분할의 시간축 대안인 co-batching과의 구조 대조"로 쓴다.</dd>
+    <dt>순서</dt><dd>이 프로젝트에서 piecewise ON NemotronH는 부팅된 적이 없다. 이미지 확인(권고 py3.12)이 기준선 확정보다 먼저다. 실패하면 모든 SGLang 주장에 "piecewise OFF" 범위를 단다.</dd>
+    <dt>mixed 발화</dt><dd>플래그 검사로는 실제 혼합을 알 수 없다. 같은 argv의 계측 boot에서 mixed forward 비율을 잰다. mixed iteration은 decode graph를 쓰지 못하므로 Phase B의 mixed 열세는 piecewise ON으로 옮겨 말할 수 없다.</dd>
+    <dt>워크로드</dt><dd>W1은 입력 최대가 8192보다 작아 chunk 크기를 평가하지 못한다. 2048 chunk도 W1에서는 200요청당 약 4.6건만 발화한다. chunk 주장에는 W3 또는 1k–4k 혼합이 필요하다.</dd>
+  </dl>
+</section>
+
+<section>
+  <h2>측정 셀·지표 정의를 정하는 시점</h2>
+  <p>전체를 motivation 실험 뒤로 미루면 결과를 본 뒤 정의를 고르게 되어 감사에서 불가로 판정됐다. 항목별로 나누면 일부만 미룰 수 있다.</p>
+  <div class="base">
+    <div><b>측정 전에 고정</b><small>사후 계산이 불가능하거나 판정을 좌우함</small><span>rate 격자, run 길이, 도착 과정, trace, seed, 동시 실행 상한(cap), 고정 D, SLO 평가 범위와 읽기 규칙, 인용할 rung 규칙. rate 격자는 평가 범위에서 가장 엄격한 SLO의 용량 경계까지 감싸야 한다.</span></div>
+    <div><b>측정 후 계산</b><small>원시 토큰 시각에서 계산, 규칙은 사전 등록</small><span>TTFT·ITL SLO별 attainment 전체 곡선, 용량 정의별 값(버스트, 안정성, 포화 완료율), 정지 지표. 부하 생성기는 정해진 도착 시각으로 요청을 보내고 토큰별 시각을 저장하므로 SLO를 입력으로 받지 않는 arm은 재계산할 수 있다.</span></div>
+    <div><b>정책 단계로 연기</b><small>motivation에 컨트롤러가 없음</small><span>HI 배율 원칙, 수정 전후 비교 방식, 혼잡 가드 상호작용. motivation 데이터는 정책 확증에 재사용하지 않는다.</span></div>
+  </div>
+  <p class="note">원시 데이터가 있어도 격자 밖 rate, 수집하지 않은 길이, 다른 도착 과정, 다른 cap은 계산할 수 없다. 5 arm × 6 rung × 4 seed를 600 s로 돌리면 부하 구간만 20시간, 300 s로 10시간이라 arm·rung·길이 축소를 측정 전에 정해야 한다.</p>
+</section>
+
+<details>
+  <summary>이전 문서의 표기와 대조</summary>
+  <div class="scroll">
+  <table>
+    <tr><th>이 페이지의 이름</th><th>이전 표기</th></tr>
+    <tr><td>비교 기준선 정의</td><td>D1</td></tr>
+    <tr><td>측정 셀·지표 정의</td><td>D2</td></tr>
+    <tr><td>부팅 메모리 분할과 동시 실행 상한 범위</td><td>D3</td></tr>
+    <tr><td>도착 시 decode 정지 원인</td><td>M1</td></tr>
+    <tr><td>층 종류별 decode 시간과 SM 민감도</td><td>M2 (결함 원문 확인은 M2a)</td></tr>
+    <tr><td>hybrid 고유 여지: 기준선 대 PD-mux</td><td>M3</td></tr>
+    <tr><td>실제 분할 체류 시간과 분할 선택</td><td>M4 (갈리는 셀 탐색은 M4a)</td></tr>
+    <tr><td>구속 자원 전환: KV 메모리 대 동시 실행 상한</td><td>M5</td></tr>
+    <tr><td>분할 전환 대기와 동적 정책 여지</td><td>M6</td></tr>
+  </table>
+  </div>
+</details>
+
+</div>
