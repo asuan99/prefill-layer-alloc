@@ -19,19 +19,21 @@
 - **비교 기준선 결정(사용자, 2026-11-09)**: SGLang v0.5.10·vLLM 0.31.0 고정, SG chunk·SG mixed·vLLM 모두 기준선, 주 비교 대상 SG mixed. 감사 r1 GO-with-edits(PLAUSIBLE): 사유 "코드베이스가 SGLang을 따름"은 REFUTED(플래그 선택 근거 아님), SG-mix 단독 이득 표기 불가 · 감사 조건(부하점별 최선 기준선 대비, SG-chunked 병기, mixed 2048 추가, 이미지 프로브 선행, 근거 문장 교체) 전부 수용(사용자, 2026-11-09)
 - **측정 셀·지표 시점**: 전체 연기는 감사 REFUTED, 항목별 연기 GO-with-edits. SLO는 전체 결과 수집 후 사후 계산(tight·loose 별도 측정 불필요, 사용자 지적). 측정 전 고정 = rate 격자·run 길이·도착 과정·cap·고정 D·SLO 평가 범위·읽기 규칙. 동적 컨트롤러는 게이트 8 예외 · HI 배율·수정 비교 방식은 정책 단계
 - **opchar main 병합 완료**(`3fcd52c7`, 인용 정지 오탐 17건 커밋 메시지 공시, 사용자 결정 2026-11-09) · 워크로드 대조·LooGLE 실측·모델별 메모리 교차점 = `reports/motivation_gap_2026-11-09/workload_comparison.html`(artifact 2oUyLhRusZDddR5rbDNeyq)
+- **워크로드·모델 범위 결정(사용자, 2026-11-09)**: 주 측정 = 사용자 첫 발화 ShareGPT · openchat_sharegpt4 · arXiv 요약(자연 출력) 단일 분포 셀 + 짧은 요청 rate를 고정하고 LooGLE 5%를 얹는 짝 비교 간섭 셀(부류별 보고, 합산 attainment 주 지표 금지). Mooncake 연기. 상위 용어 = "linear 층"(재귀 상태 층, 합성곱형 LFM2 제외), 주 줄기 Nano-9B-v2(Mamba2), 대조 = Qwen3.5-9B(Gated DeltaNet, L* 약 1.6k) — `reports/motivation_gap_2026-11-09/linear_models.html`(artifact 7PBTQnFiCSybRd85cYgUfB)
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 - 엔진 수정 브랜치 `impl-defects-e123`(worktree `prefill-layer-alloc-implfix`) main 미병합 · 동결 설계 V-O·H-D(`cap_char/PLAN_V_oracle_gap_dynamic_headroom_2026-10-26.md` rev4)
 ## 다음 행동
-1. **(다음 시작점)** py3.12 이미지에서 piecewise ON NemotronH 부팅 프로브(기준선 확정의 선행) · Nano decode graph 짧은 nsys node 트레이스(층 종류 분리 가능성 확인) · opchar 병합 마무리
+1. **(다음 시작점)** py3.12 이미지 부팅 프로브 1회(Workspace): piecewise ON NemotronH(기준선 확정의 선행) + Qwen3.5-9B 부팅·PD-mux·cudagraph(대조 모델 성립 조건) + Nano decode graph 짧은 nsys node 트레이스(층 종류 분리 가능성)
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
 3. 아래 결정 뒤 motivation PREREG 초안(감사 2회), 새 probe 구현
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
 ## 사용자 결정 대기
 - **motivation Job 규모** / Nano·W1만 5 arm × 6 rung × 4 seed × 600 s = 부하 구간 20 h, W3·attention 대조는 별도 / 권고: W1에서 mixed 2048 제외(W3에서만), rung 6개 유지, run 300 s, seed별 Job 블록 = 8 h(블록당 2 h). 600 s 원자료 절단(n=1, 기술값): 용량 아래는 120 s로 충분, 경계 점은 300 s에서 통과·600 s에서 탈락 가능
-- **워크로드 세트** / 짧은 챗만으로는 hybrid 구간에 못 닿음(L* 대조) / 사용자 첫 발화 ShareGPT + openchat_sharegpt4 + arXiv 요약(자연 출력) + LooGLE 혼합 셀(권고), Mooncake 연기
+- **비용 수식 linear 일반화** / FLOPs·decode 항은 Mamba2 전용, s·k 형태만 공통 / 수식 v2로 층별 상태 항 분리(코드·문서·버전 동시, 대조 모델 측정 뒤 권고) · 보류
+- **Flex(2610.37432) 위치 확인** / Attention·SSM 서브배치에 SM 단위 분할, 프로젝트의 층 종류 SM 분할과 직접 인접 / venue-strategist 비교 검토(권고) · 보류
 - **motivation 잔여 결정** / 메모리·cap 범위(아래 결정 13과 묶음) · 실행 이미지(py3.12 권고 대 shim) · attention 대조 모델(Llama-8B 대 a31) · hybrid 고유 여지 측정이 Phase B 세 번째 Job (나)를 대체하는지(권고: 대체)
 - **Phase B 세 번째·네 번째 Job** / 등록 셀 1.82·2.92 req/s는 포화 예보 / (가) 그대로 (나) 용량 근처 rev4 (다) 종결 — hybrid 고유 여지 측정으로 흡수 권고
 - **HE0 셀 부하 재정의** / 동적 arm 혼잡 가드 고정, 원칙 a–d(`policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`) / 2026-11-09 감사: (a)는 주 용량 규칙과 같은 결정·(c)는 cap 결정·(b)(d)는 정책 단계. 결정 전 정책 판정 셀 Job 제출 금지
