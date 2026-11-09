@@ -18,7 +18,7 @@
 - **관측 지점 코드 확정 완료** = **`reports/motivation_gap_2026-11-09/observation_map.html`**(artifact FzF3JCzNx8KLQ9sfqk7HgM): 측정 7개의 동작 시나리오·계측 상태·옛 번호 대조표. 새 probe 필요 = 도착 시 decode 정지 원인, 층 종류별 decode 시간, 엔진 간 ITL 동등성, 요청별 KV·cap 사유 · 분할 체류 시간·전환 대기는 플래그로 가능
 - **비교 기준선 결정(사용자, 2026-11-09)**: SGLang v0.5.10·vLLM 0.31.0 고정, SG chunk·SG mixed·vLLM 모두 기준선, 주 비교 대상 SG mixed. 감사 r1 GO-with-edits(PLAUSIBLE): 사유 "코드베이스가 SGLang을 따름"은 REFUTED(플래그 선택 근거 아님), SG-mix 단독 이득 표기 불가 · 감사 조건(부하점별 최선 기준선 대비, SG-chunked 병기, mixed 2048 추가, 이미지 프로브 선행, 근거 문장 교체) 전부 수용(사용자, 2026-11-09)
 - **측정 셀·지표 시점**: 전체 연기는 감사 REFUTED, 항목별 연기 GO-with-edits. SLO는 전체 결과 수집 후 사후 계산(tight·loose 별도 측정 불필요, 사용자 지적). 측정 전 고정 = rate 격자·run 길이·도착 과정·cap·고정 D·SLO 평가 범위·읽기 규칙. 동적 컨트롤러는 게이트 8 예외 · HI 배율·수정 비교 방식은 정책 단계
-- **opchar 병합 승인됨, 미완료**: 충돌 1건(양쪽 추가된 이력 파일)뿐이나 커밋 전 인용 정지 검사가 raw CSV 숫자 일치 17건으로 실패해 중단. main은 그대로
+- **opchar main 병합 완료**(`3fcd52c7`, 인용 정지 오탐 17건 커밋 메시지 공시, 사용자 결정 2026-11-09) · 워크로드 대조·LooGLE 실측·모델별 메모리 교차점 = `reports/motivation_gap_2026-11-09/workload_comparison.html`(artifact 2oUyLhRusZDddR5rbDNeyq)
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
@@ -31,7 +31,7 @@
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
 ## 사용자 결정 대기
 - **motivation Job 규모** / Nano·W1만 5 arm × 6 rung × 4 seed × 600 s = 부하 구간 20 h, W3·attention 대조는 별도 / 권고: W1에서 mixed 2048 제외(W3에서만), rung 6개 유지, run 300 s, seed별 Job 블록 = 8 h(블록당 2 h). 600 s 원자료 절단(n=1, 기술값): 용량 아래는 120 s로 충분, 경계 점은 300 s에서 통과·600 s에서 탈락 가능
-- **opchar 병합의 인용 정지 오탐 처리** / 17건 전부 raw CSV 숫자 우연 일치(정본의 인용 금지 수치와 형태만 같은 측정값·타임스탬프), 검사 도구 주석이 면제 확대를 경계 / 도구 수정 없이 이번 병합만 커밋 메시지에 공시(권고) · `results/opchar/**/*.csv` 면제 · CSV 제외 병합
+- **워크로드 세트** / 짧은 챗만으로는 hybrid 구간에 못 닿음(L* 대조) / 사용자 첫 발화 ShareGPT + openchat_sharegpt4 + arXiv 요약(자연 출력) + LooGLE 혼합 셀(권고), Mooncake 연기
 - **motivation 잔여 결정** / 메모리·cap 범위(아래 결정 13과 묶음) · 실행 이미지(py3.12 권고 대 shim) · attention 대조 모델(Llama-8B 대 a31) · hybrid 고유 여지 측정이 Phase B 세 번째 Job (나)를 대체하는지(권고: 대체)
 - **Phase B 세 번째·네 번째 Job** / 등록 셀 1.82·2.92 req/s는 포화 예보 / (가) 그대로 (나) 용량 근처 rev4 (다) 종결 — hybrid 고유 여지 측정으로 흡수 권고
 - **HE0 셀 부하 재정의** / 동적 arm 혼잡 가드 고정, 원칙 a–d(`policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`) / 2026-11-09 감사: (a)는 주 용량 규칙과 같은 결정·(c)는 cap 결정·(b)(d)는 정책 단계. 결정 전 정책 판정 셀 Job 제출 금지

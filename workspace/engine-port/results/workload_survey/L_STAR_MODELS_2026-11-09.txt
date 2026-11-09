@@ -1,0 +1,15 @@
+model | nA/nM | s_MB | k_B/tok | L* | c* | slots48_GB | >L*: W1 W3 LooGLE | ssm dtype override
+ibm-granite_granite-4.0-h-micro | 4/36 | 76.4 | 8192 | 9331 | 18662 | 3.67 | 0.000 0.260 1.000 | None
+ibm-granite_granite-4.0-h-small | 4/36 | 152.8 | 16384 | 9327 | 18655 | 7.34 | 0.000 0.262 1.000 | None
+ibm-granite_granite-4.0-h-tiny | 4/36 | 57.3 | 8192 | 7000 | 14000 | 2.75 | 0.000 0.451 1.000 | None
+nvidia_NVIDIA-Nemotron-Nano-9B-v2-Base | 4/27 | 143.5 | 16384 | 8762 | 17523 | 6.89 | 0.000 0.314 1.000 | None
+nvidia_Nemotron-H-47B-Reasoning-128K | 5/45 | 760.5 | 20480 | 37134 | 74268 | 36.50 | 0.000 0.000 0.386 | None
+nvidia_Nemotron-H-8B-Reasoning-128K | 4/24 | 102.1 | 16384 | 6234 | 12468 | 4.90 | 0.000 0.535 1.000 | None
+tiiuae_Falcon-H1-7B-Instruct | 44/44 | 139.4 | 45056 | 3093 | 6186 | 6.69 | 0.005 0.863 1.000 | None
+tiiuae--Falcon-H1-3B-Instruct | 32/32 | 135.1 | 32768 | 4123 | 8246 | 6.48 | 0.000 0.766 1.000 | None
+nvidia--Nemotron-H-8B-Base-8K | 4/24 | 102.1 | 16384 | 6234 | 12468 | 4.90 | 0.000 0.535 1.000 | None
+analytic-v1 (2026-10-22)
+a4 4 27 143.5 16384 8762 17523
+a13 13 18 95.7 53248 1797 3594
+a22 22 9 47.8 90112 531 1062
+a31 31 0 0.0 126976 0 0
