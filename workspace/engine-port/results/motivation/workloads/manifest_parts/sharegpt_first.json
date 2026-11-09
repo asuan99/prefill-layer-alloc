@@ -1,0 +1,45 @@
+{
+ "input": {
+  "cv": 2.2301,
+  "max": 3897,
+  "mean": 230.1,
+  "min": 4,
+  "n": 56132,
+  "p1": 4,
+  "p25": 14,
+  "p5": 7,
+  "p50": 33,
+  "p75": 142,
+  "p90": 693,
+  "p95": 1324,
+  "p99": 2708
+ },
+ "length_table": "lengths/sharegpt_first.json",
+ "n_records": 56132,
+ "output": {
+  "cv": 0.7121,
+  "max": 2145,
+  "mean": 285.724,
+  "min": 4,
+  "n": 56132,
+  "p1": 8,
+  "p25": 127,
+  "p5": 26,
+  "p50": 251,
+  "p75": 392,
+  "p90": 585,
+  "p95": 723,
+  "p99": 822
+ },
+ "output_mode": "ignore_eos=True, output_tokens = reply length",
+ "pool_sha256": "f3bd82bc87826c9aa06d525c6296a7a3b0a503d14d18f86184d30c8100b92255",
+ "prompt": "harness convention: [1]*n_input (length only, no text content)",
+ "rule": "first human turn -> first gpt reply; both >= 4 tokens; total <= 4000 (ph_trace.build_sharegpt_lengths)",
+ "source": {
+  "dataset": "ShareGPT_V3_unfiltered_cleaned_split.json",
+  "sha256": "35f0e213ce091ed9b9af2a1f0755e9d39f9ccec34ab281cd4ca60d70f6479ba4",
+  "volume_path": "/data/hf/raw/ShareGPT_V3_unfiltered_cleaned_split.json"
+ },
+ "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "workload": "sharegpt_first"
+}

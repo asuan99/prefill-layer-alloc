@@ -1,0 +1,50 @@
+{
+ "input": {
+  "cv": 0.924,
+  "max": 8152,
+  "mean": 2244.827,
+  "min": 1,
+  "n": 34512,
+  "p1": 10,
+  "p25": 542,
+  "p5": 25,
+  "p50": 1597,
+  "p75": 3512,
+  "p90": 5591,
+  "p95": 6542,
+  "p99": 7529
+ },
+ "length_table": "lengths/openchat_rounds.json",
+ "lengths_sha256": "d66d7c9cac0fdad69b83b706029312ec969f54a5fb306606e300d679a389c4b6",
+ "n_records": 34512,
+ "output": {
+  "cv": 0.6019,
+  "max": 1887,
+  "mean": 362.106,
+  "min": 1,
+  "n": 34512,
+  "p1": 5,
+  "p25": 192,
+  "p5": 38,
+  "p50": 345,
+  "p75": 513,
+  "p90": 666,
+  "p95": 764,
+  "p99": 838
+ },
+ "output_mode": "ignore_eos=True, output_tokens = reply length",
+ "prompt": "real text, conversation prefix token ids",
+ "rule": "gpt-turn rounds with cumulative input > 0 and input + reply <= 8192; turn tokens concatenated, no chat template, no special tokens",
+ "source": {
+  "dataset": "openchat/openchat_sharegpt4_dataset sharegpt_gpt4.json",
+  "sha256": "4bde74653bade4d1869a50ce0d7b253d73411ad4a44c9e737dc271d06198c4a0"
+ },
+ "token_file": {
+  "bytes": 57189571,
+  "n_payload_tokens": 14014894,
+  "name": "openchat_rounds_tokens_v1.bin",
+  "sha256": "a6fac9bc4046d581082989227e22a2d1dee0a5f911c84b949ef5cf5d4c04ee5f"
+ },
+ "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "workload": "openchat_rounds"
+}

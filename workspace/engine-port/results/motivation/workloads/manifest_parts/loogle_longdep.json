@@ -1,0 +1,52 @@
+{
+ "input": {
+  "cv": 0.3979,
+  "max": 68375,
+  "mean": 32801.017,
+  "min": 13459,
+  "n": 1096,
+  "p1": 14013,
+  "p25": 18864,
+  "p5": 14621,
+  "p50": 35187,
+  "p75": 41936,
+  "p90": 48229,
+  "p95": 52995,
+  "p99": 64420
+ },
+ "length_table": "lengths/loogle_longdep.json",
+ "lengths_sha256": "24c13d8559d460602b85d3ee54f3d37ffa60240a56c5f50d4977bb224de54a00",
+ "n_docs": 140,
+ "n_excluded": 5,
+ "n_records": 1096,
+ "output": {
+  "cv": 1.7226,
+  "max": 326,
+  "mean": 14.853,
+  "min": 1,
+  "n": 1096,
+  "p1": 1,
+  "p25": 3,
+  "p5": 2,
+  "p50": 7,
+  "p75": 15,
+  "p90": 37,
+  "p95": 55,
+  "p99": 134
+ },
+ "output_mode": "ignore_eos=True, output_tokens = answer length",
+ "prompt": "real text, context + question token ids, no instruction",
+ "rule": "longdep_qa; input = context + question tokens, input <= 94800, input + output <= 96000; output = max(1, answer tokens); 5 excluded",
+ "source": {
+  "dataset": "LooGLE longdep_qa.jsonl",
+  "sha256": "6c047bc6e904e5fd632e44a2f2624d75e85fe0f871c6b74bcfffa918bf2f3624"
+ },
+ "token_file": {
+  "bytes": 18775956,
+  "n_payload_tokens": 4681689,
+  "name": "loogle_longdep_tokens_v1.bin",
+  "sha256": "9586fbbeeeb4117ef0c14b5dd6e7981bad26a320716b78d0531fa082807ceb17"
+ },
+ "tokenizer_sha256": "3277c00fe5fb3963b3cb7c07b7f183722d2af4d775a4aea7cfb3684d7cccbc2f",
+ "workload": "loogle_longdep"
+}
