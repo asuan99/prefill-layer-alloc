@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-11-09T17:42:18Z	pdmux-py312-probe-23e0601-20261109174208	23e06016c07bf29190b7bb8c8eac7be5bd63afcc	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82	workspace/engine-port/scripts/vessl/py312_probe_job.sh		no
