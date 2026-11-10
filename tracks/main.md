@@ -13,7 +13,7 @@
 - promote 필요: 아니오 (이번 세션 코드 검토·예상 값은 공시 후보·사전 예측이라 감사 전 반영 안 함)
 - promote 필요: 아니오 (10차 반영 2026-11-10; 결정 — 2026-11-09 비교 기준선, opchar = 고리 1 보조 근거, 작업 방식: 보고서는 md 금지·HTML, 측정은 번호 대신 보려는 동작 이름으로 부름 → 메모리 반영)
 - promote 필요: 아니오 (10차 반영 2026-11-10; 감사 — 기준선·측정 셀 정의 시점 r1, 판정 요약 `reports/motivation_gap_2026-11-09/observation_map.html`, 새 판정 등급 없음)
-- promote 필요: 아니오 (10차 반영 2026-11-10; 결정 — 2026-11-10 프로브 후속 결정, 위 현재 상태 줄; 프로브 자체는 부팅 확인이라 측정 결과 아님)
+- promote 필요: 예 (결정) — 2026-11-10 SG 주 기준선 piecewise OFF·a31 비-hybrid 경로, 위 현재 상태 줄(직전 프로브 후속 결정은 10차 반영됨)
 ## 현재 상태 (2026-11-10)
 - **결론**: 제안 기법 설계 이전에 motivation 증거 사슬(고리 1–4)이 서 있지 않다. 고리 2는 검증 0, 고리 3은 KISTI 8월 결과뿐, 고리 4는 셀 정의가 판정을 막음. 이전 실험 목록 = `reports/motivation_gap_2026-11-09/PRIOR_EXPERIMENTS_AND_PLAN.md`(이력) · 공유 Doc artifact 2wMCeLCGjjRN9WFJjWTXsC
 - **관측 지점 코드 확정 완료** = **`reports/motivation_gap_2026-11-09/observation_map.html`**(artifact FzF3JCzNx8KLQ9sfqk7HgM): 측정 7개의 동작 시나리오·계측 상태·옛 번호 대조표. 새 probe 필요 = 도착 시 decode 정지 원인, 층 종류별 decode 시간, 엔진 간 ITL 동등성, 요청별 KV·cap 사유 · 분할 체류 시간·전환 대기는 플래그로 가능
@@ -26,7 +26,7 @@
 - **동시 실행 상한과 decode 메모리 트래픽 측정 추가(사용자, 2026-11-10)**: 1단계 앞. 고정 배치 = 문맥 2⁷–2¹⁸ 2배 간격, 배치 1–256(메모리 허용 범위, Nano 75셀·a31 60셀, 비분할 108 SM, chunked 채우기, mem 0.82) + 서빙 mem {0.6, 0.75}(cap 48)·cap {48,128,256}(mem 0.75). 결과의 cap·mem이 이후 측정 고정값. 결정 13 (A)/(B)는 이 측정으로 대체. 256k는 Nano 선언 최대 131,072 초과라 시간 측정 전용
 - **attention 대조 모델 결정(사용자, 2026-11-10)**: a31(Nano 골격, 조성 변형)을 주 대조, Llama-8B를 외부 기준 한 점으로
 - **측정 규모 결정(사용자, 2026-11-10)**: 전체 약 163시간(재시도 여유 포함 약 190) 중 준비·상한·1단계 약 63시간만 먼저 수행하고 결과로 2·3단계를 재판단. `reports/motivation_gap_2026-11-09/roadmap.html`
-- **프로브 후속 결정(사용자, 2026-11-10)**: PD-mux 주 arm은 piecewise OFF 유지(chunk −1이 기본 capture 목록을 비워 공개 구현 기본 동작이 prefill graph 없음), capture 크기 명시 부팅은 변형 arm 후보로만 시험 · 2차 단기 Job 승인(dry-run 뒤 제출) · 하네스 등록 기본값 승인(리허설=하네스 digest, SG arm flashinfer·seed 1, SLO TTFT{1,2,3,5}s×ITL{40,60,80,100}ms, 읽기 규칙 ≥3·75%·0.03, 부류 {512,2048}, 확장 2칸 — 전부 `results/motivation/mo_spec.py`에 등록 확인)
+- **SG 기준선·a31 결정(사용자, 2026-11-10 2차)**: SG 주 기준선 = piecewise OFF(upstream 코드 기본은 ON이나 실험 기능 표시, 공개 PD-mux·BulletServe prefill은 eager, Nano Mamba는 ON이어도 eager), 패치 없는 트리 ON 1개 = 민감도 arm `SG_PIECEWISE_ON`, 표기 "SGLang v0.5.10, piecewise OFF" · PD-mux prefill graph 변형은 더 보지 않음 · vLLM a31 = `layer_types` 전부 attention으로 비-hybrid 경로(부팅 확인 전, 안 되면 전용 클래스) · 2차 단기 Job 회수 `results/mo_shortcheck/`: 패치 트리 piecewise ON 부팅 실패(ContextVar), PD-mux 관측 기록 출력 동등 · 구현은 branch `worktree-agent-aa1c27e62b06cc105`(미병합) · 하네스 등록 기본값(리허설=하네스 digest, SG arm flashinfer·seed 1, SLO TTFT{1,2,3,5}s×ITL{40,60,80,100}ms, 읽기 규칙 ≥3·75%·0.03, 부류 {512,2048}, 확장 2칸) 유지
 - **arXiv 요약 출력 조건 결정(사용자, 2026-11-10)**: 기존 "자연 출력"은 요약 지시 없는 프롬프트로 98.2%가 상한 1,024에 닿아 사실상 1,024 고정이었음(정정). 주 조건 = 초록 길이 고정 출력, 변형 = 1,024 고정. "자연 출력" 표기 금지. vLLM의 a31은 프로브 뒤 hybrid 블록 정렬 비활성 방법을 짧게 시험, 안 되면 공시
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
