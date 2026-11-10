@@ -1,0 +1,3273 @@
+{
+ "status": "prediction only, not citable; dstar_model proposal r0 (decision 61), analytic-v1 prior",
+ "version": "dstar-model proposal r0 (2026-10-30)",
+ "analytic": "analytic-v1 (2026-10-22)",
+ "b0_ms_per_req_derived": 0.1408027621383031,
+ "dd_ms_per_req_by_mode": {
+  "108u": 0.22588075673680708,
+  "16": 0.6364035904813432,
+  "24": 0.43802039595602343,
+  "34": 0.360586952929371,
+  "44": 0.29586813714112475,
+  "64": 0.2773611457240139
+ },
+ "u_by_D": {
+  "16": 0.2212475923207898,
+  "24": 0.3214525246729366,
+  "34": 0.39048213196411036,
+  "44": 0.475897011076736,
+  "64": 0.5076513574774738,
+  "108": 0.6233499664708685
+ },
+ "summary": {
+  "n_cells": 108,
+  "n_differs_corrected": 56,
+  "n_differs_predictpy": 40,
+  "predictpy_differ_cells_not_in_corrected": 0,
+  "degenerate_cells": 6
+ },
+ "rows": [
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 5.36,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.05,
+    "24": 3.68,
+    "34": 4.9,
+    "44": 5.07,
+    "64": 5.36
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 8.09,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.75,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 5.29,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.91,
+    "24": 3.57,
+    "34": 4.85,
+    "44": 5.02,
+    "64": 5.29
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 7.98,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.64,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 5.22,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.78,
+    "24": 3.47,
+    "34": 4.81,
+    "44": 4.97,
+    "64": 5.22
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 7.87,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.54,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 6.27,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 2.05,
+    "24": 3.68,
+    "34": 4.75,
+    "44": 5.31,
+    "64": 6.27
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 10.04,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 10.04,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 6.15,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.91,
+    "24": 3.57,
+    "34": 4.64,
+    "44": 5.21,
+    "64": 6.15
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 10.04,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 9.97,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|whole",
+   "workload": "sharegpt_first",
+   "band": "whole",
+   "n": 56132,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 285.7,
+   "ctx_decode": 373.0,
+   "D_full": 64,
+   "lam_full": 6.03,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.78,
+    "24": 3.47,
+    "34": 4.53,
+    "44": 5.1,
+    "64": 6.03
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 10.04,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 9.81,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.3,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.07,
+    "24": 1.86,
+    "34": 2.3,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.65,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.3,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.01,
+    "24": 1.81,
+    "34": 2.3,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.62,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.3,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 1.75,
+    "34": 2.3,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.59,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.3,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.07,
+    "24": 1.86,
+    "34": 2.3,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.66,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.3,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.01,
+    "24": 1.81,
+    "34": 2.3,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.66,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|whole",
+   "workload": "openchat_rounds",
+   "band": "whole",
+   "n": 34512,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 362.1,
+   "ctx_decode": 2425.9,
+   "D_full": 34,
+   "lam_full": 2.27,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 1.75,
+    "34": 2.27,
+    "44": 1.94,
+    "64": 1.14
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.62,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 2.3,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = abstract",
+   "workload": "arxiv_summ",
+   "band": "whole, output = abstract",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 202.8,
+   "ctx_decode": 7217.8,
+   "D_full": 16,
+   "lam_full": 0.71,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.71,
+    "24": 0.59,
+    "34": 0.44,
+    "44": 0.27,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.71,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.71,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.58,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.34,
+    "24": 0.58,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.59,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.59,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.58,
+   "binding_full": [
+    "ITL",
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.32,
+    "24": 0.58,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 0.58,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 0.58,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.57,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 0.3,
+    "24": 0.57,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 0.58,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 0.58,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.58,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.34,
+    "24": 0.58,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.59,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.59,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.58,
+   "binding_full": [
+    "ITL",
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.32,
+    "24": 0.58,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 0.58,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 0.58,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|whole, output = CAP2 observed natural",
+   "workload": "arxiv_summ",
+   "band": "whole, output = CAP2 observed natural",
+   "n": 5906,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 1007.3,
+   "ctx_decode": 7620.0,
+   "D_full": 24,
+   "lam_full": 0.57,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 0.3,
+    "24": 0.57,
+    "34": 0.43,
+    "44": 0.26,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 0.58,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 0.58,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "loogle_longdep|whole (long stream alone)",
+   "workload": "loogle_longdep",
+   "band": "whole (long stream alone)",
+   "n": 1096,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 14.9,
+   "ctx_decode": 32808.4,
+   "D_full": 16,
+   "lam_full": 0.0,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.0,
+    "24": 0.0,
+    "34": 0.0,
+    "44": 0.0,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.0,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.0,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": true,
+   "tied_full": true
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 5.97,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 4.19,
+    "34": 5.62,
+    "44": 5.76,
+    "64": 5.97
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 9.71,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 9.35,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 5.92,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 4.07,
+    "34": 5.59,
+    "44": 5.72,
+    "64": 5.92
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 9.6,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 9.25,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 5.88,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 3.95,
+    "34": 5.56,
+    "44": 5.69,
+    "64": 5.88
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 9.49,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 9.14,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 7.15,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 4.19,
+    "34": 5.43,
+    "44": 6.07,
+    "64": 7.15
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 13.98,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 13.15,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 7.03,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 4.07,
+    "34": 5.31,
+    "44": 5.96,
+    "64": 7.03
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 13.78,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 12.96,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 0-255",
+   "workload": "sharegpt_first",
+   "band": "input 0-255",
+   "n": 45563,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 279.0,
+   "ctx_decode": 185.0,
+   "D_full": 64,
+   "lam_full": 6.92,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 2.32,
+    "24": 3.95,
+    "34": 5.19,
+    "44": 5.85,
+    "64": 6.92
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 20.0,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 12.79,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.29,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.63,
+    "24": 2.89,
+    "34": 3.83,
+    "44": 4.01,
+    "64": 4.29
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.6,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.6,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.22,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.52,
+    "24": 2.81,
+    "34": 3.79,
+    "44": 3.96,
+    "64": 4.22
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.52,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.52,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.15,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.42,
+    "24": 2.73,
+    "34": 3.75,
+    "44": 3.91,
+    "64": 4.15
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.44,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.44,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.93,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.63,
+    "24": 2.89,
+    "34": 3.73,
+    "44": 4.17,
+    "64": 4.93
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 6.49,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 6.49,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.82,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.52,
+    "24": 2.81,
+    "34": 3.64,
+    "44": 4.08,
+    "64": 4.82
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 6.38,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 6.38,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 256-1023",
+   "workload": "sharegpt_first",
+   "band": "input 256-1023",
+   "n": 6623,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 328.5,
+   "ctx_decode": 700.0,
+   "D_full": 64,
+   "lam_full": 4.71,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.42,
+    "24": 2.73,
+    "34": 3.55,
+    "44": 3.99,
+    "64": 4.71
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 6.28,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 6.28,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.24,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.37,
+    "24": 2.39,
+    "34": 3.12,
+    "44": 3.24,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.85,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.85,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.2,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.29,
+    "24": 2.32,
+    "34": 3.07,
+    "44": 3.2,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.83,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.83,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.16,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.2,
+    "24": 2.25,
+    "34": 3.03,
+    "44": 3.16,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.81,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.81,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.32,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.37,
+    "24": 2.39,
+    "34": 3.07,
+    "44": 3.32,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.85,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.85,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.32,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.29,
+    "24": 2.32,
+    "34": 2.99,
+    "44": 3.32,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.85,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.85,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 1024-2047",
+   "workload": "sharegpt_first",
+   "band": "input 1024-2047",
+   "n": 2642,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 308.8,
+   "ctx_decode": 1593.8,
+   "D_full": 44,
+   "lam_full": 3.27,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.2,
+    "24": 2.25,
+    "34": 2.91,
+    "44": 3.27,
+    "64": 2.2
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.85,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.85,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.2,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.28,
+    "24": 2.2,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.22,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.14,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.2,
+    "24": 2.14,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.16,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.07,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.13,
+    "24": 2.07,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.1,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.2,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.28,
+    "24": 2.2,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.22,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.14,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.2,
+    "24": 2.14,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.16,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "sharegpt_first|input 2048-4095",
+   "workload": "sharegpt_first",
+   "band": "input 2048-4095",
+   "n": 1304,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 255.6,
+   "ctx_decode": 2805.3,
+   "D_full": 24,
+   "lam_full": 2.07,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.13,
+    "24": 2.07,
+    "34": 2.05,
+    "44": 1.75,
+    "64": 1.12
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.34,
+   "D_nostate_predictpy": 24,
+   "lam_nostate_predictpy": 2.1,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 4.76,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.34,
+    "34": 4.49,
+    "44": 4.59,
+    "64": 4.76
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 7.75,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.47,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 4.72,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.24,
+    "34": 4.47,
+    "44": 4.57,
+    "64": 4.72
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 7.66,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.39,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 4.69,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.15,
+    "34": 4.44,
+    "44": 4.54,
+    "64": 4.69
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 7.58,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 7.31,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 5.71,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.34,
+    "34": 4.33,
+    "44": 4.84,
+    "64": 5.71
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 18.04,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 10.6,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 5.61,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.24,
+    "34": 4.24,
+    "44": 4.75,
+    "64": 5.61
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 17.92,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 10.45,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 0-255",
+   "workload": "openchat_rounds",
+   "band": "input 0-255",
+   "n": 5924,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 351.3,
+   "ctx_decode": 255.0,
+   "D_full": 64,
+   "lam_full": 5.52,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.95,
+    "24": 3.15,
+    "34": 4.14,
+    "44": 4.67,
+    "64": 5.52
+   },
+   "D_nostate_corrected": 64,
+   "lam_nostate_corrected": 17.79,
+   "D_nostate_predictpy": 64,
+   "lam_nostate_predictpy": 10.32,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 4.08,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.56,
+    "24": 2.75,
+    "34": 3.65,
+    "44": 3.82,
+    "64": 4.08
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.28,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.28,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 4.02,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.46,
+    "24": 2.67,
+    "34": 3.6,
+    "44": 3.77,
+    "64": 4.02
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.2,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.2,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 3.95,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.36,
+    "24": 2.6,
+    "34": 3.56,
+    "44": 3.72,
+    "64": 3.95
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.13,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.13,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 4.69,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.56,
+    "24": 2.75,
+    "34": 3.55,
+    "44": 3.97,
+    "64": 4.69
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 6.07,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 6.07,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 4.58,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.46,
+    "24": 2.67,
+    "34": 3.47,
+    "44": 3.88,
+    "64": 4.58
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.98,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.98,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 256-1023",
+   "workload": "openchat_rounds",
+   "band": "input 256-1023",
+   "n": 7287,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 335.4,
+   "ctx_decode": 798.8,
+   "D_full": 64,
+   "lam_full": 4.48,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.36,
+    "24": 2.6,
+    "34": 3.38,
+    "44": 3.8,
+    "64": 4.48
+   },
+   "D_nostate_corrected": 44,
+   "lam_nostate_corrected": 5.88,
+   "D_nostate_predictpy": 44,
+   "lam_nostate_predictpy": 5.88,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 2.88,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.19,
+    "24": 2.08,
+    "34": 2.74,
+    "44": 2.88,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.55,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.55,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 2.84,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.12,
+    "24": 2.02,
+    "34": 2.7,
+    "44": 2.84,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.52,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.52,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 2.79,
+   "binding_full": [
+    "SLOT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.04,
+    "24": 1.96,
+    "34": 2.66,
+    "44": 2.79,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.48,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.48,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 3.0,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.19,
+    "24": 2.08,
+    "34": 2.68,
+    "44": 3.0,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.69,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.69,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 2.93,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.12,
+    "24": 2.02,
+    "34": 2.61,
+    "44": 2.93,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.69,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.69,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 1024-2047",
+   "workload": "openchat_rounds",
+   "band": "input 1024-2047",
+   "n": 6617,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 367.3,
+   "ctx_decode": 1686.1,
+   "D_full": 44,
+   "lam_full": 2.86,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.04,
+    "24": 1.96,
+    "34": 2.55,
+    "44": 2.86,
+    "64": 2.11
+   },
+   "D_nostate_corrected": 34,
+   "lam_nostate_corrected": 3.69,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.69,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 1.63,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.88,
+    "24": 1.58,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.82,
+    "24": 1.53,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 1.63,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.88,
+    "24": 1.58,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 2048-4095",
+   "workload": "openchat_rounds",
+   "band": "input 2048-4095",
+   "n": 7789,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 381.8,
+   "ctx_decode": 3156.7,
+   "D_full": 34,
+   "lam_full": 1.83,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.82,
+    "24": 1.53,
+    "34": 1.83,
+    "44": 1.56,
+    "64": 0.98
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 2.1,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 1.83,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.74,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.7,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.65,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.74,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.7,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "openchat_rounds|input 4096-8191",
+   "workload": "openchat_rounds",
+   "band": "input 4096-8191",
+   "n": 6895,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 372.3,
+   "ctx_decode": 5894.9,
+   "D_full": 24,
+   "lam_full": 0.99,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.65,
+    "24": 0.99,
+    "34": 0.85,
+    "44": 0.69,
+    "64": 0.35
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.11,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.11,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.0,
+    "24": 3.43,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 3.49,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.88,
+    "24": 3.33,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.44,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.76,
+    "24": 3.23,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.44,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 2.0,
+    "24": 3.43,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 3.49,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.88,
+    "24": 3.33,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.44,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 1024-2047",
+   "workload": "arxiv_summ",
+   "band": "input 1024-2047",
+   "n": 236,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 170.8,
+   "ctx_decode": 1695.7,
+   "D_full": 34,
+   "lam_full": 3.44,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.76,
+    "24": 3.23,
+    "34": 3.44,
+    "44": 2.96,
+    "64": 1.95
+   },
+   "D_nostate_corrected": 24,
+   "lam_nostate_corrected": 3.91,
+   "D_nostate_predictpy": 34,
+   "lam_nostate_predictpy": 3.44,
+   "differs_corrected": true,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.49,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.4,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.31,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.49,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.4,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 2048-4095",
+   "workload": "arxiv_summ",
+   "band": "input 2048-4095",
+   "n": 940,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 182.4,
+   "ctx_decode": 3299.6,
+   "D_full": 24,
+   "lam_full": 1.92,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.31,
+    "24": 1.92,
+    "34": 1.67,
+    "44": 1.42,
+    "64": 0.88
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 2.12,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 2.12,
+   "differs_corrected": true,
+   "differs_predictpy": true,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 1.03,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.03,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 1.0,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.0,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 0.94,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 1.03,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 1.03,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 1.0,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 1.0,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 4096-8191",
+   "workload": "arxiv_summ",
+   "band": "input 4096-8191",
+   "n": 2638,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 200.7,
+   "ctx_decode": 6095.5,
+   "D_full": 16,
+   "lam_full": 0.94,
+   "binding_full": [
+    "ITL"
+   ],
+   "lam_full_by_D": {
+    "16": 0.94,
+    "24": 0.91,
+    "34": 0.77,
+    "44": 0.62,
+    "64": 0.27
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 1.03,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 1.03,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 48,
+   "rho": 1.13,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 48,
+   "rho": 1.16,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 48,
+   "rho": 1.19,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 128,
+   "rho": 1.13,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 128,
+   "rho": 1.16,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  },
+  {
+   "id": "arxiv_summ|input 8192-16384",
+   "workload": "arxiv_summ",
+   "band": "input 8192-16384",
+   "n": 2031,
+   "cap": 128,
+   "rho": 1.19,
+   "ER": 220.2,
+   "ctx_decode": 11323.1,
+   "D_full": 16,
+   "lam_full": 0.36,
+   "binding_full": [
+    "TTFT"
+   ],
+   "lam_full_by_D": {
+    "16": 0.36,
+    "24": 0.28,
+    "34": 0.17,
+    "44": 0.03,
+    "64": 0.0
+   },
+   "D_nostate_corrected": 16,
+   "lam_nostate_corrected": 0.36,
+   "D_nostate_predictpy": 16,
+   "lam_nostate_predictpy": 0.36,
+   "differs_corrected": false,
+   "differs_predictpy": false,
+   "degenerate_all_zero": false,
+   "tied_full": false
+  }
+ ]
+}
