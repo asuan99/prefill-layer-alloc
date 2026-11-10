@@ -1,0 +1,91 @@
+{
+ "schema": "mo_shortcheck/v1",
+ "engine_digest": {
+  "expected": "8d8f67201199bd181f64aae043b6a8ec5c6772799dbf964081584684e9e9c858",
+  "checked_by": "mo_shortcheck_job.sh (engine_digest.py check) before any boot"
+ },
+ "stages": [
+  "S1",
+  "S2",
+  "S3",
+  "S4"
+ ],
+ "boot_fixed": {
+  "mem": 0.6,
+  "cap": 48,
+  "context": 20480,
+  "vllm_chunk": 8192,
+  "vllm_backend": "FLASHINFER",
+  "sg_venv_freeze": "boot-test"
+ },
+ "s2_order": [
+  "pm_on_default",
+  "pm_on_max16384",
+  "pm_off_main",
+  "pm_on_max8192"
+ ],
+ "s3_order": [
+  "as_is",
+  "block16",
+  "mamba0",
+  "nohybridkv"
+ ],
+ "s4_orders": [
+  [
+   "SG",
+   "PM"
+  ],
+  {
+   "SG": [
+    "OFF",
+    "ON",
+    "ON",
+    "OFF"
+   ],
+   "PM": [
+    "OFF",
+    "ON",
+    "ON",
+    "OFF"
+   ]
+  }
+ ],
+ "ctx_requests": [
+  [
+   262128,
+   16,
+   "http_400"
+  ],
+  [
+   262016,
+   16,
+   "ok"
+  ],
+  [
+   262127,
+   16,
+   "ok"
+  ]
+ ],
+ "boot_ids": {
+  "S1": [
+   "ctx262144"
+  ],
+  "S2": [
+   "pm_on_default",
+   "pm_on_max16384",
+   "pm_off_main",
+   "pm_on_max8192"
+  ],
+  "S4": [
+   "s4_SG_OFF_a",
+   "s4_SG_ON_a",
+   "s4_SG_ON_b",
+   "s4_SG_OFF_b",
+   "s4_PM_OFF_a",
+   "s4_PM_ON_a",
+   "s4_PM_ON_b",
+   "s4_PM_OFF_b"
+  ]
+ }
+}

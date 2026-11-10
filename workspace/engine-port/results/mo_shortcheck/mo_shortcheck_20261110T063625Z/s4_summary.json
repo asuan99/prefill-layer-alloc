@@ -1,0 +1,246 @@
+{
+ "SG": {
+  "equivalence": {
+   "pairs": {
+    "OFF_a~OFF_b": null,
+    "ON_a~ON_b": null,
+    "ON_a~OFF_a": null,
+    "ON_a~OFF_b": null,
+    "ON_b~OFF_a": null,
+    "ON_b~OFF_b": null
+   },
+   "within_boot_repeat": {
+    "OFF_a": null,
+    "ON_a": null,
+    "ON_b": null,
+    "OFF_b": null
+   },
+   "verdict": "INCOMPLETE",
+   "note": "sequential greedy outputs, text sha256 + completion_tokens; PASS = zero mismatches ON vs OFF AND zero in every floor comparison"
+  },
+  "overhead": {
+   "mix_wall_s": {
+    "status": "INCOMPLETE",
+    "boot_medians": {
+     "OFF_a": null,
+     "ON_a": null,
+     "ON_b": null,
+     "OFF_b": null
+    }
+   },
+   "dec_wall_s": {
+    "status": "INCOMPLETE",
+    "boot_medians": {
+     "OFF_a": null,
+     "ON_a": null,
+     "ON_b": null,
+     "OFF_b": null
+    }
+   }
+  },
+  "records_on": {
+   "ON_a": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": [
+     "decode_forward",
+     "extend_forward",
+     "forward_interior",
+     "admission_request",
+     "mixed_opportunity"
+    ],
+    "t_issue_start_seen": null,
+    "off_files_absent": null
+   },
+   "ON_b": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": [
+     "decode_forward",
+     "extend_forward",
+     "forward_interior",
+     "admission_request",
+     "mixed_opportunity"
+    ],
+    "t_issue_start_seen": null,
+    "off_files_absent": null
+   }
+  },
+  "records_off": {
+   "OFF_a": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": null,
+    "t_issue_start_seen": null,
+    "off_files_absent": true
+   },
+   "OFF_b": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": null,
+    "t_issue_start_seen": null,
+    "off_files_absent": true
+   }
+  },
+  "boot_status": {
+   "OFF_a": "FAIL",
+   "ON_a": "FAIL",
+   "ON_b": "FAIL",
+   "OFF_b": "FAIL"
+  }
+ },
+ "PM": {
+  "equivalence": {
+   "pairs": {
+    "OFF_a~OFF_b": 0,
+    "ON_a~ON_b": 0,
+    "ON_a~OFF_a": 0,
+    "ON_a~OFF_b": 0,
+    "ON_b~OFF_a": 0,
+    "ON_b~OFF_b": 0
+   },
+   "within_boot_repeat": {
+    "OFF_a": 0,
+    "ON_a": 0,
+    "ON_b": 0,
+    "OFF_b": 0
+   },
+   "verdict": "EQUIV_PASS",
+   "note": "sequential greedy outputs, text sha256 + completion_tokens; PASS = zero mismatches ON vs OFF AND zero in every floor comparison"
+  },
+  "overhead": {
+   "mix_wall_s": {
+    "status": "PROBE_VALUE_NOT_CITABLE",
+    "boot_medians": {
+     "OFF_a": 24.905,
+     "ON_a": 24.945,
+     "ON_b": 24.858,
+     "OFF_b": 24.916
+    },
+    "ratio_on_over_off": 0.9996387065695188,
+    "floor_off_pair": 0.00044148338417082655,
+    "floor_on_pair": 0.00349987931450646
+   },
+   "dec_wall_s": {
+    "status": "PROBE_VALUE_NOT_CITABLE",
+    "boot_medians": {
+     "OFF_a": 12.5235,
+     "ON_a": 12.7155,
+     "ON_b": 12.7275,
+     "OFF_b": 12.527999999999999
+    },
+    "ratio_on_over_off": 1.0156278067181606,
+    "floor_off_pair": 0.0003591954022986732,
+    "floor_on_pair": 0.0009428403064229984
+   }
+  },
+  "records_on": {
+   "ON_a": {
+    "files_exist": {
+     "decode_probe.jsonl": true,
+     "admission.jsonl": true,
+     "tel.jsonl": true
+    },
+    "kinds": {
+     "decode_probe_boot": 1,
+     "forward_interior_boot": 1,
+     "forward_interior": 5125,
+     "decode_probe_window": 116,
+     "decode_forward": 5125,
+     "admission_boot": 1,
+     "admission_window": 119,
+     "admission_request": 584,
+     "mixed_opportunity": 48,
+     "phase_marker": 2,
+     "runtime_snapshot": 2772,
+     "prefill_span_start": 48,
+     "prefill_span_end": 48,
+     "decode_iteration": 5125,
+     "controller_decision": 382,
+     "split_transition": 17
+    },
+    "missing_kinds": [
+     "extend_forward"
+    ],
+    "t_issue_start_seen": true,
+    "off_files_absent": null
+   },
+   "ON_b": {
+    "files_exist": {
+     "decode_probe.jsonl": true,
+     "admission.jsonl": true,
+     "tel.jsonl": true
+    },
+    "kinds": {
+     "decode_probe_boot": 1,
+     "forward_interior_boot": 1,
+     "forward_interior": 5118,
+     "decode_probe_window": 116,
+     "decode_forward": 5118,
+     "admission_boot": 1,
+     "admission_window": 118,
+     "admission_request": 588,
+     "mixed_opportunity": 48,
+     "phase_marker": 2,
+     "runtime_snapshot": 1993,
+     "prefill_span_start": 48,
+     "prefill_span_end": 48,
+     "decode_iteration": 5118,
+     "controller_decision": 380,
+     "split_transition": 15
+    },
+    "missing_kinds": [
+     "extend_forward"
+    ],
+    "t_issue_start_seen": true,
+    "off_files_absent": null
+   }
+  },
+  "records_off": {
+   "OFF_a": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": null,
+    "t_issue_start_seen": null,
+    "off_files_absent": true
+   },
+   "OFF_b": {
+    "files_exist": {
+     "decode_probe.jsonl": false,
+     "admission.jsonl": false,
+     "tel.jsonl": false
+    },
+    "kinds": {},
+    "missing_kinds": null,
+    "t_issue_start_seen": null,
+    "off_files_absent": true
+   }
+  },
+  "boot_status": {
+   "OFF_a": "PASS",
+   "ON_a": "PASS",
+   "ON_b": "PASS",
+   "OFF_b": "PASS"
+  }
+ }
+}

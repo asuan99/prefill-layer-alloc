@@ -1,0 +1,17 @@
+=== Job ===
+Name:                 pdmux-mo-shortcheck-e4f7cc9-20261110035729
+Slug:                 job-bu0onwnkg7rl
+State:                succeeded
+Image:                ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82
+Command:              bash /io/code/e4f7cc9028095357c389b406b915c079616b5915/job_entry.sh
+Cluster:              cluster-betelgeuse
+Resource Spec:        resourcespec-a100x1
+Job Type:             k8s-job
+Created:              2026-11-10T03:57:38Z
+Started At:           2026-11-10T03:57:44Z
+Completed At:         2026-11-10T07:03:57Z
+Duration:             3h6m13s
+Image Pull Policy:    IfNotPresent
+Env Vars:             PDMUX_COMMIT=e4f7cc9028095357c389b406b915c079616b5915, PDMUX_JOB_NAME=pdmux-mo-shortcheck-e4f7cc9-20261110035729, PDMUX_CAMPAIGN=mo_shortcheck, PDMUX_TARGET=workspace/engine-port/scripts/vessl/mo_shortcheck_job.sh, PDMUX_IMAGE=ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82, PDMUX_SPEC=resourcespec-a100x1
+Object Volumes:       objvol-9vgmwmerzwd3:/io
+Cluster Volumes:      clustervol-havdzigstmv7:/data

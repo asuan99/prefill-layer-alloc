@@ -1,0 +1,2 @@
+gpu_count=1
+image=ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82
