@@ -16,7 +16,7 @@ Every time, size and ratio written here is a probe value: not citable, not an ar
             Boots: as-is, --block-size 16, --disable-hybrid-kv-cache-manager, config with mamba_num_heads 0.  Records every log line that mentions
             block size / page / hybrid / mamba and the parsed block sizes.  "Does not work" is a result and is recorded as such.
   S4 INSTR  Engine observation records (digest 8d8f6720, four default-OFF flags + the older probes) ON versus OFF on Nano, two configurations
-            (fused mixed-chunk patched tree piecewise ON = SG_PATCH_OFF; PD-mux bundle D44 piecewise OFF), ABBA per configuration in this Job.
+            (fused mixed-chunk patched tree piecewise OFF = SG_PATCH_OFF; PD-mux bundle D44 piecewise OFF), ABBA per configuration in this Job.
             Equivalence = greedy outputs of sequential fixed requests (batch invariance not needed), noise floor = OFF_a vs OFF_b and the
             within-boot repeat.  Overhead = wall of fixed closed-loop bursts, reported with the OFF-pair / ON-pair floor.
 
@@ -130,10 +130,11 @@ def s2_order():
 
 
 def a31_flags(cand):
-    return {"as_is": [], "block16": ["--block-size", "16"], "nohybridkv": ["--disable-hybrid-kv-cache-manager"], "mamba0": []}[cand]
+    return {"as_is": [], "block16": ["--block-size", "16"], "nohybridkv": ["--disable-hybrid-kv-cache-manager"], "mamba0": [], "layer_types": []}[cand]
 
 
-A31_CANDS = ("as_is", "block16", "nohybridkv", "mamba0")
+A31_CANDS = ("as_is", "block16", "nohybridkv", "mamba0", "layer_types")
+A31_MODEL_DIR = {"mamba0": "a31_mamba0", "layer_types": "a31_nonhybrid"}          # candidates with their own config; the others share a31
 
 
 def a31_order():
@@ -159,6 +160,12 @@ def neutralize_mamba(cfg):
     c = dict(cfg)
     c["mamba_num_heads"] = 0
     return c
+
+
+def attention_only(cfg, n_attn):
+    """layer_types candidate: vLLM ModelConfig.is_hybrid is False when every entry of hf_config.layer_types is attention (its Granite micro branch).
+    NemotronH builds its layers from hybrid_override_pattern and never reads layer_types, so only that hybrid decision changes."""
+    return dict(cfg, layer_types=["attention"] * int(n_attn))
 
 
 # ---------------------------------------------------------------------------------------------------------------- log facts (pure)
@@ -200,6 +207,7 @@ def vllm_block_facts(text, keep=40):
             "block_size_candidates": list(dict.fromkeys(nums)),
             "block_size_attn_line": next((int(m.group(1)) for m in (VL_BLOCK_NUM[0].search(ln) for ln in text.splitlines()) if m), None),
             "block_size_last": nums[-1] if nums else None,
+            "attn_block_line_seen": "Setting attention block size" in text, "mamba_padding_line_seen": "Padding mamba page size" in text,
             "kv_cache_tokens": [int(x.replace(",", "")) for x in re.findall(r"(?i)GPU KV cache size:\s*([0-9,]+)\s*tokens", text)]}
 
 
@@ -207,6 +215,8 @@ def a31_verdict(default, cand):
     """Mechanical comparison of one candidate with the as-is boot.  CHANGED needs a parsed block size that differs from the as-is value."""
     if not cand.get("boot_ok"):
         return "BOOT_FAILED"
+    if cand.get("attn_block_line_seen") is False and cand.get("mamba_padding_line_seen") is False:
+        return "NO_ALIGNMENT_LINES"
     d = default.get("block_size_attn_line") or default.get("block_size_last")
     c = cand.get("block_size_attn_line") or cand.get("block_size_last")
     if d is None or c is None:
@@ -385,7 +395,7 @@ def plan(out_root):
     s4 = []
     for cfg in cfgs:
         cmd, env0 = sg_patch_cmd() if cfg == "SG" else pm_cmd("off")
-        want_pw = cfg == "SG"
+        want_pw = False                                  # both registered configurations are piecewise OFF
         tag = {"OFF": iter("ab"), "ON": iter("ab")}
         for pos, state in enumerate(orders[cfg]):
             bid = f"s4_{cfg}_{state}_{next(tag[state])}"
@@ -428,7 +438,11 @@ def build_a31_variants(out, hf_home):
     CH.MV.build_variant(snap, str(m0), 31, force=True, source_meta={"revision_observed": rev})
     cfg = json.load(open(m0 / "config.json"))
     (m0 / "config.json").write_text(json.dumps(neutralize_mamba(cfg), indent=2) + "\n")
-    return {"a31": str(vdir / "a31"), "a31_mamba0": str(m0), "n_attn": rec["n_attn"], "n_mamba": rec["n_mamba"]}
+    nh = vdir / "a31_nonhybrid"
+    CH.MV.build_variant(snap, str(nh), 31, force=True, source_meta={"revision_observed": rev})
+    cfg = json.load(open(nh / "config.json"))
+    (nh / "config.json").write_text(json.dumps(attention_only(cfg, rec["n_attn"]), indent=2) + "\n")
+    return {"a31": str(vdir / "a31"), "a31_mamba0": str(m0), "a31_nonhybrid": str(nh), "n_attn": rec["n_attn"], "n_mamba": rec["n_mamba"]}
 
 
 def vllm_boot(cand, model_dir, out, boot_timeout):
@@ -512,6 +526,19 @@ def finish_s4(results, out):
     return summ
 
 
+def selected(order, arg, known):
+    """Items of the seeded order named in the comma list arg; an unknown name is an error, not a silently smaller Job."""
+    names = [x for x in arg.split(",") if x]
+    bad = set(names) - set(known)
+    if bad or not names:
+        raise SystemExit(f"unknown or empty selection {arg!r}; known {known}")
+    return [x for x in order if x in names]
+
+
+def stage_boots(pl, stage, s4_cfgs):
+    return [b for b in pl[stage] if stage != "S4" or b["id"].split("_")[1] in s4_cfgs]
+
+
 def engine_digest_note():
     return {"expected": ENGINE_DIGEST_EXPECTED, "checked_by": "mo_shortcheck_job.sh (engine_digest.py check) before any boot"}
 
@@ -522,19 +549,23 @@ def main(argv=None):
     ap.add_argument("--print-plan", action="store_true")
     ap.add_argument("--budget-min", type=float, default=130)
     ap.add_argument("--only", default=",".join(STAGES))
+    ap.add_argument("--s3-cands", default=",".join(A31_CANDS), help="comma list of a31 candidates to boot")
+    ap.add_argument("--s4-cfgs", default="SG,PM", help="comma list of S4 configurations to boot")
     ap.add_argument("--hf-home", default=os.environ.get("HF_HOME", "/data/hf"))
     a = ap.parse_args(argv)
+    s3_cands = selected(a31_order(), a.s3_cands, A31_CANDS)
+    s4_cfgs = selected(["SG", "PM"], a.s4_cfgs, ("SG", "PM"))
     stages = [s for s in a.only.split(",") if s in STAGES]
     if a.print_plan:
         pl = plan("<OUT>")
         for s in stages:
             print(f"== {s} (cap {STAGE_CAP_MIN[s]} min)")
             if s == "S3":
-                for c in a31_order():
-                    print(f"  a31_{c}", "model=<variants>/" + ("a31_mamba0" if c == "mamba0" else "a31"), "env", SP.VL_ENV)
+                for c in s3_cands:
+                    print(f"  a31_{c}", "model=<variants>/" + A31_MODEL_DIR.get(c, "a31"), "env", SP.VL_ENV)
                     print("    ", " ".join(vllm_cmd("<variant>", a31_flags(c))))
                 continue
-            for b in pl[s]:
+            for b in stage_boots(pl, s, s4_cfgs):
                 print(f"  {b['id']} tree={b['tree']} env={b['env']} driver={getattr(b['driver'], '__name__', None)} reqs={b['reqs']} want_piecewise={b['want_piecewise']}")
                 print("    ", " ".join(b["cmd"]))
         return 0
@@ -545,7 +576,7 @@ def main(argv=None):
     pl = plan(out)
     results, stage_status = {}, {}
     (out / "plan.json").write_text(json.dumps({"schema": SCHEMA, "engine_digest": engine_digest_note(), "stages": stages, "boot_fixed": BOOT_FIXED,
-                                                "s2_order": s2_order(), "s3_order": a31_order(), "s4_orders": abba_orders(),
+                                                "s2_order": s2_order(), "s3_order": s3_cands, "s4_cfgs": s4_cfgs, "s4_orders": abba_orders(),
                                                 "ctx_requests": ctx_requests(), "boot_ids": {s: [b["id"] for b in pl[s]] for s in pl}}, indent=1, default=str))
     for s in stages:
         sdead = min(deadline, time.time() + STAGE_CAP_MIN[s] * 60)
@@ -557,12 +588,12 @@ def main(argv=None):
             except Exception as e:  # noqa: BLE001
                 stage_status[s] = f"VARIANTS_FAILED {e!r}"[:300]
                 continue
-            for c in a31_order():
+            for c in s3_cands:
                 left = sdead - time.time()
                 if left < 420:
                     results[f"a31_{c}"] = {"status": "SKIPPED", "reason": "budget"}
                     continue
-                results[f"a31_{c}"] = vllm_boot(c, vm["a31_mamba0" if c == "mamba0" else "a31"], out, boot_timeout=min(1200, left - 120))
+                results[f"a31_{c}"] = vllm_boot(c, vm[A31_MODEL_DIR.get(c, "a31")], out, boot_timeout=min(1200, left - 120))
                 print(f"[shortcheck] a31_{c} -> {results[f'a31_{c}']['status']}", flush=True)
             dflt = results.get("a31_as_is", {})
             for c in A31_CANDS:
@@ -570,7 +601,7 @@ def main(argv=None):
                     results[f"a31_{c}"]["verdict_vs_as_is"] = a31_verdict(dflt, results[f"a31_{c}"])
             stage_status[s] = "RAN"
             continue
-        for b in pl[s]:
+        for b in stage_boots(pl, s, s4_cfgs):
             left = sdead - time.time()
             if left < 420:
                 results[b["id"]] = {"id": b["id"], "status": "SKIPPED", "reason": "budget"}

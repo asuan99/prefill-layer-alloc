@@ -143,11 +143,11 @@ def cmd_arxiv(a):
         "source": {"dataset": "ccdv/arxiv-summarization test parquet (via mg_x_pretokenize.py)", "token_file_sha256": L.ARXSUM_TOKENS_SHA256,
                    "volume_path": "/data/datasets/arxsum_x/arxsum_x_tokens_v1.bin (already on the cluster volume)"},
         "rule": "existing arxsum_x_tokens_v1.bin: 0 < input <= 16384, abstract >= 2; n_output = abstract token count",
-        "output_mode": "ignore_eos=False, max_new_tokens = 1024 (policy harness convention, decision 47); output length is run-determined",
+        "output_mode": "ignore_eos=True, output_tokens = abstract length (main condition, user decision 2026-11-10); variant: fixed 1024, gen_traces emit --fixed-output 1024",
         "prompt": "article token ids only, no summarization instruction",
         "n_records": len(rows), "length_table": "lengths/arxiv_summ.json (doc_id, input, abstract length)",
         "lengths_sha256": L.lengths_sha256([(r[1], r[2]) for r in rows]),
-        "input": L.dist(I), "output": L.dist(O), "output_is": "abstract token length (reference); not the served natural output", **extra})
+        "input": L.dist(I), "output": L.dist(O), "output_is": "abstract token length (the served output of the main condition)", **extra})
     return 0
 
 

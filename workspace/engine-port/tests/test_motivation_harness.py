@@ -86,13 +86,13 @@ def _u(s):
     return int(hashlib.sha256(s.encode()).hexdigest()[:8], 16) / 0xFFFFFFFF
 
 
-CAPS = {"PDMUX": 6.0, "mixed_chunk8192_piecewiseON": 4.0, "chunked": 3.5, "mixed_chunk2048": 4.0, "VLLM": 5.0}
+CAPS = {"PDMUX": 6.0, "mixed_chunk8192_piecewiseOFF": 4.0, "chunked": 3.5, "mixed_chunk2048": 4.0, "VLLM": 5.0}
 
 
 def _arm_cap(name):
     if "pdmuxflagsOFF" in name:
         return 4.0
-    if "piecewiseOFF" in name and "PDMUX" not in name:
+    if "piecewiseON" in name and "PDMUX" not in name:
         return 2.5
     for k, v in CAPS.items():
         if k in name:
@@ -164,7 +164,7 @@ class TestArms(unittest.TestCase):
         self.arms = {a["key"]: a for a in MS.arm_table(dict(MS.REHEARSAL_FIXED))}
 
     def test_required_arms_present(self):
-        self.assertEqual(set(self.arms), {"SG_MIXED_8192", "SG_CHUNKED_8192", "SG_MIXED_2048", "VLLM", "PDMUX_BUNDLE", "SG_PATCH_OFF", "SG_PIECEWISE_OFF"})
+        self.assertEqual(set(self.arms), {"SG_MIXED_8192", "SG_CHUNKED_8192", "SG_MIXED_2048", "VLLM", "PDMUX_BUNDLE", "SG_PATCH_OFF", "SG_PIECEWISE_ON"})
 
     def test_sglang_arms_use_py312_vllm_unchanged(self):
         for k, a in self.arms.items():
@@ -204,7 +204,7 @@ class TestArms(unittest.TestCase):
         for token in ("PDMUX-D44", "nonsticky", "budget65536", "chunk-1", "piecewiseOFF", "overlapOFF", "bundle", "patchedtree"):
             self.assertIn(token, pm)
         self.assertIn("pdmuxflagsOFF", self.arms["SG_PATCH_OFF"]["name"])
-        self.assertIn("piecewiseOFF", self.arms["SG_PIECEWISE_OFF"]["name"])
+        self.assertIn("piecewiseON", self.arms["SG_PIECEWISE_ON"]["name"])
 
     def test_registered_treatments(self):
         a = self.arms
@@ -212,7 +212,7 @@ class TestArms(unittest.TestCase):
         self.assertIn("--enable-mixed-chunk", c("SG_MIXED_8192"))
         self.assertNotIn("--enable-mixed-chunk", c("SG_CHUNKED_8192"))
         self.assertEqual(_flag(c("SG_MIXED_2048"), "--chunked-prefill-size"), "2048")
-        self.assertNotIn("--disable-piecewise-cuda-graph", c("SG_MIXED_8192"))
+        self.assertIn("--disable-piecewise-cuda-graph", c("SG_MIXED_8192"))
         self.assertIn("--enable-pdmux", c("PDMUX_BUNDLE"))
         self.assertEqual(a["PDMUX_BUNDLE"]["env"]["PDMUX_R2_FIXED_DSM"], "44")
         self.assertIs(a["PDMUX_BUNDLE"]["sticky"], False)
@@ -223,9 +223,9 @@ class TestArms(unittest.TestCase):
         self.assertEqual(po["cmd"], base["cmd"])                          # patch-OFF: identical argv, only the tree differs
         self.assertEqual((base["tree"], po["tree"]), ("pristine", "patched"))
         self.assertEqual(po["env"], {})
-        pw = self.arms["SG_PIECEWISE_OFF"]
-        self.assertEqual([x for x in pw["cmd"] if x not in base["cmd"]], ["--disable-piecewise-cuda-graph"])
-        self.assertEqual([x for x in base["cmd"] if x not in pw["cmd"]], [])
+        pw = self.arms["SG_PIECEWISE_ON"]
+        self.assertEqual([x for x in base["cmd"] if x not in pw["cmd"]], ["--disable-piecewise-cuda-graph"])
+        self.assertEqual([x for x in pw["cmd"] if x not in base["cmd"]], [])
         self.assertEqual(pw["tree"], base["tree"])
         ch = self.arms["SG_CHUNKED_8192"]
         self.assertEqual([x for x in base["cmd"] if x not in ch["cmd"]], ["--enable-mixed-chunk"])
@@ -389,13 +389,13 @@ def _quant(obs, executed):
 
 MUTATIONS = {
     "python_version": _set("python_version", "3.14"), "venv_freeze": _set("venv_freeze", "f" * 64), "tree": _set("tree", "patched"),
-    "piecewise": _set("piecewise", "off"), "chunk": _set("chunk", 4096), "mixed": _set("mixed", False), "overlap": _set("overlap", "off"),
+    "piecewise": _set("piecewise", "on"), "chunk": _set("chunk", 4096), "mixed": _set("mixed", False), "overlap": _set("overlap", "off"),
     "mem": _set("mem", 0.75), "cap": _set("cap", 128), "context": _set("context", 40960), "backend": _set("backend", "triton"), "seed": _set("seed", 2),
     "env": _set("env", {"PDMUX_R2_POLICY": "fixed"}), "argv": _set("argv", ["x"]), "boot_order": _order, "trace_hash": _hash(), "trace_quantiles": _quant,
 }
 E2E_TAMPER = {   # field -> (FakeServer tamper, extra run_job kwargs)
     "python_version": (None, {"py": lambda py: "3.14"}), "venv_freeze": (None, {"fr": lambda py: "0" * 64}),
-    "tree": ({"stamp": {"engine_tree": "patched"}}, {}), "piecewise": ({"pw_failed": True}, {}), "chunk": ({"banner": {"chunked_prefill_size": 4096}}, {}),
+    "tree": ({"stamp": {"engine_tree": "patched"}}, {}), "piecewise": ({"banner": {"disable_piecewise_cuda_graph": "False"}}, {}), "chunk": ({"banner": {"chunked_prefill_size": 4096}}, {}),
     "mixed": ({"banner": {"enable_mixed_chunk": "False"}}, {}), "overlap": ({"banner": {"disable_overlap_schedule": "True"}}, {}),
     "mem": ({"banner": {"mem_fraction_static": 0.75}}, {}), "cap": ({"banner": {"max_running_requests": 128, "max_mamba_cache_size": 128}}, {}),
     "context": ({"banner": {"context_length": 40960}}, {}), "backend": ({"banner": {"attention_backend": "'triton'"}}, {}),
@@ -733,7 +733,7 @@ class TestAnalyzer(unittest.TestCase):
             self.assertIn(c["primary_status"], ("BRACKETED", "LADDER_TOP_PASS", "LADDER_BOTTOM_FAIL"))
             self.assertIn("status", c["secondary_interp"])
         pm = next(a for a in caps if "PDMUX" in a)
-        mixed = next(a for a in caps if a.endswith("mixed_chunk8192_piecewiseON_overlapON") and "pdmuxflagsOFF" not in a)
+        mixed = next(a for a in caps if a.endswith("mixed_chunk8192_piecewiseOFF_overlapON") and "pdmuxflagsOFF" not in a)
         pv, mv = caps[pm]["primary_burst"], caps[mixed]["primary_burst"]
         self.assertTrue(pv is None or mv is None or pv >= mv)                 # fake profile: bundle capacity 6 vs 4
         # unit: interpolation in log-rate between the last passing and the first failing rung

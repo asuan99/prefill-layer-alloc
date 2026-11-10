@@ -174,7 +174,8 @@ class TestPlan(unittest.TestCase):
         sg = next(b for b in s4 if "_SG_" in b["id"])
         self.assertIn("--enable-mixed-chunk", sg["cmd"])
         self.assertNotIn("--enable-pdmux", sg["cmd"])
-        self.assertTrue(sg["want_piecewise"])
+        self.assertFalse(sg["want_piecewise"])
+        self.assertIn("--disable-piecewise-cuda-graph", sg["cmd"])
         pm = next(b for b in s4 if "_PM_" in b["id"])
         self.assertIn("--enable-pdmux", pm["cmd"])
         self.assertIn("--disable-piecewise-cuda-graph", pm["cmd"])
@@ -203,6 +204,21 @@ class TestA31(unittest.TestCase):
             extra = M.vllm_cmd("/v/a31", M.a31_flags(c))[len(base):]
             self.assertEqual(extra, M.a31_flags(c))
 
+    def test_attention_only_does_not_mutate(self):
+        cfg = {"x": 1}
+        out = M.attention_only(cfg, 31)
+        self.assertEqual(out["layer_types"], ["attention"] * 31)
+        self.assertNotIn("layer_types", cfg)
+
+    def test_selection(self):
+        self.assertEqual(M.selected(["b", "a", "c"], "a,b", ("a", "b", "c")), ["b", "a"])
+        for bad in ("a,z", ""):
+            with self.assertRaises(SystemExit):
+                M.selected(["a"], bad, ("a",))
+        pl = {"S4": [{"id": "s4_SG_ON_a"}, {"id": "s4_PM_ON_a"}], "S3": [{"id": "x"}]}
+        self.assertEqual([b["id"] for b in M.stage_boots(pl, "S4", ["SG"])], ["s4_SG_ON_a"])
+        self.assertEqual(M.stage_boots(pl, "S3", ["SG"]), pl["S3"])
+
     def test_neutralize_does_not_mutate(self):
         cfg = {"mamba_num_heads": 128, "x": 1}
         out = M.neutralize_mamba(cfg)
@@ -220,6 +236,10 @@ class TestA31(unittest.TestCase):
         c = dict(M.vllm_block_facts("INFO Setting attention block size to 16 tokens\n"), boot_ok=True)
         self.assertEqual(M.a31_verdict(d, c), "CHANGED")
         self.assertEqual(M.a31_verdict(d, {"boot_ok": False}), "BOOT_FAILED")
+        none = dict(M.vllm_block_facts("INFO GPU KV cache size: 1,000 tokens\n"), boot_ok=True)
+        self.assertEqual(M.a31_verdict(d, none), "NO_ALIGNMENT_LINES")
+        pad = dict(M.vllm_block_facts("INFO Padding mamba page size by 433.33% to ensure\n"), boot_ok=True)
+        self.assertEqual(M.a31_verdict(d, pad), "UNPARSED")
         self.assertEqual(M.a31_verdict(d, {"boot_ok": True, "block_size_attn_line": None, "block_size_last": None}), "UNPARSED")
 
 
@@ -329,6 +349,15 @@ class TestJobScript(unittest.TestCase):
         self.assertIn(M.ENGINE_DIGEST_EXPECTED, txt)
         self.assertIn(M.ENGINE_DIGEST_EXPECTED, (ENG / "env" / "dev_tree_edits.md").read_text())
         self.assertIn("gpu_count", txt)
+
+    def test_r2_target_selects_only_the_open_checks(self):
+        p = VESSL / "mo_shortcheck_r2_job.sh"
+        self.assertEqual(subprocess.run(["bash", "-n", str(p)]).returncode, 0)
+        self.assertTrue(os.access(p, os.X_OK))
+        txt = p.read_text()
+        for tok in ("--only S3,S4", "--s3-cands as_is,layer_types", "--s4-cfgs SG", "mo_shortcheck_job.sh"):
+            self.assertIn(tok, txt)
+        self.assertIn("MO_SHORTCHECK_ARGS", (VESSL / "mo_shortcheck_job.sh").read_text())
 
     def test_env_file_pins_the_probe_image(self):
         env = (VESSL / "vessl.sg312.env").read_text()

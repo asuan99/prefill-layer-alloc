@@ -19,4 +19,5 @@ manifest="${data}/runs/${name}/meta/runtime_source_manifest.sha256"
 python3 "${eng}/scripts/bootstrap/engine_digest.py" check --manifest "${manifest}" --sealed "${expected}" \
   --out "${pre}/ENGINE_DIGEST_CHECK.json" > "${pre}/ENGINE_DIGEST_CHECK.txt" 2>&1 \
   || { echo "ABORT_ENGINE_DIGEST (see ${pre}/ENGINE_DIGEST_CHECK.txt)" >&2; exit 13; }
-exec python3 "${eng}/scripts/vessl/mo_shortcheck.py" --out-root "${out_root}" --budget-min 130
+# shellcheck disable=SC2086
+exec python3 "${eng}/scripts/vessl/mo_shortcheck.py" --out-root "${out_root}" ${MO_SHORTCHECK_ARGS:---budget-min 130}

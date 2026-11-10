@@ -1,7 +1,7 @@
 {
  "builder_sha256": {
-  "build_pools.py": "4f583b9f160acb47ec184e27d2bd891d0888e9cfea4295d20685678157abe677",
-  "gen_traces.py": "0d28a23c123a8b3f4d2f03a5199db573241f9d0418ccfe2e934930648424334e",
+  "build_pools.py": "f651f94edf5da917893ece6913dc47a64488b796781bab0032941a1481051280",
+  "gen_traces.py": "4b2f80ebcb466f9ae1483dfcf513093795db458952169a133d5310e084adcaf2",
   "mw_lib.py": "06add7d460a61ee879b8e5561a266cbc364da705688417a6c8e22e9ef6dbb43b"
  },
  "quantile_rule": "nearest rank (mw_lib.q)",
@@ -59,8 +59,8 @@
     "p95": 339,
     "p99": 399
    },
-   "output_is": "abstract token length (reference); not the served natural output",
-   "output_mode": "ignore_eos=False, max_new_tokens = 1024 (policy harness convention, decision 47); output length is run-determined",
+   "output_is": "abstract token length (the served output of the main condition)",
+   "output_mode": "ignore_eos=True, output_tokens = abstract length (main condition, user decision 2026-11-10); variant: fixed 1024, gen_traces emit --fixed-output 1024",
    "prompt": "article token ids only, no summarization instruction",
    "rule": "existing arxsum_x_tokens_v1.bin: 0 < input <= 16384, abstract >= 2; n_output = abstract token count",
    "source": {

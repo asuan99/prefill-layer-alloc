@@ -57,15 +57,17 @@ REHEARSAL_FIXED = {"mem": 0.6, "cap": 48, "context": 20480, "vllm_chunk": 8192, 
                    "sg_venv_freeze": "rehearsal-any"}   # rehearsal cards only (card["rehearsal"] = True); never a measurement value
 
 # ---- arms ---------------------------------------------------------------------------------------------------------------
+# SG baselines run piecewise OFF (user decision 2026-11-10: upstream labels the feature experimental, research systems and the public PD-mux prefill path
+# are eager, and NemotronH keeps its 27 Mamba layers eager anyway); SG_PIECEWISE_ON is the one-flag sensitivity arm for the v0.5.10 code default.
 # One row = one bundle.  piecewise / overlap / mixed / chunk / tree are the registered treatment fields; the name is generated from them.
 ARM_PARAMS = (
-    dict(key="SG_MIXED_8192", engine="sglang", tree="pristine", mixed=True, chunk=8192, piecewise="on", overlap="on", role="baseline"),
-    dict(key="SG_CHUNKED_8192", engine="sglang", tree="pristine", mixed=False, chunk=8192, piecewise="on", overlap="on", role="baseline"),
-    dict(key="SG_MIXED_2048", engine="sglang", tree="pristine", mixed=True, chunk=2048, piecewise="on", overlap="on", role="baseline"),
+    dict(key="SG_MIXED_8192", engine="sglang", tree="pristine", mixed=True, chunk=8192, piecewise="off", overlap="on", role="baseline"),
+    dict(key="SG_CHUNKED_8192", engine="sglang", tree="pristine", mixed=False, chunk=8192, piecewise="off", overlap="on", role="baseline"),
+    dict(key="SG_MIXED_2048", engine="sglang", tree="pristine", mixed=True, chunk=2048, piecewise="off", overlap="on", role="baseline"),
     dict(key="VLLM", engine="vllm", tree="vllm", mixed=None, chunk="vllm", piecewise=None, overlap=None, role="baseline"),
     dict(key="PDMUX_BUNDLE", engine="sglang", tree="patched", mixed=False, chunk=-1, piecewise="off", overlap="off", role="bundle", D=44),
-    dict(key="SG_PATCH_OFF", engine="sglang", tree="patched", mixed=True, chunk=8192, piecewise="on", overlap="on", role="control_patch"),
-    dict(key="SG_PIECEWISE_OFF", engine="sglang", tree="pristine", mixed=True, chunk=8192, piecewise="off", overlap="on",
+    dict(key="SG_PATCH_OFF", engine="sglang", tree="patched", mixed=True, chunk=8192, piecewise="off", overlap="on", role="control_patch"),
+    dict(key="SG_PIECEWISE_ON", engine="sglang", tree="pristine", mixed=True, chunk=8192, piecewise="on", overlap="on",
          role="control_piecewise"),
 )
 PRIMARY_KEY = "SG_MIXED_8192"          # primary baseline + anchor arm
