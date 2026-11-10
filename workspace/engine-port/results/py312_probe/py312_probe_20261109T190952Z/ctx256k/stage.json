@@ -1,0 +1,85 @@
+{
+ "id": "ctx256k",
+ "tree": "pristine",
+ "argv": [
+  "-m",
+  "sglang.launch_server",
+  "--model-path",
+  "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+  "--revision",
+  "dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "--trust-remote-code",
+  "--dtype",
+  "bfloat16",
+  "--disable-radix-cache",
+  "--context-length",
+  "262144",
+  "--max-prefill-tokens",
+  "262144",
+  "--max-running-requests",
+  "16",
+  "--host",
+  "127.0.0.1",
+  "--mem-fraction-static",
+  "0.82"
+ ],
+ "env": {
+  "SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN": "1"
+ },
+ "want_piecewise": true,
+ "status": "FAIL",
+ "requests": [
+  {
+   "n": 1,
+   "n_in": 65536,
+   "n_out": 16,
+   "ok": 1,
+   "max_s": 9.05,
+   "errors": []
+  },
+  {
+   "n": 1,
+   "n_in": 131072,
+   "n_out": 16,
+   "ok": 1,
+   "max_s": 18.77,
+   "errors": []
+  },
+  {
+   "n": 1,
+   "n_in": 262144,
+   "n_out": 16,
+   "ok": 0,
+   "max_s": 0.28,
+   "errors": [
+    "<HTTPError 400: 'Bad Request'>"
+   ]
+  },
+  {
+   "n": 8,
+   "n_in": 131072,
+   "n_out": 16,
+   "ok": 8,
+   "max_s": 148.41,
+   "errors": []
+  }
+ ],
+ "boot_s": 79,
+ "boot_ok": true,
+ "peak_gpu_mib": 70456,
+ "gpu_after_mib": 0,
+ "banner": [
+  "Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+  "[2026-11-09 19:24:12] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=262144, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b92",
+  "[2026-11-09 19:24:12] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+  "[2026-11-09 19:24:20] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+  "[2026-11-09 19:24:22] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+  "[2026-11-09 19:24:34] Mamba Cache is allocated. max_mamba_cache_size: 16, conv_state size: 0.03GB, ssm_state size: 2.24GB ",
+  "[2026-11-09 19:24:39] Capture piecewise CUDA graph begin. avail mem=13.38 GB",
+  "[2026-11-09 19:25:15] Capture piecewise CUDA graph end. Time elapsed: 36.56 s. mem usage=1.19 GB. avail mem=12.19 GB.",
+  "[2026-11-09 19:25:17] max_total_num_tokens=3004104, chunked_prefill_size=8192, max_prefill_tokens=262144, max_running_requests=16, context_len=262144, available_gpu_mem=12.19 GB"
+ ],
+ "piecewise_failed": false,
+ "piecewise_captured": true,
+ "oom": false
+}

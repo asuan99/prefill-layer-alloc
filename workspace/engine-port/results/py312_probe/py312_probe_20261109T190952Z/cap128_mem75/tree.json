@@ -1,0 +1,70 @@
+{
+  "schema": "pdmux.engine_tree_boot/v1",
+  "utc": "2026-11-09T19:20:52Z",
+  "engine_tree": "pristine",
+  "argv": [
+    "/opt/sg312-venv/bin/python",
+    "-m",
+    "sglang.launch_server",
+    "--model-path",
+    "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+    "--revision",
+    "dc0661c829b14e5b9246c05cfa89094a0875e052",
+    "--trust-remote-code",
+    "--dtype",
+    "bfloat16",
+    "--disable-radix-cache",
+    "--context-length",
+    "20480",
+    "--max-prefill-tokens",
+    "16384",
+    "--max-running-requests",
+    "128",
+    "--host",
+    "127.0.0.1",
+    "--max-mamba-cache-size",
+    "128",
+    "--mem-fraction-static",
+    "0.75",
+    "--port",
+    "47721"
+  ],
+  "pdmux_env": {
+    "PDMUX_ENGINE_TREE": "pristine",
+    "PDMUX_PROJECT_ROOT": "/opt/pdmux/prefill-layer-alloc",
+    "PDMUX_ROOT": "/opt/pdmux"
+  },
+  "patched_only_gates": {},
+  "engine_tree_ref_sha256": "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3",
+  "engine_tree_ref_overridden": false,
+  "engine_tree_extras": {
+    "sglang/_version.py": "094b815def1c8e3ca8b92070902f780ebfaa2d683937e394079b6ed6a1e46d74"
+  },
+  "pdmux_env_scrubbed": [
+    "PDMUX_ENGINE_TREE",
+    "PDMUX_PROJECT_ROOT",
+    "PDMUX_ROOT"
+  ],
+  "pythonpath_dropped": [],
+  "preserve_status": {
+    "status": "OK",
+    "utc": "2026-11-09T19:09:32Z",
+    "src": "/opt/pdmux/sglang_engine_dev/python",
+    "dst": "/opt/pdmux/sglang_pristine/python",
+    "ref_path": "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/sglang_v0.5.10_python_tree.sha256",
+    "ref_sha256": "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3",
+    "ref_overridden": "0",
+    "origin": "copied",
+    "reason": "",
+    "tree_manifest_sha256": "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3",
+    "tree_entries": "2258",
+    "extras": "sglang/_version.py"
+  },
+  "engine_tree_root": "/opt/pdmux/sglang_pristine/python",
+  "engine_tree_sglang_init": "/opt/pdmux/sglang_pristine/python/sglang/__init__.py",
+  "engine_tree_manifest_sha256": "1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3",
+  "engine_tree_manifest_entries": 2257,
+  "engine_tree_markers_found": [],
+  "child_pythonpath": "/opt/pdmux/sglang_pristine/python",
+  "status": "EXEC"
+}

@@ -1,0 +1,635 @@
+[
+ {
+  "id": "piecewise_on_chunked",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "48",
+   "--host",
+   "127.0.0.1"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 8,
+    "n_in": 2048,
+    "n_out": 64,
+    "ok": 8,
+    "max_s": 2.69,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 16000,
+    "n_out": 64,
+    "ok": 1,
+    "max_s": 4.19,
+    "errors": []
+   }
+  ],
+  "boot_s": 175,
+  "boot_ok": true,
+  "peak_gpu_mib": 71634,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:10:24] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:10:59] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:11:41] Capture piecewise CUDA graph begin. avail mem=12.54 GB",
+   "[2026-11-09 19:12:24] Capture piecewise CUDA graph end. Time elapsed: 43.29 s. mem usage=1.19 GB. avail mem=11.34 GB.",
+   "[2026-11-09 19:12:26] max_total_num_tokens=2775351, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=11.34 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "piecewise_on_mixed",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "48",
+   "--host",
+   "127.0.0.1",
+   "--enable-mixed-chunk"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 8,
+    "n_in": 2048,
+    "n_out": 64,
+    "ok": 8,
+    "max_s": 3.69,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 16000,
+    "n_out": 64,
+    "ok": 1,
+    "max_s": 2.64,
+    "errors": []
+   }
+  ],
+  "boot_s": 79,
+  "boot_ok": true,
+  "peak_gpu_mib": 71356,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:13:11] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:13:34] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:13:39] Capture piecewise CUDA graph begin. avail mem=12.54 GB",
+   "[2026-11-09 19:14:14] Capture piecewise CUDA graph end. Time elapsed: 35.00 s. mem usage=1.19 GB. avail mem=11.34 GB.",
+   "[2026-11-09 19:14:15] max_total_num_tokens=2775351, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=11.34 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "piecewise_off_chunked",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--disable-piecewise-cuda-graph",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "48",
+   "--host",
+   "127.0.0.1"
+  ],
+  "env": {},
+  "want_piecewise": false,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 8,
+    "n_in": 2048,
+    "n_out": 64,
+    "ok": 8,
+    "max_s": 2.73,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 16000,
+    "n_out": 64,
+    "ok": 1,
+    "max_s": 9.51,
+    "errors": []
+   }
+  ],
+  "boot_s": 43,
+  "boot_ok": true,
+  "peak_gpu_mib": 70606,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:14:42] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:15:04] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:15:11] max_total_num_tokens=2806320, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=12.07 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": false,
+  "oom": false
+ },
+ {
+  "id": "pdmux_piecewise_on",
+  "tree": "patched",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--attention-backend",
+   "flashinfer",
+   "--disable-radix-cache",
+   "--mem-fraction-static",
+   "0.6",
+   "--max-running-requests",
+   "48",
+   "--context-length",
+   "20480",
+   "--random-seed",
+   "1",
+   "--chunked-prefill-size",
+   "-1",
+   "--disable-overlap-schedule",
+   "--max-prefill-tokens",
+   "16384",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "48",
+   "--enable-pdmux",
+   "--pdmux-config-path",
+   "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+  ],
+  "env": {
+   "PDMUX_ENGINE_MODE": "pdmux",
+   "PDMUX_R2_POLICY": "fixed",
+   "PDMUX_R2_FIXED_DSM": "44"
+  },
+  "want_piecewise": true,
+  "status": "FAIL",
+  "requests": [
+   {
+    "n": 8,
+    "n_in": 2048,
+    "n_out": 64,
+    "ok": 8,
+    "max_s": 4.11,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 16000,
+    "n_out": 64,
+    "ok": 1,
+    "max_s": 2.63,
+    "errors": []
+   }
+  ],
+  "boot_s": 67,
+  "boot_ok": true,
+  "peak_gpu_mib": 58688,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:15:44] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:16:07] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:16:27] max_total_num_tokens=1586264, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=28.68 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": false,
+  "oom": false
+ },
+ {
+  "id": "pdmux_piecewise_off",
+  "tree": "patched",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--attention-backend",
+   "flashinfer",
+   "--disable-radix-cache",
+   "--mem-fraction-static",
+   "0.6",
+   "--max-running-requests",
+   "48",
+   "--context-length",
+   "20480",
+   "--random-seed",
+   "1",
+   "--disable-piecewise-cuda-graph",
+   "--chunked-prefill-size",
+   "-1",
+   "--disable-overlap-schedule",
+   "--max-prefill-tokens",
+   "16384",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "48",
+   "--enable-pdmux",
+   "--pdmux-config-path",
+   "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/cap_char/costterms_harness/pdmux_costterms_D64_candidate.yml"
+  ],
+  "env": {
+   "PDMUX_ENGINE_MODE": "pdmux",
+   "PDMUX_R2_POLICY": "fixed",
+   "PDMUX_R2_FIXED_DSM": "44"
+  },
+  "want_piecewise": false,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 8,
+    "n_in": 2048,
+    "n_out": 64,
+    "ok": 8,
+    "max_s": 3.75,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 16000,
+    "n_out": 64,
+    "ok": 1,
+    "max_s": 2.63,
+    "errors": []
+   }
+  ],
+  "boot_s": 52,
+  "boot_ok": true,
+  "peak_gpu_mib": 58688,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:17:03] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:17:25] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:17:39] max_total_num_tokens=1586264, chunked_prefill_size=-1, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=28.68 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": false,
+  "oom": false
+ },
+ {
+  "id": "cap48_mem60",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "48",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "48",
+   "--mem-fraction-static",
+   "0.6"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 48,
+    "n_in": 256,
+    "n_out": 32,
+    "ok": 48,
+    "max_s": 2.37,
+    "errors": []
+   }
+  ],
+  "boot_s": 79,
+  "boot_ok": true,
+  "peak_gpu_mib": 52972,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:18:07] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:18:29] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:18:33] Capture piecewise CUDA graph begin. avail mem=30.66 GB",
+   "[2026-11-09 19:19:08] Capture piecewise CUDA graph end. Time elapsed: 35.12 s. mem usage=1.19 GB. avail mem=29.47 GB.",
+   "[2026-11-09 19:19:10] max_total_num_tokens=1588210, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=29.47 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "cap48_mem75",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "48",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "48",
+   "--mem-fraction-static",
+   "0.75"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 48,
+    "n_in": 256,
+    "n_out": 32,
+    "ok": 48,
+    "max_s": 2.23,
+    "errors": []
+   }
+  ],
+  "boot_s": 79,
+  "boot_ok": true,
+  "peak_gpu_mib": 65096,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:19:35] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:19:56] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+   "[2026-11-09 19:20:01] Capture piecewise CUDA graph begin. avail mem=18.84 GB",
+   "[2026-11-09 19:20:36] Capture piecewise CUDA graph end. Time elapsed: 35.19 s. mem usage=1.19 GB. avail mem=17.64 GB.",
+   "[2026-11-09 19:20:38] max_total_num_tokens=2362433, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=17.64 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "cap128_mem75",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "128",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "128",
+   "--mem-fraction-static",
+   "0.75"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 128,
+    "n_in": 256,
+    "n_out": 32,
+    "ok": 128,
+    "max_s": 5.32,
+    "errors": []
+   }
+  ],
+  "boot_s": 79,
+  "boot_ok": true,
+  "peak_gpu_mib": 65746,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:21:01] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:21:23] Mamba Cache is allocated. max_mamba_cache_size: 128, conv_state size: 0.24GB, ssm_state size: 17.01GB ",
+   "[2026-11-09 19:21:29] Capture piecewise CUDA graph begin. avail mem=18.59 GB",
+   "[2026-11-09 19:22:05] Capture piecewise CUDA graph end. Time elapsed: 35.77 s. mem usage=1.19 GB. avail mem=17.40 GB.",
+   "[2026-11-09 19:22:07] max_total_num_tokens=1661513, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=128, context_len=20480, available_gpu_mem=17.40 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "cap256_mem75",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "20480",
+   "--max-prefill-tokens",
+   "16384",
+   "--max-running-requests",
+   "256",
+   "--host",
+   "127.0.0.1",
+   "--max-mamba-cache-size",
+   "256",
+   "--mem-fraction-static",
+   "0.75"
+  ],
+  "env": {},
+  "want_piecewise": true,
+  "status": "PASS",
+  "requests": [
+   {
+    "n": 256,
+    "n_in": 256,
+    "n_out": 32,
+    "ok": 256,
+    "max_s": 10.37,
+    "errors": []
+   }
+  ],
+  "boot_s": 85,
+  "boot_ok": true,
+  "peak_gpu_mib": 66044,
+  "gpu_after_mib": 0,
+  "banner": [
+   "[2026-11-09 19:22:31] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+   "[2026-11-09 19:22:53] Mamba Cache is allocated. max_mamba_cache_size: 256, conv_state size: 0.48GB, ssm_state size: 33.88GB ",
+   "[2026-11-09 19:23:02] Capture piecewise CUDA graph begin. avail mem=18.22 GB",
+   "[2026-11-09 19:23:38] Capture piecewise CUDA graph end. Time elapsed: 35.72 s. mem usage=1.19 GB. avail mem=17.03 GB.",
+   "[2026-11-09 19:23:40] max_total_num_tokens=540041, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=256, context_len=20480, available_gpu_mem=17.03 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ },
+ {
+  "id": "ctx256k",
+  "tree": "pristine",
+  "argv": [
+   "-m",
+   "sglang.launch_server",
+   "--model-path",
+   "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+   "--revision",
+   "dc0661c829b14e5b9246c05cfa89094a0875e052",
+   "--trust-remote-code",
+   "--dtype",
+   "bfloat16",
+   "--disable-radix-cache",
+   "--context-length",
+   "262144",
+   "--max-prefill-tokens",
+   "262144",
+   "--max-running-requests",
+   "16",
+   "--host",
+   "127.0.0.1",
+   "--mem-fraction-static",
+   "0.82"
+  ],
+  "env": {
+   "SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN": "1"
+  },
+  "want_piecewise": true,
+  "status": "FAIL",
+  "requests": [
+   {
+    "n": 1,
+    "n_in": 65536,
+    "n_out": 16,
+    "ok": 1,
+    "max_s": 9.05,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 131072,
+    "n_out": 16,
+    "ok": 1,
+    "max_s": 18.77,
+    "errors": []
+   },
+   {
+    "n": 1,
+    "n_in": 262144,
+    "n_out": 16,
+    "ok": 0,
+    "max_s": 0.28,
+    "errors": [
+     "<HTTPError 400: 'Bad Request'>"
+    ]
+   },
+   {
+    "n": 8,
+    "n_in": 131072,
+    "n_out": 16,
+    "ok": 8,
+    "max_s": 148.41,
+    "errors": []
+   }
+  ],
+  "boot_s": 79,
+  "boot_ok": true,
+  "peak_gpu_mib": 70456,
+  "gpu_after_mib": 0,
+  "banner": [
+   "Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+   "[2026-11-09 19:24:12] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=262144, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b92",
+   "[2026-11-09 19:24:12] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+   "[2026-11-09 19:24:20] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+   "[2026-11-09 19:24:22] Warning: User-specified context_length (262144) is greater than the derived context_length (131072). This may lead to incorrect model outputs or CUDA errors. Note that the derived context_length may differ from max_position_embeddings in the model's config.",
+   "[2026-11-09 19:24:34] Mamba Cache is allocated. max_mamba_cache_size: 16, conv_state size: 0.03GB, ssm_state size: 2.24GB ",
+   "[2026-11-09 19:24:39] Capture piecewise CUDA graph begin. avail mem=13.38 GB",
+   "[2026-11-09 19:25:15] Capture piecewise CUDA graph end. Time elapsed: 36.56 s. mem usage=1.19 GB. avail mem=12.19 GB.",
+   "[2026-11-09 19:25:17] max_total_num_tokens=3004104, chunked_prefill_size=8192, max_prefill_tokens=262144, max_running_requests=16, context_len=262144, available_gpu_mem=12.19 GB"
+  ],
+  "piecewise_failed": false,
+  "piecewise_captured": true,
+  "oom": false
+ }
+]
