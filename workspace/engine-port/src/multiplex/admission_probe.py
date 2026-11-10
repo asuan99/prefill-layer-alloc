@@ -56,6 +56,42 @@ through ``AsyncJsonlTelemetry`` (no file I/O on the scheduler thread); only
 rare events (retract, invariant violations) are per-event.  Per-EXTEND events
 are opt-in (``PDMUX_ADMISSION_EMIT_EXTEND=1``).
 
+REQUEST-LEVEL RECORDS (default OFF)
+-----------------------------------
+``PDMUX_ADMISSION_REQ_RECORDS=1`` (strict: unset | 0 | 1; requires
+``PDMUX_ADMISSION_PATH``) emits one ``admission_request`` record per
+``add_one_req`` call and one for the request at the head of the blocked queue when
+a decision stops without reaching ``add_one_req`` (loop cap, chunked guard, sticky
+``batch_is_full``, PD-mux pre-gates).  Fields: ``rid``, ``t_mono`` (decision time),
+``decision_seq``, ``outcome`` (admitted | rejected | blocked), ``stop_reason`` /
+``stop_sub`` / ``stop_inherited``, ``rem_total``, ``required_tokens``,
+``required_basis``, ``running_bs``, ``n_can_run``, ``n_waiting``.
+
+``stop_reason`` is the terminal category above, so KV and the running cap stay
+separate.  There is deliberately NO slot reason: under radix OFF the mamba slot
+count equals the cap constant (``cap_slot_relation`` == IDENTICAL), so a ``cap`` stop
+cannot be told apart from a slot limit.
+
+``rem_total`` is read BEFORE the call (admitted requests change it), and is None
+when the decision built no adder.  ``required_tokens`` follows ``required_basis``:
+``add_total`` is the number the KV check of ``add_one_req`` compares;
+``ignore_eos_input`` is the early check of ``add_one_req_ignore_eos``;
+``ignore_eos_demand`` is input + reserved output, because the projection check
+compares no single number; ``queue_estimate`` is the same demand for a request the
+loop never reached, computed from origin + output length (exact only with no prefix
+match, i.e. radix OFF).
+
+MIXED FORWARD RATIO (default OFF)
+---------------------------------
+``PDMUX_ADMISSION_MIXED_RATIO=1`` (same rules) emits one ``mixed_opportunity`` record
+per decision that produced a batch.  ``mixed_forward_ratio`` counts MIXED among those
+with ``running_bs >= 1``, optionally inside a load window.  A decision with
+``running_bs >= 1`` whose running batch empties in ``filter_batch`` counts as a
+non-mixed opportunity, which is what the engine did.
+
+Both flags are observation only.  Their cost is unmeasured: instrumentation boots
+only.  A failure inside either turns that record type off and never reaches admission.
+
 The pure part of this module (everything above ``# ---- engine glue``) has
 no torch / sglang import so CPU tests can load it as a loose file.
 """
@@ -110,6 +146,19 @@ OTHER_SUBS = (
 RES_CONTINUE = "CONTINUE"
 RES_NO_TOKEN = "NO_TOKEN"
 RES_OTHER = "OTHER"
+
+# Request-level records and the mixed forward ratio (default OFF)
+REQ_RECORDS_ENV = "PDMUX_ADMISSION_REQ_RECORDS"
+MIXED_RATIO_ENV = "PDMUX_ADMISSION_MIXED_RATIO"
+REQUEST_EVENT = "admission_request"
+MIXED_EVENT = "mixed_opportunity"
+OUTCOME_ADMITTED = "admitted"
+OUTCOME_REJECTED = "rejected"
+OUTCOME_BLOCKED = "blocked"
+BASIS_ADD = "add_total"
+BASIS_IGNORE_EOS_INPUT = "ignore_eos_input"
+BASIS_IGNORE_EOS_DEMAND = "ignore_eos_demand"
+BASIS_QUEUE = "queue_estimate"
 
 
 def ceil_paged(tokens: int, page_size: int) -> int:
@@ -214,6 +263,20 @@ def classify_add(snap: AddSnapshot) -> Tuple[str, str, str]:
     if s.truncation_align_size is not None and trunc_len < s.truncation_align_size:
         return OTHER, "trunc_align", RES_OTHER
     return UNCLASSIFIED, "expected_chunk_admit", RES_CONTINUE
+
+
+def required_tokens(snap: AddSnapshot, extend_input_len: int, sub: str) -> Tuple[int, str]:
+    """Tokens the request needed at this add, and what that number is.
+
+    ``extend_input_len`` is the pre-call length: a chunked admission truncates it.
+    """
+    output = min(max(snap.max_new_tokens - snap.n_output, 0), snap.clip_max_new_tokens)
+    if snap.ignore_eos_path:
+        paged = ceil_paged(extend_input_len, snap.page_size)
+        if sub == "ignore_eos_early":
+            return paged, BASIS_IGNORE_EOS_INPUT
+        return paged + output, BASIS_IGNORE_EOS_DEMAND
+    return int(extend_input_len) + output, BASIS_ADD
 
 
 def cap_fired(can_run_len: int, allocatable: int) -> bool:
@@ -505,6 +568,37 @@ def validate_record(rec: Dict[str, Any]) -> List[str]:
     return errs
 
 
+def mixed_forward_ratio(
+    records: List[Dict[str, Any]], t_window: Optional[Tuple[float, float]] = None
+) -> Dict[str, Any]:
+    """MIXED forwards among prefill opportunities with ``running_bs >= 1``.
+
+    ``t_window`` is on the probe's ``time.monotonic`` clock (``t_mono``) and should be
+    the load window.  Refuses a file from a boot without the flag, which would
+    otherwise read as "never mixed".  ``ratio`` is None with no opportunity.
+    """
+    boots = [r for r in records if r.get("event") == "admission_boot"]
+    if not boots or not all(b.get("mixed_ratio_enabled") is True for b in boots):
+        raise ValueError(f"mixed_forward_ratio needs a probe file booted with {MIXED_RATIO_ENV}=1")
+    rows = [r for r in records if r.get("event") == MIXED_EVENT]
+    n_outside = 0
+    if t_window is not None:
+        lo, hi = float(t_window[0]), float(t_window[1])
+        inside = [r for r in rows if lo <= float(r["t_mono"]) <= hi]
+        n_outside = len(rows) - len(inside)
+        rows = inside
+    opportunities = [r for r in rows if int(r["running_bs"]) >= 1]
+    n_mixed = sum(1 for r in opportunities if r["mixed"])
+    return {
+        "n_mixed": n_mixed,
+        "n_opportunities": len(opportunities),
+        "ratio": (n_mixed / len(opportunities)) if opportunities else None,
+        "n_no_running": len(rows) - len(opportunities),
+        "n_outside_window": n_outside,
+        "arm_enable_mixed_chunk": boots[-1].get("arm_enable_mixed_chunk"),
+    }
+
+
 # ---- engine glue --------------------------------------------------------
 # Everything below touches scheduler / adder objects but still imports no
 # torch at module scope.
@@ -525,6 +619,8 @@ class AdmissionProbe:
         boot: Optional[Dict[str, Any]] = None,
         static_fields: Optional[Dict[str, Any]] = None,
         clock=time.monotonic,
+        req_records: bool = False,
+        mixed_ratio: bool = False,
     ) -> None:
         self.acct = AdmissionAccountant()
         self.window_s = float(window_s)
@@ -543,6 +639,12 @@ class AdmissionProbe:
         self._inner_called = False
         self._thread_id: Optional[int] = None
         self.thread_mismatch = 0
+        self.req_records = bool(req_records)
+        self.mixed_ratio = bool(mixed_ratio)
+        self.n_req_records = 0
+        self.n_mixed_records = 0
+        self.n_record_errors = 0
+        self._decision_seq = 0
         self.records: List[Dict[str, Any]] = []  # kept only when path is None (tests)
         self._tel = None
         if path is not None:
@@ -555,7 +657,9 @@ class AdmissionProbe:
             )
         self.acct.reset_window(self.clock())
         self._emit("admission_boot", schema_version=ADMISSION_SCHEMA_VERSION,
-                   t_realtime=time.time(), t_mono=self.clock(), **self.boot)
+                   t_realtime=time.time(), t_mono=self.clock(), **self.boot,
+                   **({"req_records_enabled": True} if self.req_records else {}),
+                   **({"mixed_ratio_enabled": True} if self.mixed_ratio else {}))
 
     # -- output
     def _emit(self, event: str, **fields: Any) -> None:
@@ -578,6 +682,9 @@ class AdmissionProbe:
 
     def close(self) -> None:
         self.maybe_flush(force=True)
+        if self.req_records or self.mixed_ratio or self.n_record_errors:
+            self._emit("admission_records_close", n_req_records=self.n_req_records,
+                       n_mixed_records=self.n_mixed_records, n_record_errors=self.n_record_errors)
         if self._tel is not None:
             self._tel.close()
 
@@ -588,10 +695,88 @@ class AdmissionProbe:
         elif tid != self._thread_id:
             self.thread_mismatch += 1
 
+    # -- request-level records and mixed opportunities (default OFF; never raise)
+    def _record_fail(self, exc: BaseException) -> None:
+        logger.warning("admission request/mixed records disabled after failure: %r", exc)
+        self.req_records = False
+        self.mixed_ratio = False
+        self.n_record_errors += 1
+
+    def read_pre_add(self, adder: Any, req: Any) -> Optional[Tuple[float, int]]:
+        """``(rem_total, extend_input_len)`` before ``add_one_req`` changes them."""
+        try:
+            return float(adder.rem_total_tokens), int(req.extend_input_len)
+        except Exception as exc:
+            self._record_fail(exc)
+            return None
+
+    def _emit_request(self, rid: Any, outcome: str, cat: Optional[str], sub: Optional[str], inherited: bool,
+                      rem_total: Optional[float], required: Optional[int], basis: Optional[str],
+                      running_bs: Optional[int], n_can_run: int, n_waiting: int) -> None:
+        self._emit(REQUEST_EVENT, rid=rid, t_mono=self.clock(), decision_seq=self._decision_seq, outcome=outcome,
+                   stop_reason=cat, stop_sub=sub, stop_inherited=bool(inherited), rem_total=rem_total,
+                   required_tokens=required, required_basis=basis, running_bs=running_bs,
+                   n_can_run=int(n_can_run), n_waiting=int(n_waiting))
+        self.n_req_records += 1
+
+    def _record_add(self, adder: Any, req: Any, snap: AddSnapshot, cat: str, sub: str,
+                    pre: Optional[Tuple[float, int]]) -> None:
+        if not self.req_records or pre is None:
+            return
+        try:
+            rem_total, input_len = pre
+            required, basis = required_tokens(snap, input_len, sub)
+            self._emit_request(
+                req.rid, OUTCOME_ADMITTED if snap.added else OUTCOME_REJECTED,
+                None if cat == CONTINUE else cat, None if cat == CONTINUE else sub, False,
+                rem_total, required, basis, self._entry.get("running_bs"),
+                len(adder.can_run_list), len(self._entry_queue),
+            )
+        except Exception as exc:
+            self._record_fail(exc)
+
+    def _record_blocked(self, queue: Any, index: int, adder: Any, cat: str, sub: str, inherited: bool,
+                        running_bs: Optional[int]) -> None:
+        """The request a stop left waiting without reaching ``add_one_req``.
+
+        ``index`` is the loop position: the loop skips no request unless LoRA or
+        hicache prefetch is on, and neither is used in these runs.
+        """
+        if not self.req_records:
+            return
+        try:
+            if index >= len(queue):
+                return
+            req = queue[index]
+            demand = len(req.origin_input_ids) + len(req.output_ids) + min(
+                max(int(req.sampling_params.max_new_tokens) - len(req.output_ids), 0),
+                int(self.clip_max_new_tokens),
+            )
+            self._emit_request(
+                req.rid, OUTCOME_BLOCKED, cat, sub, inherited,
+                float(adder.rem_total_tokens) if adder is not None else None,
+                demand, BASIS_QUEUE, running_bs,
+                len(getattr(adder, "can_run_list", []) or []) if adder is not None else 0, len(queue),
+            )
+        except Exception as exc:
+            self._record_fail(exc)
+
+    def _record_mixed(self, new_batch: Any, running_bs: int, n_can_run: int, mixed: bool) -> None:
+        if not self.mixed_ratio:
+            return
+        try:
+            fm = getattr(new_batch, "forward_mode", None)
+            self._emit(MIXED_EVENT, t_mono=self.clock(), running_bs=int(running_bs), n_can_run=int(n_can_run),
+                       mixed=bool(mixed), forward_mode=str(getattr(fm, "name", fm)))
+            self.n_mixed_records += 1
+        except Exception as exc:
+            self._record_fail(exc)
+
     # -- decision bracket
     def begin_decision(self, sched: Any) -> None:
         self._check_thread()
         self._inner_called = True
+        self._decision_seq += 1
         rb = sched.running_batch
         sticky = bool(getattr(rb, "batch_is_full", False))
         if not sticky:
@@ -637,12 +822,16 @@ class AdmissionProbe:
         if rel == "slot_tighter":
             self._emit("admission_invariant", kind="slot_tighter", **self._entry,
                        n_can_run=len(can_run), n_new=n_new)
+        if cat == CAP or inherited:
+            self._record_blocked(self._entry_queue, t.n_add_calls, adder, cat, sub, inherited,
+                                 self._entry.get("running_bs"))
         if cat in REJECTION_CATEGORIES and not inherited and cat not in (PREFILL_SEAT, R2_LATCH):
             self.acct.record_cobind(self._cobind(sched, t, cat, adder, len(can_run), n_new))
         if new_batch is not None:
             fm = getattr(new_batch, "forward_mode", None)
             mixed = bool(fm is not None and getattr(fm, "is_mixed", lambda: False)())
             self.acct.record_extend(self._entry["running_bs"], mixed)
+            self._record_mixed(new_batch, self._entry["running_bs"], len(can_run), mixed)
             if self.emit_extend:
                 self._emit("admission_extend", running_bs=self._entry["running_bs"],
                            n_can_run=len(can_run), mixed=mixed, t_mono=self.clock())
@@ -702,7 +891,8 @@ class AdmissionProbe:
         n = len(adder.can_run_list) if adder is not None else 0
         t.events.append(("cap", cap_fired(n, allocatable)))
 
-    def on_add(self, adder: Any, req: Any, res_name: str, snap: AddSnapshot) -> None:
+    def on_add(self, adder: Any, req: Any, res_name: str, snap: AddSnapshot,
+               pre: Optional[Tuple[float, int]] = None) -> None:
         t = self.trace
         if t is None or adder is not self.current_adder:
             return
@@ -712,6 +902,7 @@ class AdmissionProbe:
             self.acct.classifier_mismatch += 1
             cat, sub = UNCLASSIFIED, f"mismatch:{predicted}->{res_name}"
         t.events.append(("add", cat, sub))
+        self._record_add(adder, req, snap, cat, sub, pre)
 
     # -- outside get_new_batch_prefill
     def on_pdmux_pregate(self, sched: Any, seat_busy: bool, latch_before: bool) -> None:
@@ -727,6 +918,11 @@ class AdmissionProbe:
             self.acct.record_decision(R2_LATCH, "pdmux", False)
         else:
             self.acct.record_decision(UNCLASSIFIED, "pregate", False)
+        if waiting and self.req_records:
+            self._decision_seq += 1
+            cat = PREFILL_SEAT if seat_busy else (R2_LATCH if latch_before else UNCLASSIFIED)
+            self._record_blocked(sched.waiting_queue, 0, None, cat, "pdmux", False,
+                                 len(getattr(getattr(sched, "running_batch", None), "reqs", []) or []))
         self.maybe_flush()
 
     def on_decode_batch(self, batch: Any) -> None:
@@ -792,11 +988,12 @@ def install_wrappers(prefill_adder_cls: Any, scheduler_cls: Any, clip_max_new_to
         p = _PROBE
         if p is None or p.trace is None:
             return orig_add(self, req, has_chunked_req, truncation_align_size)
+        pre = p.read_pre_add(self, req) if p.req_records else None
         n_before = len(self.can_run_list)
         res = orig_add(self, req, has_chunked_req, truncation_align_size)
         added = len(self.can_run_list) > n_before and self.can_run_list[-1] is req
         snap = _snapshot(self, req, n_before, added, clip_max_new_tokens, truncation_align_size)
-        p.on_add(self, req, getattr(res, "name", str(res)), snap)
+        p.on_add(self, req, getattr(res, "name", str(res)), snap, pre)
         return res
 
     prefill_adder_cls.add_one_req = add_one_req
@@ -982,6 +1179,15 @@ def _env_flag(name: str) -> bool:
     return os.environ.get(name, "").strip().lower() in ("1", "true", "yes")
 
 
+def _env_flag_strict(name: str) -> bool:
+    raw = (os.environ.get(name, "") or "").strip()
+    if raw in ("", "0"):
+        return False
+    if raw == "1":
+        return True
+    raise ValueError(f"{name}={raw!r}: only unset, '0' or '1' are defined")
+
+
 def maybe_install_admission_probe(scheduler: Any) -> Optional[AdmissionProbe]:
     """Return a probe iff ``PDMUX_ADMISSION_PATH`` is set; otherwise None.
 
@@ -989,7 +1195,11 @@ def maybe_install_admission_probe(scheduler: Any) -> Optional[AdmissionProbe]:
     wrapper is installed.
     """
     path_str = os.environ.get("PDMUX_ADMISSION_PATH", "").strip()
+    req_records = _env_flag_strict(REQ_RECORDS_ENV)
+    mixed_ratio = _env_flag_strict(MIXED_RATIO_ENV)
     if not path_str:
+        if req_records or mixed_ratio:  # fail fast: a boot that would silently record nothing
+            raise ValueError(f"{REQ_RECORDS_ENV} / {MIXED_RATIO_ENV} need PDMUX_ADMISSION_PATH")
         return None
     from sglang.srt.managers.schedule_policy import CLIP_MAX_NEW_TOKENS, PrefillAdder
 
@@ -1013,6 +1223,8 @@ def maybe_install_admission_probe(scheduler: Any) -> Optional[AdmissionProbe]:
         emit_extend=_env_flag("PDMUX_ADMISSION_EMIT_EXTEND"),
         boot=boot,
         static_fields=static,
+        req_records=req_records,
+        mixed_ratio=mixed_ratio,
     )
     probe.clip_max_new_tokens = int(CLIP_MAX_NEW_TOKENS)
     set_probe(probe)

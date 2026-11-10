@@ -103,6 +103,52 @@ boot that is separate from every measurement arm (PC-boot precedent C5);
 numbers from such a boot are r_ser / r_mix inputs, never goodput / latency
 evidence, and measurement arms run with the flag OFF.
 
+FORWARD INTERIOR TIMING (default OFF)
+-------------------------------------
+``PDMUX_PROBE_FORWARD_INTERIOR=1`` (strict: unset | 0 | 1; requires
+``PDMUX_DECODE_PROBE_PATH``, else ``ValueError`` at install) emits one
+``forward_interior`` record per DECODE, MIXED and plain EXTEND forward, joined to
+``decode_forward`` / ``extend_forward`` by ``seq``.  All stamps use the probe's host
+clock, the same clock as ``t_host_start``:
+
+  t_forward_enter / t_forward_return   the bracket of ``ModelRunner.forward``
+  t_meta_enter / t_meta_exit           ``init_forward_metadata`` on the attention
+                                       backend (first enter, last exit), or
+                                       ``init_forward_metadata_replay_cuda_graph``
+                                       on the decode-graph path
+  t_ssm_meta_enter / t_ssm_meta_exit   the same call on the hybrid backend's
+                                       ``linear_attn_backend``.  That sub-interval
+                                       holds ``Mamba2Metadata.prepare_mixed`` and its
+                                       ``.item()`` (mamba2_metadata.py:201) on EXTEND
+                                       and MIXED forwards
+  t_launch, launch_source              host clock at the model call: entry of
+                                       ``model.forward`` (eager and piecewise), or
+                                       return of ``graph_runner.replay_prepare`` (the
+                                       decode graph replays right after it)
+  t_model_return                       return of ``model.forward``; None on the
+                                       decode-graph path
+
+``t_launch`` IS NOT A CUDA API CALLBACK.  It is the last host point before the model's
+kernels are issued.  Metadata preparation issues small kernels of its own before it,
+so "first kernel of the forward" would land inside the metadata interval.
+``t_meta_*`` is host time: a ``.item()`` that waits for earlier GPU work on the same
+stream shows up there, and these stamps cannot split waiting from Python work.
+
+The piecewise and eager paths reach the same two objects
+(``runner.attn_backend.init_forward_metadata`` and ``runner.model.forward``), so the
+same instance-level shadows serve both; ``graph`` plus ``mode`` say which path ran.
+SPLIT_PREFILL (PD-mux) is not recorded and stays in ``n_other_modes``.  Capture is
+skipped.  EXTEND forwards take a ``seq`` while this flag is ON, even without
+``PDMUX_PROBE_EXTEND_TIME``, so decode ``seq`` values have holes in that case; those
+files are rejected by ``pacing_ratios`` through its boot check.  A failure inside
+this code turns off interior records only and leaves the forward and ``decode_forward``
+records alone.
+
+OBSERVER COST IS UNMEASURED.  ON adds up to 6 clock reads, up to 3
+``is_current_stream_capturing`` calls, a thread-local lookup per shadowed call and
+one queued record per forward.  Same rule as EXTEND timing: dedicated instrumentation
+boot only, never a measurement arm.
+
 The pure part (above ``# ---- engine glue``) imports no torch / sglang, so CPU
 tests load this file loose.
 """
@@ -147,6 +193,11 @@ EXTEND_EVENT = "extend_forward"
 EXT_GPU_FIELD = "extend_gpu_ms"
 EXT_HOST_FIELD = "extend_host_ms"
 EXTEND_ENV = "PDMUX_PROBE_EXTEND_TIME"
+INTERIOR_ENV = "PDMUX_PROBE_FORWARD_INTERIOR"
+INTERIOR_EVENT = "forward_interior"
+INTERIOR_BOOT_EVENT = "forward_interior_boot"
+LAUNCH_MODEL = "model_forward"
+LAUNCH_GRAPH = "graph_replay_prepare"
 PACING_MIN_BS = 5  # == results/stock_baseline/r_ser_holb.py MIN_BS (per-bs T_dec needs >= 5 pure samples)
 
 
@@ -360,6 +411,110 @@ def validate_record(rec: Dict[str, Any]) -> List[str]:
     return errs
 
 
+# ---- forward interior ----------------------------------------------------
+
+def _ms(a: Optional[float], b: Optional[float]) -> Optional[float]:
+    return None if a is None or b is None else (b - a) * 1000.0
+
+
+def interior_fields(stamps: Dict[str, Any], t_enter: float, t_return: float) -> Dict[str, Any]:
+    """Stamps of one forward -> record fields.
+
+    The four segments partition the forward when every stamp exists:
+    ``pre_meta_ms`` (host work before metadata), ``meta_ms``, ``meta_to_launch_ms``
+    and ``launch_to_return_ms``.  A missing stamp gives None, never a zero.
+    """
+    t_meta_enter = stamps.get("t_meta_enter")
+    t_meta_exit = stamps.get("t_meta_exit")
+    t_launch = stamps.get("t_launch")
+    source = LAUNCH_MODEL if t_launch is not None else None
+    if t_launch is None and stamps.get("t_graph_launch") is not None:
+        t_launch, source = stamps["t_graph_launch"], LAUNCH_GRAPH
+    return {
+        "t_forward_enter": t_enter,
+        "t_forward_return": t_return,
+        "t_meta_enter": t_meta_enter,
+        "t_meta_exit": t_meta_exit,
+        "t_ssm_meta_enter": stamps.get("t_ssm_meta_enter"),
+        "t_ssm_meta_exit": stamps.get("t_ssm_meta_exit"),
+        "t_launch": t_launch,
+        "launch_source": source,
+        "t_model_return": stamps.get("t_model_return"),
+        "n_meta_calls": int(stamps.get("n_meta_calls", 0)),
+        "n_model_calls": int(stamps.get("n_model_calls", 0)),
+        "forward_ms": _ms(t_enter, t_return),
+        "pre_meta_ms": _ms(t_enter, t_meta_enter),
+        "meta_ms": _ms(t_meta_enter, t_meta_exit),
+        "ssm_meta_ms": _ms(stamps.get("t_ssm_meta_enter"), stamps.get("t_ssm_meta_exit")),
+        "meta_to_launch_ms": _ms(t_meta_exit, t_launch),
+        "launch_to_return_ms": _ms(t_launch, t_return),
+    }
+
+
+# ---- realized decode SM time-share (PDMUX_PHASE_DECODE_SHARE) --------------
+
+def decode_sm_time_share(
+    records: Sequence[Dict[str, Any]],
+    t_window: Optional[Tuple[float, float]] = None,
+) -> Dict[str, Any]:
+    """Share of decode step time per ``decode_sms``, from ``decode_iteration`` records.
+
+    A step's weight is ``t_sync - t_issue_start``.  ``t_window`` (perf_counter clock)
+    keeps steps whose ``t_issue_start`` falls inside it.  Steps with ``decode_sms == 0``
+    (stream index 0) stay out of the shares and are counted.  Nothing is imputed:
+    ``n_missing_iters`` counts ``iter_seq`` holes inside the kept range, and
+    ``coverage`` = summed step time / (last sync - first issue).  Refuses a file with
+    no ``t_issue_start`` (a boot without the flag), which would otherwise read as empty.
+    """
+    its = [r for r in records if r.get("event") == "decode_iteration"]
+    if not any(r.get("t_issue_start") is not None for r in its):
+        raise ValueError("decode_sm_time_share needs records from a PDMUX_PHASE_DECODE_SHARE=1 boot")
+    kept = [r for r in its if r.get("t_issue_start") is not None]
+    n_no_stamp = len(its) - len(kept)
+    if t_window is not None:
+        lo, hi = float(t_window[0]), float(t_window[1])
+        kept = [r for r in kept if lo <= float(r["t_issue_start"]) <= hi]
+    kept.sort(key=lambda r: int(r["iter_seq"]))
+    busy: Dict[int, float] = {}
+    steps: Dict[int, int] = {}
+    n_zero = 0
+    zero_ms = 0.0
+    n_missing = 0
+    prev = None
+    for r in kept:
+        seq = int(r["iter_seq"])
+        if prev is not None and seq > prev + 1:
+            n_missing += seq - prev - 1
+        prev = seq
+        d = int(r["decode_sms"])
+        ms = (float(r["t_sync"]) - float(r["t_issue_start"])) * 1000.0
+        if d == 0:
+            n_zero += 1
+            zero_ms += ms
+            continue
+        busy[d] = busy.get(d, 0.0) + ms
+        steps[d] = steps.get(d, 0) + 1
+    total = sum(busy.values())
+    span_ms = None
+    coverage = None
+    if kept:
+        span_ms = (max(float(r["t_sync"]) for r in kept) - min(float(r["t_issue_start"]) for r in kept)) * 1000.0
+        coverage = (total + zero_ms) / span_ms if span_ms > 0 else None
+    return {
+        "shares": {d: (ms / total) for d, ms in sorted(busy.items())} if total > 0 else {},
+        "busy_ms": dict(sorted(busy.items())),
+        "n_steps": dict(sorted(steps.items())),
+        "n_kept": len(kept),
+        "n_no_issue_stamp": n_no_stamp,
+        "n_missing_iters": n_missing,
+        "n_decode_sms_zero": n_zero,
+        "decode_sms_zero_ms": zero_ms,
+        "span_ms": span_ms,
+        "coverage": coverage,
+        "max_dropped_events": max((int(r.get("dropped_events", 0) or 0) for r in its), default=0),
+    }
+
+
 # ---- r_ser / r_mix (PLAN_stock_baseline_metrics_2026-11-01 sec 0-1) -------
 
 def _is_extend_rec(r: Dict[str, Any]) -> bool:
@@ -514,6 +669,7 @@ class DecodeProbe:
         decode_iter_fn: Optional[Callable[[], Optional[int]]] = None,
         extend_time: bool = False,
         stream_key_fn: Optional[Callable[[], Any]] = None,
+        interior: bool = False,
     ) -> None:
         self.boot = dict(boot or {})
         self.window_s = float(window_s)
@@ -528,6 +684,11 @@ class DecodeProbe:
         if self.extend_time and not self.events_enabled:
             raise ValueError(f"{EXTEND_ENV}=1 needs GPU events (PDMUX_DECODE_PROBE_GPU_EVENTS unset or 1)")
         self.stream_key_fn = stream_key_fn
+        # forward interior timing: instrumentation boot only (module docstring)
+        self.interior = bool(interior)
+        self._tls = threading.local()
+        self.n_interior_records = 0
+        self.n_interior_errors = 0
         self.ext_pending: Deque[PendingForward] = deque()
         self.max_pending = max(1, int(max_pending))
         self.capture_bs = [int(b) for b in (self.boot.get("capture_bs") or [])]
@@ -552,7 +713,8 @@ class DecodeProbe:
         self._emit("decode_probe_boot", schema_version=DECODE_SCHEMA_VERSION,
                    t_realtime=time.time(), t_host=self.clock(),
                    events_enabled=self.events_enabled, **self.boot,
-                   **({"extend_time_enabled": True} if self.extend_time else {}))
+                   **({"extend_time_enabled": True} if self.extend_time else {}),
+                   **({"forward_interior_enabled": True} if self.interior else {}))
 
     # -- output
     def _emit(self, event: str, **fields: Any) -> None:
@@ -596,6 +758,79 @@ class DecodeProbe:
         with self._lock:
             self._drain_locked()
 
+    # -- forward interior
+    def _interior_fail(self, exc: BaseException) -> None:
+        if self.interior:
+            logger.warning("forward interior timing disabled after failure: %r", exc)
+        self.interior = False
+        self.n_interior_errors += 1
+
+    def _interior_bind(self, orig: Callable, stamps: Dict[str, Any]) -> Callable:
+        """``orig`` with ``stamps`` open on this thread for exactly its duration."""
+        tls = self._tls
+
+        def call(*args, **kwargs):
+            tls.stamps = stamps
+            try:
+                return orig(*args, **kwargs)
+            finally:
+                tls.stamps = None
+
+        return call
+
+    def interior_call(self, orig: Callable, args: tuple, kwargs: dict,
+                      enter: Optional[str], exit_: Optional[str], count: Optional[str] = None) -> Any:
+        """Run one shadowed engine call, stamping it when a recorded forward is open.
+
+        ``enter`` keeps the first entry, ``exit_`` the last exit.  Engine exceptions
+        propagate unchanged; a probe-side failure turns interior timing off.
+        """
+        st = None
+        try:
+            st = getattr(self._tls, "stamps", None)
+            if st is not None and (not self.interior or self.capturing_fn()):
+                st = None
+            if st is not None:
+                if enter is not None and enter not in st:
+                    st[enter] = self.clock()
+                if count is not None:
+                    st[count] = st.get(count, 0) + 1
+        except Exception as exc:
+            st = None
+            self._interior_fail(exc)
+        out = orig(*args, **kwargs)
+        if st is not None and exit_ is not None:
+            try:
+                st[exit_] = self.clock()
+            except Exception as exc:
+                self._interior_fail(exc)
+        return out
+
+    def _emit_interior(self, stamps: Optional[Dict[str, Any]], seq: Optional[int], kind: str, runner: Any,
+                       out: Any, sidx: Any, diter: Any, t0: float, t1: float) -> None:
+        if stamps is None or seq is None or not self.interior:
+            return
+        try:
+            self._emit(
+                INTERIOR_EVENT,
+                seq=seq,
+                mode=kind,
+                graph=GRAPH_HIT if bool(getattr(out, "can_run_graph", False)) else GRAPH_EAGER,
+                forward_pass_id=getattr(runner, "forward_pass_id", None),
+                pdmux_stream_idx=sidx,
+                decode_iter_seq=diter,
+                thread=threading.current_thread().name,
+                **interior_fields(stamps, t0, t1),
+            )
+            self.n_interior_records += 1
+        except Exception as exc:
+            self._interior_fail(exc)
+
+    def _next_seq(self) -> int:
+        with self._lock:
+            self._seq += 1
+            return self._seq
+
     # -- the wrapped call
     def around_forward(self, runner: Any, orig: Callable, args: tuple, kwargs: dict) -> Any:
         if self.disabled:
@@ -607,7 +842,7 @@ class DecodeProbe:
             if kind is None:
                 with self._lock:
                     self.acct.n_other_modes[mode_name(fm)] += 1
-                if not (self.extend_time and is_plain_extend(fm)):
+                if not ((self.extend_time or self.interior) and is_plain_extend(fm)):
                     return orig(*args, **kwargs)
                 kind = MODE_EXTEND
             if self.capturing_fn():
@@ -615,13 +850,16 @@ class DecodeProbe:
                     self.acct.n_skipped_capturing += 1
                 return orig(*args, **kwargs)
             self.poll()
-            pair = self._take_pair()
+            pair = self._take_pair() if (kind != MODE_EXTEND or self.extend_time) else None
             bs_real = int(getattr(fb, "batch_size", 0) or 0)
             sidx = self.stream_idx_fn() if self.stream_idx_fn is not None else None
             diter = self.decode_iter_fn() if self.decode_iter_fn is not None else None
             if self.extend_time:
                 skey = self.stream_key_fn() if self.stream_key_fn is not None else None
                 ext = extend_batch_fields(fb, mixed=(kind == MODE_MIXED)) if kind != MODE_DECODE else None
+            stamps = {} if self.interior else None
+            if stamps is not None:
+                orig = self._interior_bind(orig, stamps)
         except Exception as exc:  # probe-side failure: never break the forward
             self._disable(exc)
             return orig(*args, **kwargs)
@@ -635,7 +873,8 @@ class DecodeProbe:
         t1 = self.clock()
 
         if kind == MODE_EXTEND:
-            self._record_extend(runner, out, pair, ext, skey, sidx, diter, t0, t1)
+            seq = self._record_extend(runner, out, pair, ext, skey, sidx, diter, t0, t1) if self.extend_time else self._next_seq()
+            self._emit_interior(stamps, seq, kind, runner, out, sidx, diter, t0, t1)
             return out
 
         try:
@@ -686,6 +925,7 @@ class DecodeProbe:
                     while len(self.pending) > self.max_pending:
                         self.pending.popleft()  # never waited for; counted
                         self.acct.n_dropped_pending += 1
+            self._emit_interior(stamps, fields["seq"], kind, runner, out, sidx, diter, t0, t1)
             self.maybe_flush()
         except Exception as exc:
             with self._lock:
@@ -694,8 +934,10 @@ class DecodeProbe:
         return out
 
     def _record_extend(self, runner: Any, out: Any, pair: Any, ext: Dict[str, Any], skey: Any,
-                       sidx: Any, diter: Any, t0: float, t1: float) -> None:
-        """EXTEND record (flag ON only).  Not counted in the decode/graph window counters."""
+                       sidx: Any, diter: Any, t0: float, t1: float) -> Optional[int]:
+        """EXTEND record (flag ON only).  Not counted in the decode/graph window counters.
+        Returns the record's ``seq``, or None if the record could not be built."""
+        seq = None
         try:
             with self._lock:
                 self._seq += 1
@@ -718,11 +960,13 @@ class DecodeProbe:
                 while len(self.ext_pending) > self.max_pending:
                     self.ext_pending.popleft()  # never waited for; counted (seq hole -> excluded gap)
                     self.acct.n_extend_dropped_pending += 1
+                seq = fields["seq"]
             self.maybe_flush()
         except Exception as exc:
             with self._lock:
                 self.acct.n_probe_errors += 1
             self._disable(exc)
+        return seq
 
     def maybe_flush(self, force: bool = False) -> None:
         now = self.clock()
@@ -737,6 +981,8 @@ class DecodeProbe:
                 rec.update(n_extend_timed=self.acct.n_extend_timed, n_extend_resolved=self.acct.n_extend_resolved,
                            n_extend_pending=len(self.ext_pending),
                            n_extend_dropped_pending=self.acct.n_extend_dropped_pending)
+            if self.interior or self.n_interior_errors:
+                rec.update(n_interior_records=self.n_interior_records, n_interior_errors=self.n_interior_errors)
             self._emit("decode_probe_window", **rec)
             self.acct.reset(now)
 
@@ -758,6 +1004,7 @@ class DecodeProbe:
 
 _PROBE: Optional[DecodeProbe] = None
 _WRAPPED: List[Any] = []
+_INTERIOR_WRAPPED: List[Tuple[Any, str]] = []
 
 
 def set_probe(probe: Optional[DecodeProbe]) -> Optional[DecodeProbe]:
@@ -796,6 +1043,66 @@ def uninstall_all() -> None:
         r = _WRAPPED.pop()
         if "forward" in r.__dict__:
             del r.__dict__["forward"]
+    while _INTERIOR_WRAPPED:
+        owner, name = _INTERIOR_WRAPPED.pop()
+        if name in owner.__dict__:
+            del owner.__dict__[name]
+
+
+def _shadow(owner: Any, name: str, enter: Optional[str], exit_: Optional[str], count: Optional[str] = None) -> bool:
+    """Instance-level shadow of ``owner.name`` that reads ``_PROBE`` on every call.
+
+    Returns False, without raising, when the site cannot be shadowed: the boot record
+    lists the sites that were, so a missing site is visible in the data.
+    """
+    try:
+        if owner is None or name in vars(owner) or not callable(getattr(owner, name, None)):
+            return False
+        orig = getattr(owner, name)
+
+        def shadow(*args, **kwargs):
+            p = _PROBE
+            if p is None:
+                return orig(*args, **kwargs)
+            return p.interior_call(orig, args, kwargs, enter, exit_, count)
+
+        shadow.__wrapped__ = orig  # type: ignore[attr-defined]
+        setattr(owner, name, shadow)
+    except (AttributeError, TypeError) as exc:
+        logger.warning("forward interior: cannot shadow %s.%s: %r", type(owner).__name__, name, exc)
+        return False
+    _INTERIOR_WRAPPED.append((owner, name))
+    return True
+
+
+def _attention_backends(runner: Any) -> List[Any]:
+    """Every attention backend a recorded forward can reach, without duplicates."""
+    found = [getattr(runner, "attn_backend", None), getattr(runner, "decode_attn_backend", None)]
+    found.extend(getattr(runner, "decode_attn_backend_group", None) or [])
+    out, seen = [], set()
+    for b in found:
+        if b is not None and id(b) not in seen:
+            seen.add(id(b))
+            out.append(b)
+    return out
+
+
+def install_interior(runner: Any) -> List[str]:
+    """Shadow the interior sites of ``runner``; returns the sites wrapped."""
+    sites: List[str] = []
+    for backend in _attention_backends(runner):
+        label = type(backend).__name__
+        for name in ("init_forward_metadata", "init_forward_metadata_replay_cuda_graph"):
+            if _shadow(backend, name, "t_meta_enter", "t_meta_exit", "n_meta_calls"):
+                sites.append(f"{label}.{name}")
+        linear = getattr(backend, "linear_attn_backend", None)
+        if _shadow(linear, "init_forward_metadata", "t_ssm_meta_enter", "t_ssm_meta_exit"):
+            sites.append(f"{type(linear).__name__}.init_forward_metadata")
+    if _shadow(getattr(runner, "model", None), "forward", "t_launch", "t_model_return", "n_model_calls"):
+        sites.append("model.forward")
+    if _shadow(getattr(runner, "graph_runner", None), "replay_prepare", None, "t_graph_launch"):
+        sites.append("graph_runner.replay_prepare")
+    return sites
 
 
 def build_boot_record(scheduler: Any, runner: Any) -> Dict[str, Any]:
@@ -834,9 +1141,12 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
     (nothing installed, nothing imported beyond this module)."""
     path_str = (os.environ.get("PDMUX_DECODE_PROBE_PATH", "") or "").strip()
     extend_time = _env_flag_strict(EXTEND_ENV, False)
+    interior = _env_flag_strict(INTERIOR_ENV, False)
     if not path_str:
         if extend_time:  # fail fast: an instrumentation boot that would silently record nothing
             raise ValueError(f"{EXTEND_ENV}=1 without PDMUX_DECODE_PROBE_PATH")
+        if interior:
+            raise ValueError(f"{INTERIOR_ENV}=1 without PDMUX_DECODE_PROBE_PATH")
         return None
     events = _env_flag_strict("PDMUX_DECODE_PROBE_GPU_EVENTS", True)
     if extend_time and not events:
@@ -878,9 +1188,19 @@ def maybe_install_decode_probe(scheduler: Any) -> Optional[DecodeProbe]:
         decode_iter_fn=decode_iter_fn,
         **({"extend_time": True, "stream_key_fn": lambda: int(torch.cuda.current_stream().cuda_stream)}
            if extend_time else {}),
+        **({"interior": True} if interior else {}),
     )
     set_probe(probe)
     install_on_runner(runner)
+    if interior:
+        sites = install_interior(runner)
+        probe._emit(INTERIOR_BOOT_EVENT, sites=sites,
+                    piecewise_runner_class=type(getattr(runner, "piecewise_cuda_graph_runner", None)).__name__,
+                    graph_runner_class=type(getattr(runner, "graph_runner", None)).__name__,
+                    disable_piecewise_cuda_graph=getattr(getattr(runner, "server_args", None),
+                                                         "disable_piecewise_cuda_graph", None))
+        logger.warning("decode probe forward interior ON (%s=1): instrumentation boot only, not a measurement arm; "
+                       "sites=%s", INTERIOR_ENV, sites)
     logger.info(
         "decode probe ENABLED (I-4 events=%s, I-6; all arms; pdmux=%s capture_bs=%s) -> %s",
         events, boot["arm_enable_pdmux"], boot["capture_bs"], path,
