@@ -9,11 +9,11 @@
 - 비용 항 캠페인(10-26): `cap_char/RESULT_costterms_2026-10-26.md` §17(5차 반영) · Phase B(11-02~04): 감사 r1 허용 문안 A1–A11 `stock_baseline/AUDIT_result_phaseB_{claims,recompute}_r1_2026-11-07.md`(9차 반영)
 - 이번 세션(11-08~09, CPU, 정본 아님): Mamba2 CUDA graph 코드 대조 `reports/engine_review/2026-11-08_mamba_cudagraph/`(두 엔진 모두 decode Mamba graph·padding 칸 커널 마스킹, prefill Mamba eager split op; SGLang만 Mamba prefill metadata GPU→CPU 동기화) · motivation 공백 정리와 측정별 예상 값 `reports/motivation_gap_2026-11-09/`(M4a 예비: 합성 15셀 중 4셀만 hybrid 항이 D\*를 바꿈, 입력 1k–4k; 메모리 하한상 문맥 약 2.8k 이상에서 Nano decode < Llama) — 사전 예측, 인용 금지
 - promote 필요: 아니오 (8차·9차 반영 2026-11-07)
-- promote 필요: 예 (감사 — 미감사 문서 r1 4건 GO-with-edits, `reports/audit/2026-11-08_unaudited_r1/`; 각 판정서 허용 문안만, 대상 문서 수정 전에는 인용 금지 목록 적용)
+- promote 필요: 아니오 (10차 반영 2026-11-10; 감사 — 미감사 문서 r1 4건 GO-with-edits, `reports/audit/2026-11-08_unaudited_r1/`; 각 판정서 허용 문안만, 대상 문서 수정 전에는 인용 금지 목록 적용)
 - promote 필요: 아니오 (이번 세션 코드 검토·예상 값은 공시 후보·사전 예측이라 감사 전 반영 안 함)
-- promote 필요: 예 (결정 — 2026-11-09 비교 기준선, opchar = 고리 1 보조 근거, 작업 방식: 보고서는 md 금지·HTML, 측정은 번호 대신 보려는 동작 이름으로 부름 → 메모리 반영)
-- promote 필요: 예 (감사 — 기준선·측정 셀 정의 시점 r1, 판정 요약 `reports/motivation_gap_2026-11-09/observation_map.html`, 새 판정 등급 없음)
-- promote 필요: 예 (결정 — 2026-11-10 프로브 후속 결정, 위 현재 상태 줄; 프로브 자체는 부팅 확인이라 측정 결과 아님)
+- promote 필요: 아니오 (10차 반영 2026-11-10; 결정 — 2026-11-09 비교 기준선, opchar = 고리 1 보조 근거, 작업 방식: 보고서는 md 금지·HTML, 측정은 번호 대신 보려는 동작 이름으로 부름 → 메모리 반영)
+- promote 필요: 아니오 (10차 반영 2026-11-10; 감사 — 기준선·측정 셀 정의 시점 r1, 판정 요약 `reports/motivation_gap_2026-11-09/observation_map.html`, 새 판정 등급 없음)
+- promote 필요: 아니오 (10차 반영 2026-11-10; 결정 — 2026-11-10 프로브 후속 결정, 위 현재 상태 줄; 프로브 자체는 부팅 확인이라 측정 결과 아님)
 ## 현재 상태 (2026-11-10)
 - **결론**: 제안 기법 설계 이전에 motivation 증거 사슬(고리 1–4)이 서 있지 않다. 고리 2는 검증 0, 고리 3은 KISTI 8월 결과뿐, 고리 4는 셀 정의가 판정을 막음. 이전 실험 목록 = `reports/motivation_gap_2026-11-09/PRIOR_EXPERIMENTS_AND_PLAN.md`(이력) · 공유 Doc artifact 2wMCeLCGjjRN9WFJjWTXsC
 - **관측 지점 코드 확정 완료** = **`reports/motivation_gap_2026-11-09/observation_map.html`**(artifact FzF3JCzNx8KLQ9sfqk7HgM): 측정 7개의 동작 시나리오·계측 상태·옛 번호 대조표. 새 probe 필요 = 도착 시 decode 정지 원인, 층 종류별 decode 시간, 엔진 간 ITL 동등성, 요청별 KV·cap 사유 · 분할 체류 시간·전환 대기는 플래그로 가능

@@ -8833,3 +8833,9 @@ layer-type 기반 정책 중 층 경계 SM 전환 계열은 시험한 구현(KIS
 - **패치 트리 OFF(A10)·사전 예측(A11)**: (A10) "수정 트리·플래그 OFF와 손대지 않은 트리의 SGLang 기본 구성은 버스트 사다리(rung 간격 1.15배, rung당 seed 2, 두 GPU)에서 같은 rung에서 끊겼고 토큰 ITL 분포도 거의 겹쳤다. 이는 Q8 판정이 아니며, 15% 미만의 차이와 커널 수준 차이(causal_conv1d int64)를 배제하지 않는다." (A11) "사전등록 예측 P-1(SG 버스트 λ\* ∈ [6, 10])과 P-2(vLLM/SG ∈ [0.8, 1.25])는 MISS다 — 첫 번째 Job 사다리에서 SG λ\*가 등록 격자 최저 5.516 미만으로 확정되어 두 띠 모두 밖이다(봉인 스코어러는 이 경우 None을 내는 결함이 있었다). 예측의 기전 전제(짧은 프롬프트 정지는 SLO 아래, 요청당 정지 노출 약 1%)가 raw와 어긋났다." — 사전 예측 MISS는 claim 등급이 아니다(§6 불변).
 - **병합 메모 범위(재계산)**: "ITL SLO +10% → 0.93–0.95"는 seed 선택 범위(s202 0.483)이고, B3은 chunk −1이 mem 자동값(0.836→0.686)을 함께 바꿔 단일 변수가 아니며, PD-mux 0.5× 지속 run의 실제 도착률은 3.43(명목 −6%, 판정 불변).
 - **인용 금지(링크만)**: `workspace/engine-port/results/stock_baseline/AUDIT_result_phaseB_claims_r1_2026-11-07.md` 각 절 "인용 금지" · 정본에 올리지 않은 것 — SG 버스트 용량 수치, 엔진 간 용량 비·순서, Q8 판정, "CAP1-R 재현", 지속 대 버스트 비, 정지 원인 귀속, 8월 §1-1 기전 연결.
+
+## 12. 공시 추가 (2026-11-10 promote 10차 — 미감사 문서 감사 r1 4건·opchar 동기화 감사·결정 2026-11-09/10, 등급 변경 0; 기존 줄 번호 보존을 위해 파일 끝에 둔다)
+
+- 허용 문안과 금지 목록의 원문은 `reports/audit/2026-11-08_unaudited_r1/AUDIT_*_r1_2026-11-08.md` 4건과 `workspace/engine-port/results/opchar/AUDIT_sync_green_graph_2026-11-03.md`; 요약은 `PROJECT_STATUS.md` 파일 끝 10차 6줄. 모두 GO-with-edits, 死因 0, §1/§2/§6 모순 없음.
+- 공시: (a) D\* 대조는 사후 재현이고 예측 시험은 R Job 채점뿐 — §6 C의 "미검증·시험 가능" 불변 (b) F2·F4·F6 루프 구조는 SGLang 원본의 것이라 프로젝트 선택이 아님 — §6 G의 "공개 PD-mux 루프 범위" 불변 (c) cap 48은 최초 도입 시 근거 기록 없음, 통제 상수 역할 (d) green stream graph replay 뒤 device sync 조기 반환은 서빙 수치와 무관(범위 한정).
+- 결정(2026-11-09/10: 비교 기준선 SG chunk·SG mixed·vLLM 모두 기준선·주 비교 SG mixed, 측정 순서, 상한·트래픽 측정 추가, a31 대조, arXiv 요약 출력 조건)은 판정이 아니며 §6 등급을 바꾸지 않는다. 원문 `tracks/main.md`(git 이력)·`reports/motivation_gap_2026-11-09/`.
