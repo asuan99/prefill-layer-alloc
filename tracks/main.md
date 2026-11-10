@@ -13,6 +13,7 @@
 - promote 필요: 아니오 (이번 세션 코드 검토·예상 값은 공시 후보·사전 예측이라 감사 전 반영 안 함)
 - promote 필요: 예 (결정 — 2026-11-09 비교 기준선, opchar = 고리 1 보조 근거, 작업 방식: 보고서는 md 금지·HTML, 측정은 번호 대신 보려는 동작 이름으로 부름 → 메모리 반영)
 - promote 필요: 예 (감사 — 기준선·측정 셀 정의 시점 r1, 판정 요약 `reports/motivation_gap_2026-11-09/observation_map.html`, 새 판정 등급 없음)
+- promote 필요: 예 (결정 — 2026-11-10 프로브 후속 결정, 위 현재 상태 줄; 프로브 자체는 부팅 확인이라 측정 결과 아님)
 ## 현재 상태 (2026-11-10)
 - **결론**: 제안 기법 설계 이전에 motivation 증거 사슬(고리 1–4)이 서 있지 않다. 고리 2는 검증 0, 고리 3은 KISTI 8월 결과뿐, 고리 4는 셀 정의가 판정을 막음. 이전 실험 목록 = `reports/motivation_gap_2026-11-09/PRIOR_EXPERIMENTS_AND_PLAN.md`(이력) · 공유 Doc artifact 2wMCeLCGjjRN9WFJjWTXsC
 - **관측 지점 코드 확정 완료** = **`reports/motivation_gap_2026-11-09/observation_map.html`**(artifact FzF3JCzNx8KLQ9sfqk7HgM): 측정 7개의 동작 시나리오·계측 상태·옛 번호 대조표. 새 probe 필요 = 도착 시 decode 정지 원인, 층 종류별 decode 시간, 엔진 간 ITL 동등성, 요청별 KV·cap 사유 · 분할 체류 시간·전환 대기는 플래그로 가능
@@ -25,21 +26,20 @@
 - **동시 실행 상한과 decode 메모리 트래픽 측정 추가(사용자, 2026-11-10)**: 1단계 앞. 고정 배치 = 문맥 2⁷–2¹⁸ 2배 간격, 배치 1–256(메모리 허용 범위, Nano 75셀·a31 60셀, 비분할 108 SM, chunked 채우기, mem 0.82) + 서빙 mem {0.6, 0.75}(cap 48)·cap {48,128,256}(mem 0.75). 결과의 cap·mem이 이후 측정 고정값. 결정 13 (A)/(B)는 이 측정으로 대체. 256k는 Nano 선언 최대 131,072 초과라 시간 측정 전용
 - **attention 대조 모델 결정(사용자, 2026-11-10)**: a31(Nano 골격, 조성 변형)을 주 대조, Llama-8B를 외부 기준 한 점으로
 - **측정 규모 결정(사용자, 2026-11-10)**: 전체 약 163시간(재시도 여유 포함 약 190) 중 준비·상한·1단계 약 63시간만 먼저 수행하고 결과로 2·3단계를 재판단. `reports/motivation_gap_2026-11-09/roadmap.html`
+- **프로브 후속 결정(사용자, 2026-11-10)**: PD-mux 주 arm은 piecewise OFF 유지(chunk −1이 기본 capture 목록을 비워 공개 구현 기본 동작이 prefill graph 없음), capture 크기 명시 부팅은 변형 arm 후보로만 시험 · 2차 단기 Job 승인(dry-run 뒤 제출) · 하네스 등록 기본값 승인(리허설=하네스 digest, SG arm flashinfer·seed 1, SLO TTFT{1,2,3,5}s×ITL{40,60,80,100}ms, 읽기 규칙 ≥3·75%·0.03, 부류 {512,2048}, 확장 2칸 — 전부 `results/motivation/mo_spec.py`에 등록 확인)
 - **arXiv 요약 출력 조건 결정(사용자, 2026-11-10)**: 기존 "자연 출력"은 요약 지시 없는 프롬프트로 98.2%가 상한 1,024에 닿아 사실상 1,024 고정이었음(정정). 주 조건 = 초록 길이 고정 출력, 변형 = 1,024 고정. "자연 출력" 표기 금지. vLLM의 a31은 프로브 뒤 hybrid 블록 정렬 비활성 방법을 짧게 시험, 안 되면 공시
 - **"용량" 정의가 넷으로 섞여 있음**: 버스트 λ\*(120요청, 과도 구간 — 7.29가 포화 완료율 5.06–5.34보다 큼), 600 s 지속 안정성 규칙(ITL 없음), 포화 완료율, 모형 λ_cap → D2에서 정상상태 SLO 용량 하나로 정할 것을 권고
 - **용어**: 프로젝트 고유 용어 정의를 정리함(대화 2026-11-09). 논문용으로는 문헌 용어로 매핑하고 c\*는 ReplaySSM 인용 처리 필요
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 ## 다음 행동
-1. **(다음 시작점)** 이미지·부팅 프로브 완료(job-yyojckhua8yz, 회수·sha 통과, `results/py312_probe/`), 엔진 계측 병합 완료(`090aafb6`, digest 8d8f6720, CPU 게이트만). 2차 단기 확인 Job(입력 2¹⁸ 직전 길이, PD-mux 명시 piecewise 토큰 부팅, a31 vLLM 블록 정렬, 계측 ON/OFF GPU 동치) → 하네스 배선 → 사전 사다리 → motivation PREREG. 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`
+1. **(다음 시작점)** 2차 단기 확인 Job 구현 → `launch.sh` dry-run 사용자 제시 → 승인 뒤 `--submit`. 네 항목: 입력을 2¹⁸ 직전으로(프로브는 입력=문맥 길이라 400, `results/py312_probe/`) · PD-mux capture 크기 명시 부팅 · a31 vLLM hybrid 블록 정렬 비활성 · 엔진 계측 ON/OFF 출력 동치·오버헤드(Nano, digest 8d8f6720). 이어서 하네스 잔여(arm별 클럭·전력 제한 보고[프로브 활성 샘플 29% 제한], 실제 D 읽기, 새 토큰 파일 통합, launch.sh·job 배선) → 사전 사다리·rate 격자 봉인 → motivation PREREG(감사 2회). 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
-3. 아래 결정 뒤 motivation PREREG 초안(감사 2회), 새 probe 구현
+3. cap·mem 고정 전 유의: cap 256·mem 0.75 KV 총량 약 54만 토큰(요청당 약 2,100), 프로브는 짧은 요청만 시험
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
 ## 사용자 결정 대기
 - **비용 수식 linear 일반화** / FLOPs·decode 항은 Mamba2 전용, s·k 형태만 공통 / 수식 v2로 층별 상태 항 분리(코드·문서·버전 동시, 대조 모델 측정 뒤 권고) · 보류
 - **Flex(2610.37432) 위치 확인** / Attention·SSM 서브배치에 SM 단위 분할, 프로젝트의 층 종류 SM 분할과 직접 인접 / venue-strategist 비교 검토(권고) · 보류
-- **PD-mux piecewise 처리** / 프로브: PD-mux가 강제하는 chunk −1이 기본 capture 목록을 비워 공개 구현 기본 동작 = prefill graph 없음(py3.14 문제와 무관). 주 arm은 OFF 유지 + 명시 토큰 부팅을 2차 Job에서 시험(권고) · 승인 대기
-- **하네스 등록 기본값 확인** / 리허설 결속=하네스 digest, SG arm에 flashinfer·seed 1 명시, SLO 격자·읽기 규칙 기본값(`results/motivation/mo_spec.py`)
 - **HE0 셀 부하 재정의** / 동적 arm 혼잡 가드 고정, 원칙 a–d(`policy_tune/MEMO_HE0_cell_load_redefinition_2026-10-30.md`) / 2026-11-09 감사: (a)는 주 용량 규칙과 같은 결정·(c)는 cap 결정·(b)(d)는 정책 단계. 결정 전 정책 판정 셀 Job 제출 금지
 - **보고서 후속** / (a) HE0 그림의 SG 환산 막대·동적 예상치 표 삭제(권고) (b) 사후 기준 그림 감사 1회 (c) 정지 지표 PREREG 등록(감사 r1: 보조 지표로만, L 격자 사전 고정·n≥4·같은 Job) (d) 수식 v2(causal 계수·ReplaySSM 인용·2s 커널 종속)
 - **통합 정책 측정 후속** / (A) 하네스 PC 창 수정 + 플래그 분리 재측정(권고) (B) 측정 중단 (C) EVAL 셀만
@@ -53,7 +53,7 @@
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 · RESULT_costterms §17 · Phase B 판정서 인용 금지 · `reports/audit/2026-11-08_unaudited_r1/` 각 판정서 · "슬롯 상한이 hybrid 고유" · M3 판정서 · J1 크기 문장 · AJ-2 J-H1 값 · 이번 세션 예상 값(`predict.json`)은 측정 아님
 ## 최근 로그
-- 2026-11-10(main): py3.12 부팅 프로브 회수(SG piecewise·cap 256·mem 전부 부팅, PD-mux piecewise 미포획, 2¹⁸ 입력은 프로브 길이 오류로 미검증), 엔진 계측 병합
+- 2026-11-10(main): py3.12 부팅 프로브 회수(SG piecewise·cap 256·mem 전부 부팅, PD-mux piecewise 미포획, 2¹⁸ 입력은 프로브 길이 오류로 미검증), 엔진 계측 병합, 프로브 후속 결정 3건
 - 2026-11-09(main): 관측 지점 코드 확정·관측 지도 HTML, 기준선 결정·감사 r1, SLO 사후 계산 정리, opchar 병합 시도(인용 정지로 중단)
 - 2026-11-07~09(main): handoff 정리·promote 8·9차·Phase B 결과 감사 r1·미감사 8건 감사 r1·Mamba CUDA graph 코드 대조(SGLang·vLLM)·motivation 공백 정리 Doc + 예상 값 차트 4개·용량 정의 4종 정리·용어 정의
 - 2026-11-07(main, batch 제약 세션): SGLang cap·슬롯 코드, ReplaySSM 대조, mem 0.6 출처 → 메모 1건
