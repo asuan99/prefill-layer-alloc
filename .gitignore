@@ -170,3 +170,12 @@ workspace/engine-port/results/policy_*/**/meta/energy.csv
 workspace/engine-port/results/raw_export_20261028/*
 !workspace/engine-port/results/raw_export_20261028/MANIFEST.sha256
 workspace/engine-port/results/cap_char/policy_runs/*/raw/
+
+# 2026-11-11: Claude worktrees and Job raw telemetry / per-Job time series stay outside git (raw telemetry policy, CLAUDE.md)
+.claude/
+workspace/engine-port/results/stock_baseline*/runs/*/raw/
+workspace/engine-port/results/stock_quick*/**/raw/
+workspace/engine-port/results/*/vessl/*/meta/clk.csv
+workspace/engine-port/results/*/vessl/*/meta/energy.csv
+workspace/engine-port/results/*/vessl/*/meta/engine_tree_pristine_tree_manifest.sha256
+workspace/engine-port/results/*/vessl/*/meta/runtime_source_manifest.sha256
