@@ -28,6 +28,7 @@ import mo_card as MC
 import mo_schema as SC
 import mo_loadgen as ML
 import mo_realized as MRZ
+import mo_workload as MW
 import sb_runner as RU
 import ph_trace as T
 
@@ -100,14 +101,15 @@ def split_check_realized(srv, b, rec):
     return MRZ.realized(srv.bdir, rec, b["arm_def"]["D"])
 
 
-def execute_run(run, b, srv, replay_fn, w1_pool, out, card, card_check, tree_stamp, server_args, realized_fn=split_check_realized):
+def execute_run(run, b, srv, replay_fn, w1_pool, out, card, card_check, tree_stamp, server_args, realized_fn=split_check_realized,
+                token_store=None):
     a = b["arm_def"]
-    segs = RU.build_segments(run, w1_pool, [])
+    segs = MW.build_segments(run, w1_pool)
     rec = {"schema_version": MS.SCHEMA_VERSION, "run_id": run["run_id"], "kind": run["kind"], "cell": run.get("cell"), "seed": run["seed"],
            "arm": b["arm"], "boot_id": b["boot_id"], "boot_role": b["role"], "trace_hash": T.trace_hash(segs),
            "spec": {k: v for k, v in run.items() if k != "run_id"}, "segments": [], **stamp(), "engine": a["engine"], "engine_tree": a["tree"],
            "card_sha": card["card_sha"], "card_check": card_check, "tree_stamp": tree_stamp, "server_args": server_args}
-    for s in segs:
+    for s in MW.with_input_ids(segs, token_store):                 # token ids only on the wire; the hash above is of the length records
         rec["segments"].append(replay_segment(replay_fn, a["api"], srv.base_url, s, Path(out) / "segments" / run["run_id"]))
     rec["t_load_start_epoch"], rec["t_load_end_epoch"] = rec["segments"][0]["t_load_start_epoch"], rec["segments"][-1]["t_load_end_epoch"]
     rec["t_load_start_mono"], rec["t_load_end_mono"] = rec["segments"][0]["t_load_start_mono"], rec["segments"][-1]["t_load_end_mono"]
@@ -160,7 +162,7 @@ def run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn=M
             f = Path(out) / "runs" / f"{run['run_id']}.json"
             if not f.exists():
                 dump(execute_run(run, b, srv, replay_fn, w1_pool, out, card, card_check, tree_stamp,
-                                 RU.parse_sglang_log(log_text) if a["engine"] == "sglang" else None, realized_fn), f)
+                                 RU.parse_sglang_log(log_text) if a["engine"] == "sglang" else None, realized_fn, ctx.get("token_store")), f)
             done.append(run["run_id"])
     finally:
         info = srv.stop()
@@ -189,9 +191,13 @@ def run_job(plan, card, out, make_server, replay_fn, w1_pool, resume=False, gate
                 raise JobAbort("ABORT_NO_REHEARSAL", why)
         if out.exists() and any((out / "runs").glob("*.json")) and not resume:
             raise JobAbort("ABORT_RAW_NOT_EMPTY", "raw directory has runs; set --resume")
+        try:                                           # token file present and sha256 = registered, before the first boot
+            store = MW.store_for(plan.get("workload", "W1"))
+        except (FileNotFoundError, ValueError) as e:
+            raise JobAbort("ABORT_TOKENS", str(e))
         dump(plan, out / "plan.json")
         dump(card, out / "card.json")
-        ctx, res = {}, []
+        ctx, res = {"token_store": store}, []
         for b in plan["boots"]:
             res.append(run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn, freeze_fn, realized_fn, warmup_s))
     except JobAbort as e:
@@ -213,7 +219,7 @@ def exit_code(res):
 
 def _plan_from_args(a, w1_pool=None):
     grid = MS.make_grid(a.rmin, a.factor, a.n, a.role)
-    return MS.make_plan(a.job, grid, rehearsal=a.rehearsal, n_requests=a.n_requests)
+    return MS.make_plan(a.job, grid, rehearsal=a.rehearsal, n_requests=a.n_requests, workload=a.workload)
 
 
 def main(argv=None):
@@ -232,6 +238,7 @@ def main(argv=None):
         p.add_argument("--out")
         p.add_argument("--card")
         p.add_argument("--resume", action="store_true")
+        p.add_argument("--workload", default=MS.WORKLOAD)
     a = ap.parse_args(argv)
     if a.cmd == "rehearse":
         import mo_rehearsal as MR
@@ -247,6 +254,10 @@ def main(argv=None):
         why = _default_gate(plan)
         print(why or "REHEARSAL_RECORD_OK")
         return 1 if why else 0
+    if a.cmd == "run" and not a.rehearsal and a.workload == "W1":
+        print("ABORT_WORKLOAD: W1 (sealed sb pool) is the rehearsal fixture; a measurement Job names a mo_workload.WORKLOADS workload",
+              file=sys.stderr)
+        return EXIT_ABORT
     pool = json.load(open(a.w1_lengths))
     if a.cmd == "card":
         card = MC.build_card(plan, pool)

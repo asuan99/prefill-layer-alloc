@@ -26,6 +26,7 @@ for _p in (str(SB_DIR), str(HERE), str(ENG / "scripts" / "vessl")):
         sys.path.insert(0, _p)
 import sb_spec as SP  # noqa: E402  (sealed; imported, not modified)
 import mo_realized as MRZ  # noqa: E402
+import mo_workload as MW  # noqa: E402
 
 PY312 = "/opt/sg312-venv/bin/python"
 PY312_VENV = "/opt/sg312-venv"
@@ -225,7 +226,7 @@ def may_extend(base_top_pass, history_roles):
 
 
 # ---- plan ---------------------------------------------------------------------------------------------------------------------
-WORKLOAD = "W1"      # pool format of sb: [[input_tokens, output_tokens], ...]
+WORKLOAD = "W1"      # default = the sealed sb ShareGPT length pool (rehearsal fixture); measurement Jobs pass a mo_workload.WORKLOADS name
 ANCHOR_RATE_INDEX, ANCHOR_N = 0, 120
 ANCHOR_SEED = SP.CAP_SEEDS[0]
 
@@ -241,13 +242,21 @@ def boot_order(job, keys=ARM_KEYS):
     return order
 
 
-def cell_run(job, arm_name, rate, seed, n, cell, kind="cap", **kw):
-    return SP.cap_run(f"{job}_{arm_name}_{cell}_r{rate}_s{seed}", WORKLOAD, rate, seed, n, kind=kind, cell=cell, **kw)
+def cell_run(job, arm_name, rate, seed, n, cell, kind="cap", workload=WORKLOAD, **kw):
+    return SP.cap_run(f"{job}_{arm_name}_{cell}_r{rate}_s{seed}", workload, rate, seed, n, kind=kind, cell=cell, **kw)
 
 
-def make_plan(job, grid, fixed=None, seeds=SP.EVAL_SEEDS, n_requests=120, rehearsal=False, arm_keys=ARM_KEYS):
+def default_seeds(workload):
+    """W1 keeps the sealed sb seeds; a registered motivation workload uses its registered seeds (mw_lib.SEEDS, n >= 4)."""
+    return tuple(SP.EVAL_SEEDS) if workload == "W1" else MW.SEEDS
+
+
+def make_plan(job, grid, fixed=None, seeds=None, n_requests=120, rehearsal=False, arm_keys=ARM_KEYS, workload=WORKLOAD):
     """One Job: anchor boot (anchor arm, anchor cell) -> every arm once, in the seeded permutation, each with ALL grid rungs x seeds in
     random cell order -> anchor boot again.  The anchor cell = lowest grid rung, ANCHOR_SEED, ANCHOR_N requests."""
+    if workload != "W1" and not MW.is_registered(workload):
+        raise ValueError(f"unregistered workload {workload!r}")
+    seeds = tuple(seeds) if seeds is not None else default_seeds(workload)
     fixed = dict(fixed or (REHEARSAL_FIXED if rehearsal else default_fixed()))
     arms = {p["key"]: build_arm(p, fixed) for p in ARM_PARAMS if p["key"] in arm_keys}
     order = boot_order(job, tuple(k for k in ARM_KEYS if k in arm_keys))
@@ -255,26 +264,27 @@ def make_plan(job, grid, fixed=None, seeds=SP.EVAL_SEEDS, n_requests=120, rehear
     anchor = arms[ANCHOR_KEY]
 
     def anchor_boot(tag):
-        r = cell_run(job, anchor["name"], anchor_rate, ANCHOR_SEED, n_requests if rehearsal else ANCHOR_N, f"ANCHOR_{tag}", kind="anchor")
+        r = cell_run(job, anchor["name"], anchor_rate, seeds[0], n_requests if rehearsal else ANCHOR_N, f"ANCHOR_{tag}", kind="anchor",
+                     workload=workload)
         return SP.boot(f"{job}_anchor_{tag}", anchor, [r], role="anchor", anchor=tag)
 
     boots = [anchor_boot("start")]
     for k in order:
         a = arms[k]
-        cells = [cell_run(job, a["name"], r, s, n_requests, "GRID") for r in grid["rates"] for s in seeds]
+        cells = [cell_run(job, a["name"], r, s, n_requests, "GRID", workload=workload) for r in grid["rates"] for s in seeds]
         _rng("cells", job, k).shuffle(cells)
         boots.append(SP.boot(f"{job}_{a['name']}", a, cells, role="meas"))
     split = None
     if BUNDLE_KEY in arms:                     # one instrumented boot reads the realized split; never part of a verdict table
         split = split_check_arm(fixed)
-        r = cell_run(job, split["name"], grid["rates"][-1], ANCHOR_SEED, n_requests if rehearsal else ANCHOR_N, "SPLIT_CHECK",
-                     kind="split_check")
+        r = cell_run(job, split["name"], grid["rates"][-1], seeds[0], n_requests if rehearsal else ANCHOR_N, "SPLIT_CHECK",
+                     kind="split_check", workload=workload)
         boots.append(SP.boot(f"{job}_splitcheck", split, [r], role="split_check"))
     boots.append(anchor_boot("end"))
-    return {"job": job, "kind": "MOTIVATION_GRID", "grid": grid, "seeds": list(seeds), "n_requests": n_requests, "rehearsal": bool(rehearsal),
+    return {"job": job, "kind": "MOTIVATION_GRID", "workload": workload, "grid": grid, "seeds": list(seeds), "n_requests": n_requests, "rehearsal": bool(rehearsal),
             "fixed": fixed, "boot_order": [anchor["name"]] + [arms[k]["name"] for k in order] + ([split["name"]] if split else [])
             + [anchor["name"]], "order_keys": order,
-            "anchor": {"arm": anchor["name"], "rate": anchor_rate, "seed": ANCHOR_SEED, "n": boots[0]["runs"][0]["n_requests"],
+            "anchor": {"arm": anchor["name"], "rate": anchor_rate, "seed": seeds[0], "n": boots[0]["runs"][0]["n_requests"],
                        "positions": ["first", "last"]},
             "arm_keys": [k for k in ARM_KEYS if k in arm_keys], "boots": boots, "pending": []}
 
@@ -310,6 +320,9 @@ def plan_problems(plan, allow_placeholders=False):
         out.append("each arm must boot exactly once as a measurement boot")
     if not plan["rehearsal"] and len(seeds) < MIN_SEEDS:
         out.append(f"n seeds {len(seeds)} < {MIN_SEEDS} (gate 3)")
+    wl = plan.get("workload", WORKLOAD)
+    if any(r["workload"] != wl for b in plan["boots"] for r in b["runs"]):
+        out.append("every run of a Job uses the plan's workload")
     pm_env = SP.arm("PM-ref")["env"]
     for b in plan["boots"]:
         a = b["arm_def"]

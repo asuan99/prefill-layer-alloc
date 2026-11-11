@@ -97,15 +97,26 @@ def arm_expect(a, fixed):
     return e
 
 
+def _segments(r, w1_pool):
+    import mo_workload as MW
+    return MW.build_segments(r, w1_pool)
+
+
+def workload_facts(plan, w1_pool):
+    import mo_workload as MW
+    return MW.pool_facts(plan.get("workload", "W1"), w1_pool, pool_facts)
+
+
 def build_card(plan, w1_pool):
     """Card of a plan.  Trace facts are computed for EVERY run of the plan from the registered pool."""
     arms = {b["arm"]: {"expect": arm_expect(b["arm_def"], plan["fixed"])} for b in plan["boots"]}
     trace = {}
     for b in plan["boots"]:
         for r in b["runs"]:
-            trace[r["run_id"]] = trace_facts(RU.build_segments(r, w1_pool, []))
+            trace[r["run_id"]] = trace_facts(_segments(r, w1_pool))
     card = {"schema": MS.SCHEMA_VERSION + "/card", "job": plan["job"], "rehearsal": bool(plan["rehearsal"]), "plan_sha": MS.sha(plan),
-            "arms": arms, "boot_order": list(plan["boot_order"]), "anchor": plan["anchor"], "pool": pool_facts(w1_pool), "trace": trace,
+            "arms": arms, "boot_order": list(plan["boot_order"]), "anchor": plan["anchor"], "pool": pool_facts(w1_pool), "workload": workload_facts(plan, w1_pool),
+            "trace": trace,
             "grid": plan["grid"], "slo_grid": {"ttft_ms": list(MS.TTFT_GRID_MS), "itl_ms": list(MS.ITL_GRID_MS), "primary": list(MS.PRIMARY_SLO)},
             "class_edges": list(MS.CLASS_EDGES), "reading_rule": MS.READING_RULE}
     card["card_sha"] = sha({k: v for k, v in card.items() if k != "card_sha"})
@@ -282,7 +293,13 @@ def check_trace(card, run_id, facts):
 def check_runs(card, boot, w1_pool):
     bad = check_pool(card, w1_pool)
     for r in boot["runs"]:
-        bad += check_trace(card, r["run_id"], trace_facts(RU.build_segments(r, w1_pool, [])))
+        bad += check_trace(card, r["run_id"], trace_facts(_segments(r, w1_pool)))
+    wl = (boot["runs"][0]["workload"] if boot["runs"] else "W1")
+    if wl != "W1":
+        import mo_workload as MW
+        f, e = MW.pool_facts(wl, w1_pool, pool_facts), card.get("workload") or {}
+        if f != e:
+            bad.append({"field": "trace_hash", "expected": e, "observed": f, "reason": f"{wl} length pool / token file differs from the card"})
     return bad
 
 
