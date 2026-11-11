@@ -10,6 +10,7 @@ import re
 import sys
 import tempfile
 import threading
+import time
 import unittest
 from pathlib import Path
 from unittest import mock
@@ -49,14 +50,32 @@ def banner_of(a, over=None):
     return "server_args=ServerArgs(model_path='x', " + ", ".join(f"{k}={v}" for k, v in d.items()) + ", other=1)\n"
 
 
+FAKE_SERVERS = {}
+
+
 class FakeServer:
-    """What engine_tree.py boot + the server would leave behind: command, tree stamp, log banner.  `tamper` perturbs exactly one thing."""
+    """What engine_tree.py boot + the server would leave behind: command, tree stamp, log banner.  `tamper` perturbs exactly one thing.
+    A split-check boot (PDMUX_TELEMETRY_PATH in its env) also writes the green read-out at start and decode_iteration events while a
+    segment is replayed (fake_replay), so the events fall inside the run's load window like the real server's."""
 
     def __init__(self, bdir, a, tamper=None):
         self.bdir, self.a, self.t = Path(bdir), a, tamper or {}
         self.log = self.bdir / "server.log"
         self.base_url = f"fake://{a['name']}"
         self.cmd = None
+        FAKE_SERVERS[self.base_url] = self
+
+    def emit_steps(self):
+        tel = self.a["env"].get("PDMUX_TELEMETRY_PATH")
+        if not tel or self.t.get("no_tel"):
+            return
+        d = self.t.get("split_d", self.a.get("D"))
+        with open(tel, "a") as f:
+            for k in range(10):
+                co = k < 6
+                now = time.monotonic()
+                f.write(json.dumps({"event": "decode_iteration", "timestamp_monotonic_s": now, "t_issue_start": now - 0.02, "t_sync": now,
+                                    "prefill_in_flight": co, "decode_sms": d if co else 108, "stream_idx": 4 if co else 6, "bs": 4}) + "\n")
 
     def start(self):
         a, t = self.a, self.t
@@ -72,6 +91,11 @@ class FakeServer:
                 txt += "Capture piecewise CUDA graph end. Time elapsed: 3 s\n"
             if t.get("pw_failed"):
                 txt += "Piecewise CUDA Graph failed with error: boom\n"
+            gp = a["env"].get("PDMUX_GREEN_READOUT_PATH")
+            if gp and not t.get("no_green"):
+                gd = t.get("green_d", a.get("D"))
+                Path(gp).write_text(json.dumps({"groups": [{"stream_index": 4, "target_decode_sm": a.get("D"), "target_prefill_sm": 108 - a["D"],
+                                                            "decode": {"green_sm": {"smCount": gd}}, "prefill": {"green_sm": {"smCount": 108 - gd}}}]}))
         else:
             self.cmd = list(a["cmd"]) + ["--port", "1"]
             txt = "INFO Using FLASHINFER backend.\nmax_num_batched_tokens=8192\n"
@@ -124,6 +148,9 @@ def fake_replay(api, base_url, reqs, out_path, perf=None):
                "t_finished_mono": stamps[-1], "ttft_ms": ttft, "token_t_mono": stamps,
                "token_itl_ms": [(b - a) * 1000.0 for a, b in zip(stamps, stamps[1:])], "error": "", "error_kind": ""}
         out.append(rec)
+    srv = FAKE_SERVERS.get(base_url)
+    if srv is not None:
+        srv.emit_steps()
     by_id = {q["request_id"]: q for q in reqs}
     return float(max(2.0, (reqs[-1]["arrival_s"] if reqs else 0.0) + 1.0)), [ML.normalize(r, by_id) for r in out]
 
@@ -618,11 +645,11 @@ class TestRehearsal(unittest.TestCase):
                               py_version_fn=fake_py, freeze_fn=fake_freeze)
             self.assertTrue(rec["passed"], rec["reason"])
             self.assertTrue(all(rec["stages"].values()), rec["stages"])
-            self.assertEqual(len(rec["arm_names"]), len(MS.ARM_KEYS))
+            self.assertEqual(len(rec["arm_names"]), len(MS.ARM_KEYS) + 1)               # + the split-check arm
             self.assertEqual(rec["verdict_rows"], 1)                              # one rung
             self.assertTrue((Path(td) / "raw" / "analysis" / "verdict_table.csv").exists())
             runs = list((Path(td) / "raw" / "runs").glob("*.json"))
-            self.assertEqual(len(runs), len(MS.ARM_KEYS) + 2)                     # each arm once, one rung, one seed + 2 anchor cells
+            self.assertEqual(len(runs), len(MS.ARM_KEYS) + 3)                     # each arm once, one rung, one seed + 2 anchor cells + split check
             self.assertTrue((rd / ("d" * 16 + ".json")).exists())
 
     def test_rehearsal_reports_the_failing_stage_and_writes_no_pass(self):
@@ -831,3 +858,65 @@ class TestAnalyzer(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+# ---- 7. realized split (one instrumented boot per Job) ---------------------------------------------------------------------------------
+class TestSplitCheck(unittest.TestCase):
+    def run_with(self, tamper=None, job="JSC"):
+        td = tempfile.TemporaryDirectory()
+        self.addCleanup(td.cleanup)
+        plan = real_plan(job, n=12)
+        sc = MS.split_check_arm(dict(MS.REHEARSAL_FIXED))["name"]
+        out, card, res = run_fake_job(plan, td.name, tamper={sc: tamper} if tamper else None)
+        return plan, MA.analyze_job(MA.load_job(out))
+
+    def test_plan_has_one_split_check_boot_before_the_end_anchor(self):
+        plan = real_plan("JSCP")
+        roles = [b["role"] for b in plan["boots"]]
+        self.assertEqual(roles.count("split_check"), 1)
+        self.assertEqual(roles[-2:], ["split_check", "anchor"])
+        b = plan["boots"][-2]
+        self.assertIn("_instrSPLITCHECK", b["arm"])
+        self.assertTrue(b["arm"].startswith(MS.name_of("PDMUX_BUNDLE")))
+        self.assertEqual(b["runs"][0]["rate"], GRID3["rates"][-1])
+        self.assertEqual(MS.plan_problems(plan, allow_placeholders=True), [])
+
+    def test_split_check_env_is_fixed(self):
+        plan = real_plan("JSCE")
+        b = plan["boots"][-2]
+        b["arm_def"]["env"]["PDMUX_PROBE_EXTEND_TIME"] = "1"
+        self.assertTrue(any("split-check boot env" in m for m in MS.plan_problems(plan, allow_placeholders=True)))
+
+    def test_measurement_boots_still_refuse_instrumentation(self):
+        plan = real_plan("JSCM")
+        b = next(x for x in plan["boots"] if x["role"] == "meas" and x["arm_def"]["key"] == "PDMUX_BUNDLE")
+        b["arm_def"]["env"]["PDMUX_TELEMETRY_PATH"] = "{dir}/tel.jsonl"
+        self.assertTrue(any("instrumentation env in a measurement boot" in m for m in MS.plan_problems(plan, allow_placeholders=True)))
+
+    def test_match_and_excluded_from_tables(self):
+        plan, res = self.run_with()
+        self.assertEqual(res["split_check"]["status"], "MATCH", res["split_check"])
+        self.assertEqual(res["flags"], [])
+        sc = res["split_check"]["detail"]["scheduler"]
+        self.assertEqual(sc["coresident_share_on_target"], 1.0)
+        self.assertNotIn(MS.split_check_arm(dict(MS.REHEARSAL_FIXED))["name"], res["capacity"])
+
+    def test_scheduler_mismatch_flags_every_row(self):
+        _, res = self.run_with({"split_d": 16}, "JSC2")
+        self.assertEqual(res["split_check"]["status"], "MISMATCH")
+        self.assertIn("SPLIT_NOT_TARGET", res["flags"])
+        self.assertTrue(all("SPLIT_NOT_TARGET" in r["flags"] for r in res["verdict_rows"]))
+
+    def test_green_mismatch(self):
+        _, res = self.run_with({"green_d": 16}, "JSC3")
+        self.assertEqual(res["split_check"]["status"], "MISMATCH")
+
+    def test_missing_green_readout_is_not_a_match(self):
+        _, res = self.run_with({"no_green": True}, "JSC4")
+        self.assertEqual(res["split_check"]["status"], "MISMATCH")
+        self.assertIn("green read-out", res["split_check"]["detail"]["reason"])
+
+    def test_no_telemetry_is_unavailable(self):
+        _, res = self.run_with({"no_tel": True}, "JSC5")
+        self.assertEqual(res["split_check"]["status"], "UNAVAILABLE")
+        self.assertIn("SPLIT_CHECK_UNAVAILABLE", res["flags"])

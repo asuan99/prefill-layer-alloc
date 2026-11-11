@@ -27,6 +27,7 @@ import mo_spec as MS
 import mo_card as MC
 import mo_schema as SC
 import mo_loadgen as ML
+import mo_realized as MRZ
 import sb_runner as RU
 import ph_trace as T
 
@@ -92,7 +93,14 @@ def replay_segment(replay_fn, api, base_url, seg, out_dir):
             "t_load_end_epoch": e1, "t_load_start_mono": m0, "t_load_end_mono": m1, "requests": recs}
 
 
-def execute_run(run, b, srv, replay_fn, w1_pool, out, card, card_check, tree_stamp, server_args, realized_fn=None):
+def split_check_realized(srv, b, rec):
+    """Default realized_fn: the split-check boot reads its own telemetry + green read-out; every other boot -> None (unavailable)."""
+    if b["role"] != "split_check":
+        return None
+    return MRZ.realized(srv.bdir, rec, b["arm_def"]["D"])
+
+
+def execute_run(run, b, srv, replay_fn, w1_pool, out, card, card_check, tree_stamp, server_args, realized_fn=split_check_realized):
     a = b["arm_def"]
     segs = RU.build_segments(run, w1_pool, [])
     rec = {"schema_version": MS.SCHEMA_VERSION, "run_id": run["run_id"], "kind": run["kind"], "cell": run.get("cell"), "seed": run["seed"],
@@ -119,7 +127,7 @@ def _tree_stamp(srv, a, bdir, log_text):
 
 
 def run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn=MC.probe_python_version, freeze_fn=MC.freeze_sha,
-             realized_fn=None, warmup_s=WARMUP_S):
+             realized_fn=split_check_realized, warmup_s=WARMUP_S):
     bdir = Path(out) / "boots" / b["boot_id"]
     bdir.mkdir(parents=True, exist_ok=True)
     a = RU.resolve(b["arm_def"], bdir)
@@ -161,7 +169,7 @@ def run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn=M
 
 
 def run_job(plan, card, out, make_server, replay_fn, w1_pool, resume=False, gate_fn=None, py_version_fn=MC.probe_python_version,
-            freeze_fn=MC.freeze_sha, realized_fn=None, warmup_s=WARMUP_S):
+            freeze_fn=MC.freeze_sha, realized_fn=split_check_realized, warmup_s=WARMUP_S):
     """-> list of boot results.  Raises JobAbort (after writing JOB_ABORTED.json) on a card mismatch / refusal."""
     out = Path(out)
     try:

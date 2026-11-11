@@ -25,6 +25,7 @@ for _p in (str(SB_DIR), str(HERE), str(ENG / "scripts" / "vessl")):
     if _p not in sys.path:
         sys.path.insert(0, _p)
 import sb_spec as SP  # noqa: E402  (sealed; imported, not modified)
+import mo_realized as MRZ  # noqa: E402
 
 PY312 = "/opt/sg312-venv/bin/python"
 PY312_VENV = "/opt/sg312-venv"
@@ -82,10 +83,13 @@ def bundle_name(p):
         return "VLLM0.31.0_py312venv_default_defaultchunk"
     base = f"SGL0.5.10_py312_{p['tree']}tree"
     if p["key"] == "PDMUX_BUNDLE":
+        instr = "_instrSPLITCHECK" if p.get("instr") == "split_check" else ""
         return (f"{base}_PDMUX-D{p['D']}-nonsticky-budget65536_chunk{p['chunk']}_piecewise{p['piecewise'].upper()}"
-                f"_overlap{p['overlap'].upper()}_bundle")
+                f"_overlap{p['overlap'].upper()}_bundle{instr}")
     sched = "mixed" if p["mixed"] else "chunked"
     flag = "_pdmuxflagsOFF" if p["role"] == "control_patch" else ""
+    if p.get("instr"):
+        raise ValueError("instrumented arms exist only for the PD-mux bundle")
     return f"{base}{flag}_{sched}_chunk{p['chunk']}_piecewise{p['piecewise'].upper()}_overlap{p['overlap'].upper()}"
 
 
@@ -139,6 +143,14 @@ def build_arm(p, fixed=None):
          "cmd": sg_argv(p, fixed), "env": env, "api": "sglang", "params": dict(p)}
     if p["key"] == "PDMUX_BUNDLE":
         a.update(D=p["D"], sticky=False, inherited=PDMUX_BUNDLE_NOTE)
+    return a
+
+
+def split_check_arm(fixed=None):
+    """The bundle arm plus the split-check instrumentation (mo_realized.SPLIT_CHECK_ENV); its own name, role "split_check"."""
+    p = dict(next(q for q in ARM_PARAMS if q["key"] == "PDMUX_BUNDLE"), instr="split_check", role="split_check")
+    a = build_arm(p, fixed)
+    a["env"] = {**a["env"], **MRZ.SPLIT_CHECK_ENV}
     return a
 
 
@@ -252,9 +264,16 @@ def make_plan(job, grid, fixed=None, seeds=SP.EVAL_SEEDS, n_requests=120, rehear
         cells = [cell_run(job, a["name"], r, s, n_requests, "GRID") for r in grid["rates"] for s in seeds]
         _rng("cells", job, k).shuffle(cells)
         boots.append(SP.boot(f"{job}_{a['name']}", a, cells, role="meas"))
+    split = None
+    if BUNDLE_KEY in arms:                     # one instrumented boot reads the realized split; never part of a verdict table
+        split = split_check_arm(fixed)
+        r = cell_run(job, split["name"], grid["rates"][-1], ANCHOR_SEED, n_requests if rehearsal else ANCHOR_N, "SPLIT_CHECK",
+                     kind="split_check")
+        boots.append(SP.boot(f"{job}_splitcheck", split, [r], role="split_check"))
     boots.append(anchor_boot("end"))
     return {"job": job, "kind": "MOTIVATION_GRID", "grid": grid, "seeds": list(seeds), "n_requests": n_requests, "rehearsal": bool(rehearsal),
-            "fixed": fixed, "boot_order": [anchor["name"]] + [arms[k]["name"] for k in order] + [anchor["name"]], "order_keys": order,
+            "fixed": fixed, "boot_order": [anchor["name"]] + [arms[k]["name"] for k in order] + ([split["name"]] if split else [])
+            + [anchor["name"]], "order_keys": order,
             "anchor": {"arm": anchor["name"], "rate": anchor_rate, "seed": ANCHOR_SEED, "n": boots[0]["runs"][0]["n_requests"],
                        "positions": ["first", "last"]},
             "arm_keys": [k for k in ARM_KEYS if k in arm_keys], "boots": boots, "pending": []}
@@ -274,7 +293,8 @@ def plan_problems(plan, allow_placeholders=False):
         out.append("duplicate boot_id")
     names = [b["arm"] for b in plan["boots"]]
     keys = plan["arm_keys"]
-    want = [name_of(ANCHOR_KEY)] + [name_of(k) for k in boot_order(plan["job"], tuple(keys))] + [name_of(ANCHOR_KEY)]
+    want = ([name_of(ANCHOR_KEY)] + [name_of(k) for k in boot_order(plan["job"], tuple(keys))]
+            + ([split_check_arm()["name"]] if BUNDLE_KEY in keys else []) + [name_of(ANCHOR_KEY)])
     if names != want:
         out.append(f"boot order {names} != registered permutation of job '{plan['job']}' {want}")
     if plan["boot_order"] != names:
@@ -304,6 +324,9 @@ def plan_problems(plan, allow_placeholders=False):
         if not allow_placeholders and not plan["rehearsal"] and (any(x in (MEM_TOKEN, CAP_TOKEN) for x in a["cmd"])
                                                                    or any(is_pending(v) for v in plan["fixed"].values())):
             out.append(f"{b['boot_id']}: PLACEHOLDER mem/cap unresolved (cap measurement not done) -> not launchable")
-        if a["engine"] == "sglang" and any(k.startswith("PDMUX_") and pm_env.get(k) != v for k, v in a["env"].items()):
+        if b["role"] == "split_check":
+            if a["env"] != {**pm_env, **MRZ.SPLIT_CHECK_ENV} or a["tree"] != "patched":
+                out.append(f"{b['boot_id']}: split-check boot env must be the bundle env + mo_realized.SPLIT_CHECK_ENV exactly")
+        elif a["engine"] == "sglang" and any(k.startswith("PDMUX_") and pm_env.get(k) != v for k, v in a["env"].items()):
             out.append(f"{b['boot_id']}: instrumentation env in a measurement boot")
     return out

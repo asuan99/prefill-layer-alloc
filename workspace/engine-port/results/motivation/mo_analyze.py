@@ -157,9 +157,29 @@ def job_problems(job):
     an = anchor_check(job)
     if an.get("flag"):
         fl.append(an["flag"])
+    sc = split_check(job)
+    if sc.get("flag"):
+        fl.append(sc["flag"])
     if an.get("problem"):
         pr.append(an["problem"])
     return pr, fl
+
+
+def split_check(job):
+    """Realized decode SM count of the bundle from the split-check boot (mo_realized).  Not a verdict input; a mismatch is a flag that
+    travels with every row, because the bundle's D is then not the registered one."""
+    runs = [r for r in job["runs"] if r["boot_role"] == "split_check"]
+    if not any(b["role"] == "split_check" for b in job["plan"]["boots"]):
+        return {"status": "NOT_PLANNED"}
+    if len(runs) != 1:
+        return {"status": "MISSING", "flag": "SPLIT_CHECK_MISSING"}
+    rs = runs[0]["realized_split"]
+    if not rs.get("available"):
+        return {"status": "UNAVAILABLE", "flag": "SPLIT_CHECK_UNAVAILABLE", "detail": rs}
+    if rs.get("matches_target") is None:
+        return {"status": "NO_CORESIDENT_STEP", "flag": "SPLIT_CHECK_EMPTY", "detail": rs}
+    return {"status": "MATCH" if rs["matches_target"] else "MISMATCH", "flag": None if rs["matches_target"] else "SPLIT_NOT_TARGET",
+            "detail": rs}
 
 
 def anchor_check(job):
@@ -338,7 +358,8 @@ def analyze_job(raw, clk_csv=None):
             "slo_grid": {"ttft_ms": list(MS.TTFT_GRID_MS), "itl_ms": list(MS.ITL_GRID_MS), "primary": list(MS.PRIMARY_SLO)},
             "anchor": anchor_check(job), "verdict_rows": rows, "capacity": caps, "per_class": per_class(job), "controls": control_rows(job, tab),
             "attainment_grid": {f"{arm}|{rt}": {f"{t:g}/{i:g}": v for (t, i), v in c["grid"].items()} for (arm, rt), c in sorted(tab.items())},
-            "grid_role": job["plan"]["grid"]["role"], "cross_job": "NOT_MERGED", "clock": clock_report(job, clk_csv)}
+            "grid_role": job["plan"]["grid"]["role"], "cross_job": "NOT_MERGED", "clock": clock_report(job, clk_csv),
+            "split_check": split_check(job)}
 
 
 def analyze_jobs(raws):

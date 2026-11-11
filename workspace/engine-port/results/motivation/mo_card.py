@@ -205,7 +205,8 @@ def observe_boot(a, cmd, tree_stamp, log_text, py_version_fn=probe_python_versio
                  overlap=None if ovl is None else ("off" if ovl == "True" else "on"), mem=_float(_sa(sa, "mem_fraction_static")),
                  cap=rr if (mm is None or mm == rr) else f"max_running_requests={rr}/max_mamba_cache_size={mm}",
                  context=_int(_sa(sa, "context_length")), backend=_sa(sa, "attention_backend"), seed=_int(_sa(sa, "random_seed")),
-                 env={k: v for k, v in (tree_stamp.get("pdmux_env") or {}).items() if k not in PLUMBING_ENV})
+                 env={k: (v.replace(str(bdir), "{dir}") if bdir else v) for k, v in (tree_stamp.get("pdmux_env") or {}).items()
+                      if k not in PLUMBING_ENV})
     else:
         f = RU.parse_vllm_log(log_text)
         mb = re.search(r"max_num_batched_tokens[=:]\s*(\d+)", log_text)
