@@ -19,6 +19,7 @@ import statistics
 from pathlib import Path
 
 import mo_spec as MS
+import mo_clock as CK
 import mo_card as MC
 import mo_schema as SC
 import sb_runner as RU
@@ -308,7 +309,28 @@ def verdict_table(job):
     return rows, tab, fl
 
 
-def analyze_job(raw):
+def find_clk(raw, levels=6):
+    """The Job's meta/clk.csv (scripts/vessl/job_entry.sh writes <RUN>/meta/clk.csv; raw dirs sit under <RUN>/results/...)."""
+    d = Path(raw).resolve()
+    for _ in range(levels):
+        c = d / "meta" / "clk.csv"
+        if c.exists():
+            return c
+        d = d.parent
+    return None
+
+
+def clock_report(job, clk_csv=None):
+    """GPU clock-limit covariate per run and per arm (mo_clock); unavailable when the Job has no clk.csv (CPU tests, local runs)."""
+    clk = Path(clk_csv) if clk_csv else (find_clk(job["raw"]) if job.get("raw") else None)
+    if not clk or not clk.exists():
+        return {"available": False, "reason": "no meta/clk.csv for this Job"}
+    samples, bad = CK.read_clk(clk)
+    rep = CK.report(job["runs"], samples)
+    return {"available": True, "clk_csv": str(clk), "n_rows_skipped": bad, **rep}
+
+
+def analyze_job(raw, clk_csv=None):
     job = raw if isinstance(raw, dict) else load_job(raw)
     rows, tab, fl = verdict_table(job)
     caps = {a: capacity(job, a) for a in arms_of(job)}
@@ -316,7 +338,7 @@ def analyze_job(raw):
             "slo_grid": {"ttft_ms": list(MS.TTFT_GRID_MS), "itl_ms": list(MS.ITL_GRID_MS), "primary": list(MS.PRIMARY_SLO)},
             "anchor": anchor_check(job), "verdict_rows": rows, "capacity": caps, "per_class": per_class(job), "controls": control_rows(job, tab),
             "attainment_grid": {f"{arm}|{rt}": {f"{t:g}/{i:g}": v for (t, i), v in c["grid"].items()} for (arm, rt), c in sorted(tab.items())},
-            "grid_role": job["plan"]["grid"]["role"], "cross_job": "NOT_MERGED"}
+            "grid_role": job["plan"]["grid"]["role"], "cross_job": "NOT_MERGED", "clock": clock_report(job, clk_csv)}
 
 
 def analyze_jobs(raws):
@@ -335,4 +357,12 @@ def write_outputs(res, out_dir):
         w.writerow(cols)
         for r in res["verdict_rows"]:
             w.writerow([";".join(r[c]) if isinstance(r[c], list) else r[c] for c in cols])
+    ck = res.get("clock") or {}
+    if ck.get("available"):
+        with open(out / "clock_by_arm.csv", "w", newline="") as f:
+            rows = CK.table_rows(ck)
+            w = csv.writer(f)
+            w.writerow(["arm", "limited_frac", "sm_mhz_p50", "power_w_p50", "reasons_seen"])
+            for r in rows:
+                w.writerow([r["arm"], r["limited_frac"], r["sm_mhz_p50"], r["power_w_p50"], r["reasons_seen"]])
     return out / "verdict_table.csv"
