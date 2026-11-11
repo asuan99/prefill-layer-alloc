@@ -33,7 +33,7 @@
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 ## 다음 행동
-1. **(다음 시작점)** 2차 단기 확인 Job 구현 → `launch.sh` dry-run 사용자 제시 → 승인 뒤 `--submit`. 네 항목: 입력을 2¹⁸ 직전으로(프로브는 입력=문맥 길이라 400, `results/py312_probe/`) · PD-mux capture 크기 명시 부팅 · a31 vLLM hybrid 블록 정렬 비활성 · 엔진 계측 ON/OFF 출력 동치·오버헤드(Nano, digest 8d8f6720). 이어서 하네스 잔여(arm별 클럭·전력 제한 보고[프로브 활성 샘플 29% 제한], 실제 D 읽기, 새 토큰 파일 통합, launch.sh·job 배선) → 사전 사다리·rate 격자 봉인 → motivation PREREG(감사 2회). 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`
+1. **(다음 시작점)** 단기 확인 Job 2–4차 끝, main 병합(`eab3ed71`, 2026-11-11): SG piecewise OFF 기록 출력 동일, a31 `layer_types` 56층 전부 full_attention → vLLM 비-hybrid 경로 부팅(블록 정렬 없음). 남은 것 = CPU 하네스 잔여(arm별 클럭·전력 보고, 실제 D 읽기, 새 토큰 파일 통합, 측정 Job 배선) + 상한 측정 하네스(미구현) → GPU 완주 리허설·사전 사다리 한 Job → 사전등록·감사 2회·봉인. 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz, 11-11 갱신) · 단기 Job 원자료(엔진 로그·기록·시계열)는 worktree `agent-aa1c27e62b06cc105`에만 있음, 이전 후 삭제 결정 대기
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
 3. cap·mem 고정 전 유의: cap 256·mem 0.75 KV 총량 약 54만 토큰(요청당 약 2,100), 프로브는 짧은 요청만 시험
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
@@ -49,7 +49,7 @@
 - **봉인 문서 정오·잔여 정리** / PROPOSAL §4 배너는 달았음 · `handoff-report/claude_web_review_prompt_2026-10-28.md` 커밋 여부 · `/tmp/gate_t_*` 11개 삭제(권고) · 구판 runtime manifest 갱신(권고) · presubmit 차단 2건 범위 한정 OVERRIDE(권고) · roofline η 수식 §6 한 줄(권고) · 진단 PREREG rev2 addendum(`7af52ffb`) 문턱 그대로(권고)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out
 ## 실행 중·미회수 Job
-- 없음(2026-11-10). `results/py312_probe/vessl_jobs.tsv` 회수·sha 검증. Workspace 3개 standby
+- 없음(2026-11-11). `results/mo_shortcheck/vessl_jobs.tsv` 단기 Job 3건 회수·sha 검증. Workspace 3개 standby
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 · RESULT_costterms §17 · Phase B 판정서 인용 금지 · `reports/audit/2026-11-08_unaudited_r1/` 각 판정서 · "슬롯 상한이 hybrid 고유" · M3 판정서 · J1 크기 문장 · AJ-2 J-H1 값 · 이번 세션 예상 값(`predict.json`)은 측정 아님
 ## 최근 로그
