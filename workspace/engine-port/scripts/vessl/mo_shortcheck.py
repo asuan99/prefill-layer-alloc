@@ -162,10 +162,12 @@ def neutralize_mamba(cfg):
     return c
 
 
-def attention_only(cfg, n_attn):
+def attention_only(cfg):
     """layer_types candidate: vLLM ModelConfig.is_hybrid is False when every entry of hf_config.layer_types is attention (its Granite micro branch).
-    NemotronH builds its layers from hybrid_override_pattern and never reads layer_types, so only that hybrid decision changes."""
-    return dict(cfg, layer_types=["attention"] * int(n_attn))
+    NemotronH builds its layers from hybrid_override_pattern and never reads layer_types, so only that hybrid decision changes.
+    transformers validates layer_types: one entry per hidden layer (MLP layers included) and each entry in its allowed list, so every
+    entry is "full_attention" (accepted by both checks).  Job pdmux-mo-shortcheck-1cc867b-20261110150325 died on the earlier 31-entry list."""
+    return dict(cfg, layer_types=["full_attention"] * int(cfg["num_hidden_layers"]))
 
 
 # ---------------------------------------------------------------------------------------------------------------- log facts (pure)
@@ -441,7 +443,7 @@ def build_a31_variants(out, hf_home):
     nh = vdir / "a31_nonhybrid"
     CH.MV.build_variant(snap, str(nh), 31, force=True, source_meta={"revision_observed": rev})
     cfg = json.load(open(nh / "config.json"))
-    (nh / "config.json").write_text(json.dumps(attention_only(cfg, rec["n_attn"]), indent=2) + "\n")
+    (nh / "config.json").write_text(json.dumps(attention_only(cfg), indent=2) + "\n")
     return {"a31": str(vdir / "a31"), "a31_mamba0": str(m0), "a31_nonhybrid": str(nh), "n_attn": rec["n_attn"], "n_mamba": rec["n_mamba"]}
 
 

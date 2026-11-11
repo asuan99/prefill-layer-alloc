@@ -205,10 +205,24 @@ class TestA31(unittest.TestCase):
             self.assertEqual(extra, M.a31_flags(c))
 
     def test_attention_only_does_not_mutate(self):
-        cfg = {"x": 1}
-        out = M.attention_only(cfg, 31)
-        self.assertEqual(out["layer_types"], ["attention"] * 31)
+        cfg = {"x": 1, "num_hidden_layers": 56}
+        out = M.attention_only(cfg)
+        self.assertEqual(out["layer_types"], ["full_attention"] * 56)
         self.assertNotIn("layer_types", cfg)
+
+    def test_attention_only_passes_both_checks(self):
+        """One entry per hidden layer (the 31-entry list killed the boot in Job pdmux-mo-shortcheck-1cc867b-20261110150325),
+        every entry allowed by transformers, and vLLM's is_hybrid rule (all entries attention) turns False."""
+        out = M.attention_only({"num_hidden_layers": 56})
+        self.assertEqual(len(out["layer_types"]), 56)
+        self.assertTrue(all(x in ("attention", "full_attention") for x in out["layer_types"]))   # vllm/config/model.py is_hybrid
+        try:
+            from transformers.configuration_utils import layer_type_validation
+        except ImportError:
+            self.skipTest("transformers layer_type_validation not importable")
+        layer_type_validation(out["layer_types"], 56)
+        with self.assertRaises(ValueError):
+            layer_type_validation(["full_attention"] * 31, 56)
 
     def test_selection(self):
         self.assertEqual(M.selected(["b", "a", "c"], "a,b", ("a", "b", "c")), ["b", "a"])
