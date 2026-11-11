@@ -33,7 +33,7 @@
 - 감사 현황: Phase B 결과 r1 GO-with-edits(교정 `c945e428`, 9차 반영) · 미감사 문서 8건 r1 GO-with-edits(`996a5db7`, 대상 10개 배너) — 남은 정본 반영은 위 promote 줄
 - 정책·impl 캠페인, D\*(결정 61), Phase A·B, stock_quick, 결정 43–64i·62: 8·9차 반영 완료. 원문은 PROJECT_STATUS 최상단과 git `tracks/main.md` 이력
 ## 다음 행동
-1. **(다음 시작점)** 단기 확인 Job 2–4차 끝, main 병합(`eab3ed71`, 2026-11-11): SG piecewise OFF 기록 출력 동일, a31 `layer_types` 56층 전부 full_attention → vLLM 비-hybrid 경로 부팅(블록 정렬 없음). 남은 것 = CPU 하네스 잔여(arm별 클럭·전력 보고, 실제 D 읽기, 새 토큰 파일 통합, 측정 Job 배선) + 상한 측정 하네스(미구현) → GPU 완주 리허설·사전 사다리 한 Job → 사전등록·감사 2회·봉인. 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz, 11-11 갱신) · 단기 Job 원자료(엔진 로그·기록·시계열)는 worktree `agent-aa1c27e62b06cc105`에만 있음, 이전 후 삭제 결정 대기
+1. **(다음 시작점)** 단기 확인 Job 2–4차 끝, main 병합(`eab3ed71`): SG piecewise OFF 기록 출력 동일, a31 `layer_types` 56층 전부 full_attention → vLLM 비-hybrid 경로 부팅. 하네스 잔여 4건 완료(2026-11-11, GPU 미실행): 클럭·전력 보고 `mo_clock.py`, 실제 D = Job당 계측 boot 1개 `mo_realized.py`, 등록 워크로드·토큰 `mo_workload.py`, Job 스크립트 `results/motivation/mo_job.sh`. 남은 것 = 상한 측정 하네스(미구현) → 토큰 파일 76 MB 볼륨 업로드(승인 필요, 로컬 사본 `results/motivation/workloads/tokens/`) → GPU 완주 리허설·사전 사다리 한 Job → 사전등록·감사 2회·봉인. 순서 = `reports/motivation_gap_2026-11-09/roadmap.html`(artifact CUYuUscW3zYzh2SRf3Mkxz)
 2. CPU 선행: 철회된 층별 decode job 결함 원문(835571·858811, 873783 GATE N FAIL) 정리 · hybrid 항이 D 선택을 바꾸는 셀 탐색 본판(실제 길이 분포)
 3. cap·mem 고정 전 유의: cap 256·mem 0.75 KV 총량 약 54만 토큰(요청당 약 2,100), 프로브는 짧은 요청만 시험
 4. promote 10차(미감사 문서 감사 r1 허용 문안) — 대상 문서 본문 수정 여부와 함께
