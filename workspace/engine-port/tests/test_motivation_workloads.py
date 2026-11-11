@@ -69,11 +69,19 @@ class Interference(unittest.TestCase):
 
 
 class Outputs(unittest.TestCase):
-    def test_arxiv_natural_output_record(self):
+    def test_arxiv_main_condition_is_the_abstract_length(self):
         r = G.request("arxiv_summ", [12, 800, 200], 1.0, 0, "x", "arxiv_summ")
-        self.assertIs(r["ignore_eos"], False)
-        self.assertEqual(r["output_tokens"], G.ARXIV_MAX_NEW)
+        self.assertIs(r["ignore_eos"], True)
+        self.assertEqual(r["output_tokens"], 200)
         self.assertEqual(r["doc_id"], 12)
+
+    def test_arxiv_variant_changes_only_the_output(self):
+        seg = G.segment("t", "arxiv_summ", [G.request("arxiv_summ", [12, 800, 200], 1.0, 0, "x", "arxiv_summ")])
+        v = G.fix_output([seg], G.ARXIV_VARIANT_OUTPUT)[0]
+        r, o = v["requests"][0], seg["requests"][0]
+        self.assertEqual((r["output_tokens"], r["ignore_eos"]), (1024, True))
+        self.assertEqual({k: x for k, x in r.items() if k != "output_tokens"}, {k: x for k, x in o.items() if k != "output_tokens"})
+        self.assertEqual(o["output_tokens"], 200)
 
     def test_loogle_fixed_output_record(self):
         r = G.request("loogle_longdep", [3, 40000, 7], 1.0, 0, "x", "LONG")

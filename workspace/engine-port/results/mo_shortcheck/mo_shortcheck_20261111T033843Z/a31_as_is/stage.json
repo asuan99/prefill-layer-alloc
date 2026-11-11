@@ -1,0 +1,71 @@
+{
+ "id": "a31_as_is",
+ "cand": "as_is",
+ "argv": [
+  "/opt/vllm-venv/bin/python",
+  "-m",
+  "vllm.entrypoints.openai.api_server",
+  "--model",
+  "/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/mo_shortcheck/mo_shortcheck_20261111T033843Z/variants/a31",
+  "--trust-remote-code",
+  "--dtype",
+  "bfloat16",
+  "--max-model-len",
+  "20480",
+  "--max-num-seqs",
+  "48",
+  "--no-enable-prefix-caching",
+  "--host",
+  "127.0.0.1",
+  "--load-format",
+  "dummy"
+ ],
+ "status": "PASS",
+ "requests": [
+  {
+   "ok": true,
+   "s": 0.39
+  },
+  {
+   "ok": true,
+   "s": 0.38
+  },
+  {
+   "ok": true,
+   "s": 0.38
+  },
+  {
+   "ok": true,
+   "s": 0.38
+  }
+ ],
+ "boot_state": "ok",
+ "boot_s": 68,
+ "boot_ok": true,
+ "matched_lines": [
+  "(APIServer pid=786) INFO 11-11 03:39:18 [config.py:694] Updating mamba_ssm_cache_dtype to 'float32' for NemotronH model",
+  "(EngineCore pid=1130) INFO 11-11 03:39:30 [core.py:129] Initializing a V1 LLM engine (v0.31.0) with config: model='/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/mo_shortcheck/mo_shortcheck_20261111T033843Z/variants/a31', speculative_config=None, tokenizer='/opt/pdmux/prefill-layer-alloc/workspace/engine-port/results/mo_shortcheck/mo_shortcheck_20261111T033843Z/variants/a31', skip_to",
+  "(EngineCore pid=1130) INFO 11-11 03:39:37 [cuda.py:526] Using FLASH_ATTN attention backend out of potential backends: ['FLASH_ATTN', 'FLASHINFER', 'TRITON_ATTN', 'FLEX_ATTENTION'].",
+  "(EngineCore pid=1130) INFO 11-11 03:39:38 [interface.py:989] Setting attention block size to 1312 tokens to ensure that attention page size is >= mamba page size.",
+  "(EngineCore pid=1130) INFO 11-11 03:39:38 [interface.py:1013] Padding mamba page size by 1.08% to ensure that mamba page size and attention page size are exactly equal.",
+  "(EngineCore pid=1130) INFO 11-11 03:39:38 [utils.py:343] Using LBNHC KV cache layout.",
+  "(EngineCore pid=1130) INFO 11-11 03:39:54 [gpu_worker.py:692] Available KV cache memory: 59.56 GiB",
+  "(EngineCore pid=1130) INFO 11-11 03:39:54 [gpu_worker.py:707] CUDA graph memory profiling is enabled (default since v0.21.0). The current --gpu-memory-utilization=0.9200 is equivalent to --gpu-memory-utilization=0.9183 without CUDA graph memory profiling. To maintain the same effective KV cache size as before, increase --gpu-memory-utilization to 0.9217. To disable, set VLLM_MEMORY_PROFILER_ESTIMA",
+  "(EngineCore pid=1130) INFO 11-11 03:39:54 [kv_cache_utils.py:2464] GPU KV cache size: 490,240 tokens, Maximum concurrency for 20,480 tokens per request: 23.94x",
+  "(EngineCore pid=1130) INFO 11-11 03:40:01 [gpu_worker.py:955] Free memory on device (78.83/79.25 GiB) on startup. Desired GPU memory utilization is (0.92, 72.91 GiB). Actual usage is 12.09 GiB for consumed memory (weights + non-torch), 1.25 GiB for peak activation, and 0.07 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory=63719569040` (59.34 GiB) to fit into ",
+  "(EngineCore pid=1130) INFO 11-11 03:40:03 [core.py:373] init engine (profile, create kv cache, warmup model) took 24.80 s (compilation: 10.74 s)"
+ ],
+ "n_matched": 11,
+ "block_size_candidates": [
+  1312
+ ],
+ "block_size_attn_line": 1312,
+ "block_size_last": 1312,
+ "attn_block_line_seen": true,
+ "mamba_padding_line_seen": true,
+ "kv_cache_tokens": [
+  490240
+ ],
+ "died_tail": null,
+ "gpu_after_mib": 0
+}

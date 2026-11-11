@@ -1,0 +1,39 @@
+{
+  "gpu": {
+    "name": "NVIDIA A100-SXM4-80GB",
+    "uuid": "GPU-a72c8fd3-480b-bed0-fa6d-be11bef9c039",
+    "driver_version": "580.178.04",
+    "compute_cap": "8.0",
+    "memory_total": "81920 MiB",
+    "clocks_max_sm": "1410 MHz",
+    "power_limit": "400.00 W",
+    "mig_mode": "Disabled"
+  },
+  "gpu_count": 1,
+  "gpus": [
+    {
+      "name": "NVIDIA A100-SXM4-80GB",
+      "uuid": "GPU-a72c8fd3-480b-bed0-fa6d-be11bef9c039",
+      "driver_version": "580.178.04",
+      "compute_cap": "8.0",
+      "memory_total": "81920 MiB",
+      "clocks_max_sm": "1410 MHz",
+      "power_limit": "400.00 W",
+      "mig_mode": "Disabled",
+      "index": 0
+    }
+  ],
+  "gpu_uuids": [
+    "GPU-a72c8fd3-480b-bed0-fa6d-be11bef9c039"
+  ],
+  "hostname": "job-kzmph2cf05at-wcrdm",
+  "commit": "adf017d7aa80430cbd228fd73d984edb8880fcab",
+  "image": "ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82",
+  "spec": "resourcespec-a100x1",
+  "job_name": "pdmux-mo-shortcheck-adf017d-20261111040822",
+  "campaign": "mo_shortcheck",
+  "target": "workspace/engine-port/scripts/vessl/mo_shortcheck_r3_job.sh",
+  "array_spec": "",
+  "image_pip_freeze.txt_sha256": "45c39de25df56274e5e541281e04c2d477edaa7d3f5f2d1dcb344e19a0fa2324",
+  "image_python_torch.txt_sha256": "25072b0933afd254cc50b78a7aa43e34e43af33034036709169f08788d8686d3"
+}

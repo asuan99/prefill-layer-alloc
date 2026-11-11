@@ -97,7 +97,12 @@ def run_boot(b, out, boot_timeout, req_timeout):
             except Exception:
                 time.sleep(3)
         res["boot_s"] = round(time.time() - t0); res["boot_ok"] = up
-        if up:
+        if up and b.get("driver"):          # mo_shortcheck.py: a stage-specific request driver replaces the fixed request list
+            try:
+                res["driver"] = b["driver"](port, d, req_timeout)
+            except Exception as e:  # noqa: BLE001
+                res["driver"] = {"ok": False, "error": repr(e)[:300]}
+        if up and not b.get("driver"):
             sd = SEED
             with ThreadPoolExecutor(max_workers=300) as ex:
                 for n, n_in, n_out in b["reqs"]:
@@ -118,6 +123,8 @@ def run_boot(b, out, boot_timeout, req_timeout):
     res["piecewise_captured"] = "Capture piecewise CUDA graph end" in txt
     res["oom"] = bool(re.search(r"out of memory", txt, re.I))
     good = up and not res["oom"] and all(r["ok"] == r["n"] for r in res["requests"]) and len(res["requests"]) == len(b["reqs"])
+    if b.get("driver"):
+        good = up and not res["oom"] and bool(res.get("driver", {}).get("ok"))
     if b["want_piecewise"]:
         good = good and res["piecewise_captured"] and not res["piecewise_failed"]
     res["status"] = "PASS" if good else "FAIL"

@@ -16,7 +16,7 @@ Interference cell (paired), all from one seed:
 
   python3 -I gen_traces.py seal                           write trace_registry.json (needs lengths/*.json)
   python3 -I gen_traces.py check                          recompute and compare with the registry
-  python3 -I gen_traces.py emit --workload W --seed S --rate R --duration T --out F
+  python3 -I gen_traces.py emit --workload W --seed S --rate R --duration T [--fixed-output 1024] --out F
   python3 -I gen_traces.py emit-interference --seed S --short-rate R --duration T --with-long 0|1 --out F
 """
 from __future__ import annotations
@@ -32,7 +32,7 @@ import mw_lib as L  # noqa: E402
 import ph_trace as PH  # noqa: E402
 
 MASTER_N = {"sharegpt_first": 20000, "openchat_rounds": 20000, "arxiv_summ": 5000, "loogle_longdep": 2000}
-ARXIV_MAX_NEW = 1024                                # natural-output cap, decision 47 convention
+ARXIV_VARIANT_OUTPUT = 1024                         # variant condition: every request generates exactly this many tokens (user decision 2026-11-10)
 LONG_SHARE = 0.05                                   # long requests / all requests of the interference cell
 PROVISIONAL_SHORT_RATES = (2.0, 3.0, 4.0)           # registered ONLY as examples; the rate grid is fixed after the pre-ladder
 INTERFERENCE_DURATION = 300.0
@@ -61,11 +61,14 @@ def request(workload, row, arrival_s, k, prefix, phase):
     rid, ni, no = row
     rec = {"record": "request", "request_id": f"{prefix}-{k:05d}", "phase": phase, "arrival_s": round(arrival_s, 6),
            "input_tokens": ni, "output_tokens": no, "ignore_eos": True}
-    if workload == "arxiv_summ":
-        rec.update(output_tokens=ARXIV_MAX_NEW, ignore_eos=False)
     if rid is not None:
         rec["doc_id"] = rid
     return rec
+
+
+def fix_output(segments, n):
+    """Variant trace: same arrivals and prompts, every request generates exactly n tokens."""
+    return [{**s, "requests": [{**r, "output_tokens": n, "ignore_eos": True} for r in s["requests"]], "fixed_output_tokens": n} for s in segments]
 
 
 def master_records(workload, seed, pool):
@@ -178,6 +181,7 @@ def main(argv=None):
     g = e.add_mutually_exclusive_group(required=True)
     g.add_argument("--duration", type=float)
     g.add_argument("--n", type=int)
+    e.add_argument("--fixed-output", type=int, choices=(ARXIV_VARIANT_OUTPUT,), help="arxiv_summ variant: fixed output length instead of the abstract length")
     e.add_argument("--out", required=True)
     f = sub.add_parser("emit-interference")
     f.add_argument("--seed", type=int, required=True)
@@ -199,7 +203,11 @@ def main(argv=None):
         return 1 if bad else 0
     pools = load_pools()
     if a.cmd == "emit":
+        if a.fixed_output and a.workload != "arxiv_summ":
+            ap.error("--fixed-output is the arxiv_summ variant only")
         segs = instantiate(a.workload, a.seed, pools[a.workload], a.rate, duration=a.duration, n=a.n)
+        if a.fixed_output:
+            segs = fix_output(segs, a.fixed_output)
     else:
         segs, _ = interference(a.seed, pools["sharegpt_first"], pools["loogle_longdep"], a.short_rate, a.duration, bool(a.with_long))
     h = PH.write_trace(segs, a.out)

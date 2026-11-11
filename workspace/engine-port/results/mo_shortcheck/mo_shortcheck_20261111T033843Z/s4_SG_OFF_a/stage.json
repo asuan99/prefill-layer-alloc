@@ -1,0 +1,250 @@
+{
+ "id": "s4_SG_OFF_a",
+ "tree": "patched",
+ "argv": [
+  "-m",
+  "sglang.launch_server",
+  "--model-path",
+  "nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base",
+  "--revision",
+  "dc0661c829b14e5b9246c05cfa89094a0875e052",
+  "--trust-remote-code",
+  "--dtype",
+  "bfloat16",
+  "--attention-backend",
+  "flashinfer",
+  "--disable-radix-cache",
+  "--context-length",
+  "20480",
+  "--max-prefill-tokens",
+  "16384",
+  "--max-running-requests",
+  "48",
+  "--max-mamba-cache-size",
+  "48",
+  "--mem-fraction-static",
+  "0.6",
+  "--chunked-prefill-size",
+  "8192",
+  "--random-seed",
+  "1",
+  "--host",
+  "127.0.0.1",
+  "--enable-mixed-chunk",
+  "--disable-piecewise-cuda-graph"
+ ],
+ "env": {
+  "PDMUX_RUN_ID": "mo_shortcheck",
+  "PDMUX_WORKLOAD_ID": "s4_SG_OFF_a"
+ },
+ "want_piecewise": false,
+ "status": "PASS",
+ "requests": [],
+ "boot_s": 142,
+ "boot_ok": true,
+ "driver": {
+  "ok": true,
+  "eq1": [
+   {
+    "sha": "f81499562645e0db69494045cdd20bb8fe78f6ff5d89938fca3ffd5083aa6582",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "20f65f291c9e9b21fc8c2dd44e389c56452f92a8a06aea9da9f1805c60e5ad3f",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "60bf33970f4f4185f889a1916ff01724c9cdb16cbb28f959fa4eca45580f0edc",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "e76d264cb974c1506523265c1f127f622fc979bb86b0ade73c0733cb45c3862e",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "e1023abb04d94c16d9006612b33f486c3e999e540b97e7a9f652ce9a7dcfdca5",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "a408230e5019b5b512c4583bdc7c913b6949504c4f5b875d2c185e982bdc45b8",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "344d36537a226ea2347d235d1664a10e47676a036d48ca5c1b16b833f927d811",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "170f096dd75d691114902225644f17383609ea7a2c117db895f70affa85eb3e8",
+    "n": 64,
+    "ok": true
+   }
+  ],
+  "eq2": [
+   {
+    "sha": "f81499562645e0db69494045cdd20bb8fe78f6ff5d89938fca3ffd5083aa6582",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "20f65f291c9e9b21fc8c2dd44e389c56452f92a8a06aea9da9f1805c60e5ad3f",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "60bf33970f4f4185f889a1916ff01724c9cdb16cbb28f959fa4eca45580f0edc",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "e76d264cb974c1506523265c1f127f622fc979bb86b0ade73c0733cb45c3862e",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "e1023abb04d94c16d9006612b33f486c3e999e540b97e7a9f652ce9a7dcfdca5",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "a408230e5019b5b512c4583bdc7c913b6949504c4f5b875d2c185e982bdc45b8",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "344d36537a226ea2347d235d1664a10e47676a036d48ca5c1b16b833f927d811",
+    "n": 64,
+    "ok": true
+   },
+   {
+    "sha": "170f096dd75d691114902225644f17383609ea7a2c117db895f70affa85eb3e8",
+    "n": 64,
+    "ok": true
+   }
+  ],
+  "mix_wall_s": [
+   22.148,
+   22.415,
+   22.238
+  ],
+  "dec_wall_s": [
+   11.365,
+   11.391
+  ],
+  "mix_burst_sha": [
+   "eee8b3e435c417f468d925b10d9e2f6d0bcd4b2b1aaa1b90479eb9a13b41271f",
+   "e2b5ac02c14e40e13fe1efabf8cea3ba444b1ca89a7ff22eaf10f27b0650b358",
+   "4c2886d7032b5788b505fc6b4d71e3a5fbe878836683e3f3a1ec776ce5c28b51"
+  ],
+  "mix_req_s_p50": [
+   20.054499999999997,
+   20.284,
+   20.148
+  ],
+  "n_failed": 0,
+  "first_error": null
+ },
+ "peak_gpu_mib": 52254,
+ "gpu_after_mib": 0,
+ "banner": [
+  "[2026-11-11 03:41:06] server_args=ServerArgs(model_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_path='nvidia/NVIDIA-Nemotron-Nano-9B-v2-Base', tokenizer_mode='auto', tokenizer_worker_num=1, skip_tokenizer_init=False, load_format='auto', model_loader_extra_config='{}', trust_remote_code=True, context_length=20480, is_embedding=False, enable_multimodal=None, revision='dc0661c829b14e5b924",
+  "[2026-11-11 03:41:43] Mamba Cache is allocated. max_mamba_cache_size: 48, conv_state size: 0.09GB, ssm_state size: 6.46GB ",
+  "[2026-11-11 03:42:29] max_total_num_tokens=1588210, chunked_prefill_size=8192, max_prefill_tokens=16384, max_running_requests=48, context_len=20480, available_gpu_mem=30.66 GB"
+ ],
+ "piecewise_failed": false,
+ "piecewise_captured": false,
+ "oom": false,
+ "capture": {
+  "piecewise_tokens_list": [
+   4,
+   8,
+   12,
+   16,
+   20,
+   24,
+   28,
+   32,
+   48,
+   64,
+   80,
+   96,
+   112,
+   128,
+   144,
+   160,
+   176,
+   192,
+   208,
+   224,
+   240,
+   256,
+   288,
+   320,
+   352,
+   384,
+   416,
+   448,
+   480,
+   512,
+   576,
+   640,
+   704,
+   768,
+   832,
+   896,
+   960,
+   1024,
+   1280,
+   1536,
+   1792,
+   2048,
+   2304,
+   2560,
+   2816,
+   3072,
+   3328,
+   3584,
+   3840,
+   4096,
+   4608,
+   5120,
+   5632,
+   6144,
+   6656,
+   7168,
+   7680,
+   8192
+  ],
+  "n_capture_sizes": 58,
+  "max_capture_size": 8192,
+  "piecewise_max_tokens_arg": "8192",
+  "pw_lines": [
+   "Disable piecewise CUDA graph because --disable-piecewise-cuda-graph is set"
+  ],
+  "max_total_num_tokens": 1588210,
+  "available_gpu_mem_gb_last": 30.66,
+  "captured": false,
+  "failed": false,
+  "disabled_reason": "Disable piecewise CUDA graph because --disable-piecewise-cuda-graph is set"
+ },
+ "t_start_epoch": 1794368433.4,
+ "t_end_epoch": 1794368700.7,
+ "driver_name": "drive_instr",
+ "records": {
+  "files_exist": {
+   "decode_probe.jsonl": false,
+   "admission.jsonl": false,
+   "tel.jsonl": false
+  },
+  "kinds": {},
+  "missing_kinds": null,
+  "t_issue_start_seen": null,
+  "off_files_absent": true
+ }
+}

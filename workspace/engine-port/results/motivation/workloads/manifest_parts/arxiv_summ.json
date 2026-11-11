@@ -49,8 +49,8 @@
   "p95": 339,
   "p99": 399
  },
- "output_is": "abstract token length (reference); not the served natural output",
- "output_mode": "ignore_eos=False, max_new_tokens = 1024 (policy harness convention, decision 47); output length is run-determined",
+ "output_is": "abstract token length (the served output of the main condition)",
+ "output_mode": "ignore_eos=True, output_tokens = abstract length (main condition, user decision 2026-11-10); variant: fixed 1024, gen_traces emit --fixed-output 1024",
  "prompt": "article token ids only, no summarization instruction",
  "rule": "existing arxsum_x_tokens_v1.bin: 0 < input <= 16384, abstract >= 2; n_output = abstract token count",
  "source": {

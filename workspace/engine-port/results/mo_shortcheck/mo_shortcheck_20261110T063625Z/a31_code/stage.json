@@ -1,0 +1,6 @@
+{
+ "interface_py": "/opt/vllm-venv/lib/python3.12/site-packages/vllm/platforms/interface.py",
+ "n_lines": 96,
+ "help_rc": 0,
+ "help_lines": 64
+}

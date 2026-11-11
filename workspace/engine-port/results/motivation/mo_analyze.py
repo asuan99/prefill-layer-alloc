@@ -282,7 +282,7 @@ def best_baseline_rows(job, rt_tab=None):
 
 
 def control_rows(job, rt_tab=None):
-    """The two single-variable pairs (patch OFF vs primary baseline: tree only; piecewise OFF vs primary baseline: one flag only)."""
+    """The two single-variable pairs (patch OFF vs primary baseline: tree only; piecewise ON vs primary baseline: one flag only)."""
     tab = rt_tab or rung_table(job)
     prim = next(b["arm"] for b in job["plan"]["boots"] if b["arm_def"]["key"] == MS.ANCHOR_KEY)
     rows = []

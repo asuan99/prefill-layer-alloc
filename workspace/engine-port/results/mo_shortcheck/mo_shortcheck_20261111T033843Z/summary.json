@@ -1,0 +1,169 @@
+{
+ "schema": "mo_shortcheck/v1",
+ "stage_status": {
+  "S3": "RAN",
+  "S4": "RAN"
+ },
+ "elapsed_min": 14.2,
+ "boots": {
+  "a31_as_is": {
+   "status": "PASS",
+   "boot_s": 68,
+   "boot_ok": true
+  },
+  "a31_layer_types": {
+   "status": "FAIL",
+   "boot_s": 14,
+   "boot_ok": false,
+   "verdict_vs_as_is": "BOOT_FAILED"
+  },
+  "s4_SG_OFF_a": {
+   "status": "PASS",
+   "boot_s": 142,
+   "boot_ok": true,
+   "peak_gpu_mib": 52254
+  },
+  "s4_SG_ON_a": {
+   "status": "PASS",
+   "boot_s": 46,
+   "boot_ok": true,
+   "peak_gpu_mib": 52924
+  },
+  "s4_SG_ON_b": {
+   "status": "PASS",
+   "boot_s": 46,
+   "boot_ok": true,
+   "peak_gpu_mib": 52924
+  },
+  "s4_SG_OFF_b": {
+   "status": "PASS",
+   "boot_s": 46,
+   "boot_ok": true,
+   "peak_gpu_mib": 52924
+  }
+ },
+ "s4": {
+  "SG": {
+   "equivalence": {
+    "pairs": {
+     "OFF_a~OFF_b": 0,
+     "ON_a~ON_b": 0,
+     "ON_a~OFF_a": 0,
+     "ON_a~OFF_b": 0,
+     "ON_b~OFF_a": 0,
+     "ON_b~OFF_b": 0
+    },
+    "within_boot_repeat": {
+     "OFF_a": 0,
+     "ON_a": 0,
+     "ON_b": 0,
+     "OFF_b": 0
+    },
+    "verdict": "EQUIV_PASS",
+    "note": "sequential greedy outputs, text sha256 + completion_tokens; PASS = zero mismatches ON vs OFF AND zero in every floor comparison"
+   },
+   "overhead": {
+    "mix_wall_s": {
+     "status": "PROBE_VALUE_NOT_CITABLE",
+     "boot_medians": {
+      "OFF_a": 22.238,
+      "ON_a": 22.489,
+      "ON_b": 22.194,
+      "OFF_b": 22.2
+     },
+     "ratio_on_over_off": 1.005513299428417,
+     "floor_off_pair": 0.0017117117117118053,
+     "floor_on_pair": 0.013291880688474533
+    },
+    "dec_wall_s": {
+     "status": "PROBE_VALUE_NOT_CITABLE",
+     "boot_medians": {
+      "OFF_a": 11.378,
+      "ON_a": 11.394,
+      "ON_b": 11.384,
+      "OFF_b": 11.3645
+     },
+     "ratio_on_over_off": 1.0015609541607122,
+     "floor_off_pair": 0.0011879097188614018,
+     "floor_on_pair": 0.0008784258608574014
+    }
+   },
+   "records_on": {
+    "ON_a": {
+     "files_exist": {
+      "decode_probe.jsonl": true,
+      "admission.jsonl": true,
+      "tel.jsonl": false
+     },
+     "kinds": {
+      "decode_probe_boot": 1,
+      "forward_interior_boot": 1,
+      "decode_probe_window": 97,
+      "forward_interior": 2893,
+      "extend_forward": 24,
+      "decode_forward": 2868,
+      "admission_boot": 1,
+      "admission_window": 98,
+      "admission_request": 648,
+      "mixed_opportunity": 79
+     },
+     "missing_kinds": [],
+     "t_issue_start_seen": null,
+     "off_files_absent": null
+    },
+    "ON_b": {
+     "files_exist": {
+      "decode_probe.jsonl": true,
+      "admission.jsonl": true,
+      "tel.jsonl": false
+     },
+     "kinds": {
+      "decode_probe_boot": 1,
+      "forward_interior_boot": 1,
+      "decode_probe_window": 95,
+      "forward_interior": 2893,
+      "extend_forward": 24,
+      "decode_forward": 2868,
+      "admission_boot": 1,
+      "admission_window": 99,
+      "admission_request": 650,
+      "mixed_opportunity": 77
+     },
+     "missing_kinds": [],
+     "t_issue_start_seen": null,
+     "off_files_absent": null
+    }
+   },
+   "records_off": {
+    "OFF_a": {
+     "files_exist": {
+      "decode_probe.jsonl": false,
+      "admission.jsonl": false,
+      "tel.jsonl": false
+     },
+     "kinds": {},
+     "missing_kinds": null,
+     "t_issue_start_seen": null,
+     "off_files_absent": true
+    },
+    "OFF_b": {
+     "files_exist": {
+      "decode_probe.jsonl": false,
+      "admission.jsonl": false,
+      "tel.jsonl": false
+     },
+     "kinds": {},
+     "missing_kinds": null,
+     "t_issue_start_seen": null,
+     "off_files_absent": true
+    }
+   },
+   "boot_status": {
+    "OFF_a": "PASS",
+    "ON_a": "PASS",
+    "ON_b": "PASS",
+    "OFF_b": "PASS"
+   }
+  }
+ }
+}
