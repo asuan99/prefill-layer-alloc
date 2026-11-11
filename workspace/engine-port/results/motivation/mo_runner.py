@@ -243,8 +243,8 @@ def main(argv=None):
     if a.cmd == "rehearse":
         import mo_rehearsal as MR
         pool = json.load(open(a.w1_lengths))
-        rec = MR.rehearse(a.job, pool, a.out, lambda bdir, arm_def: MoProcessServer(bdir, arm_def), ML.replay, a.rmin)
-        print(json.dumps({k: rec[k] for k in ("passed", "harness_digest", "verdict_rows", "reason")}))
+        rec = MR.rehearse(a.job, pool, a.out, lambda bdir, arm_def: MoProcessServer(bdir, arm_def), ML.replay, a.rmin, workload=a.workload)
+        print(json.dumps({k: rec[k] for k in ("passed", "harness_digest", "verdict_rows", "reason", "workload", "workloads_resolved")}))
         return 0 if rec["passed"] else EXIT_ABORT
     plan = _plan_from_args(a)
     if a.cmd == "plan":

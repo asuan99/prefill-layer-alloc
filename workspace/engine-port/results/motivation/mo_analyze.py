@@ -387,3 +387,26 @@ def write_outputs(res, out_dir):
             for r in rows:
                 w.writerow([r["arm"], r["limited_frac"], r["sm_mhz_p50"], r["power_w_p50"], r["reasons_seen"]])
     return out / "verdict_table.csv"
+
+
+def main(argv=None):
+    """mo_analyze.py RAW --out DIR [--clk CLK_CSV]: one Job, written to DIR (analysis.json, verdict_table.csv, clock_by_arm.csv)."""
+    import argparse
+    ap = argparse.ArgumentParser()
+    ap.add_argument("raw")
+    ap.add_argument("--out", required=True)
+    ap.add_argument("--clk")
+    a = ap.parse_args(argv)
+    try:
+        res = analyze_job(a.raw, a.clk)
+    except JobInvalid as e:
+        Path(a.out).mkdir(parents=True, exist_ok=True)
+        (Path(a.out) / "JOB_INVALID.json").write_text(json.dumps({"problems": e.problems}, indent=1) + "\n")
+        print(f"JOB_INVALID: {e}")
+        return 3
+    print(write_outputs(res, a.out))
+    return 0
+
+
+if __name__ == "__main__":
+    raise SystemExit(main())

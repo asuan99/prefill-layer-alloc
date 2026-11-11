@@ -35,6 +35,7 @@ def _harness_files():
     files += [SP.HERE / n for n in ("sb_spec.py", "sb_runner.py", "sb_loadgen.py", "stock_metrics.py")]
     files += sorted(SP.PH_DIR.glob("ph_*.py"))
     files += [SP.ENGINE_TREE_PY, SP.ENG / "benchmarks" / "pdmux_eval" / "trace_loadgen.py", SP.ENG / "benchmarks" / "pdmux_eval" / "abs_mono_loadgen.py"]
+    files += [HERE / "workloads" / "gen_traces.py", HERE / "workloads" / "mw_lib.py", SP.ENG / "scripts" / "multigpu" / "mg_x_pretokenize.py"]
     return [f for f in files if f.exists()]
 
 
@@ -55,17 +56,34 @@ def current_commit():
         return None
 
 
-def rehearsal_plan(job, rmin=3.0, factor=1.15, n_requests=REHEARSAL_N_REQUESTS, seeds=(SP.EVAL_SEEDS[0],)):
-    return MS.make_plan(job, MS.make_grid(rmin, factor, 1), seeds=seeds, n_requests=n_requests, rehearsal=True)
+def rehearsal_plan(job, rmin=3.0, factor=1.15, n_requests=REHEARSAL_N_REQUESTS, seeds=None, workload="W1"):
+    seeds = seeds or (MS.default_seeds(workload)[0],)
+    return MS.make_plan(job, MS.make_grid(rmin, factor, 1), seeds=seeds, n_requests=n_requests, rehearsal=True, workload=workload)
 
 
-def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=None, digest=None, **kw):
+def resolve_workloads(w1_pool, token_dir=None, n=4):
+    """CPU check of every registered workload: trace builds, token file present with the registered sha256, ids match lengths.
+    -> ({workload: "OK" | reason}).  The full-arm pass covers one workload; this covers the trace and token path of the others."""
+    import mo_workload as MW
+    out = {}
+    for wl in MW.WORKLOADS:
+        try:
+            run = {"run_id": "resolve", "workload": wl, "rate": 1.0, "seed": MW.SEEDS[0], "n_requests": n}
+            MW.with_input_ids(MW.build_segments(run, w1_pool), MW.store_for(wl, token_dir))
+            out[wl] = "OK"
+        except Exception as e:  # noqa: BLE001
+            out[wl] = f"{type(e).__name__}: {e}"
+    return out
+
+
+def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=None, digest=None, workload="W1", **kw):
     """Run the whole pass; return (and persist) the record.  Never raises on a stage failure: the record says which stage failed."""
     out = Path(out)
     rec = {"schema": "motivation.rehearsal/v1", "job": job, "rehearsal_commit": current_commit(), "harness_digest": digest or harness_digest(),
-           "stages": {s: False for s in STAGES}, "passed": False, "reason": None, "verdict_rows": 0}
+           "stages": {s: False for s in STAGES}, "passed": False, "reason": None, "verdict_rows": 0, "workload": workload}
+    rec["workloads_resolved"] = resolve_workloads(w1_pool, kw.pop("token_dir", None))
     try:
-        plan = rehearsal_plan(job, rmin)
+        plan = rehearsal_plan(job, rmin, workload=workload)
         bad = MS.plan_problems(plan)
         if bad:
             raise RuntimeError(f"plan: {bad}")
@@ -120,4 +138,7 @@ def launch_gate(plan, rehearsal_dir=None, digest=None):
     want = sorted({b["arm"] for b in plan["boots"]})
     if rec.get("arm_names") != want:
         return f"REHEARSAL_ARM_LIST_DIFFERS: rehearsed {len(rec.get('arm_names', []))} arms, plan has {len(want)}"
+    wl = plan.get("workload", "W1")
+    if wl != "W1" and (rec.get("workloads_resolved") or {}).get(wl) != "OK":
+        return f"REHEARSAL_WORKLOAD_NOT_RESOLVED: {wl}: {(rec.get('workloads_resolved') or {}).get(wl, 'not checked')}"
     return None

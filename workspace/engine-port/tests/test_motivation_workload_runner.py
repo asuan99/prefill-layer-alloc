@@ -120,3 +120,78 @@ class TestTokenAbort(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TestRehearsalWorkloads(unittest.TestCase):
+    def _rec(self, resolved, workload="openchat_rounds"):
+        p = plan(workload, "JGATE")
+        return p, {"harness_digest": "e" * 64, "passed": True, "stages": {s: True for s in H.MH.STAGES},
+                   "arm_names": sorted({b["arm"] for b in p["boots"]}), "workloads_resolved": resolved}
+
+    def test_gate_needs_the_plan_workload_resolved(self):
+        with tempfile.TemporaryDirectory() as td:
+            p, rec = self._rec({"openchat_rounds": "FileNotFoundError: x"})
+            (Path(td) / ("e" * 16 + ".json")).write_text(json.dumps(rec))
+            self.assertIn("REHEARSAL_WORKLOAD_NOT_RESOLVED", H.MH.launch_gate(p, td, "e" * 64))
+            rec["workloads_resolved"]["openchat_rounds"] = "OK"
+            (Path(td) / ("e" * 16 + ".json")).write_text(json.dumps(rec))
+            self.assertIsNone(H.MH.launch_gate(p, td, "e" * 64))
+
+    def test_harness_digest_covers_trace_and_token_code(self):
+        names = {f.name for f in H.MH._harness_files()}
+        self.assertTrue({"gen_traces.py", "mw_lib.py", "mg_x_pretokenize.py", "mo_workload.py", "mo_realized.py", "mo_clock.py"} <= names)
+
+    @unittest.skipUnless(HAVE_TOKENS, "local token files absent")
+    def test_full_rehearsal_on_a_token_workload(self):
+        with tempfile.TemporaryDirectory() as td, mock.patch.dict(os.environ, {"PDMUX_MO_TOKEN_DIR": str(TOK_DIR)}):
+            rec = H.MH.rehearse("JRWL", H.POOL, Path(td) / "raw", H.make_server(), H.fake_replay, rehearsal_dir=Path(td) / "rec",
+                                digest="f" * 64, py_version_fn=H.fake_py, freeze_fn=H.fake_freeze, workload="openchat_rounds")
+            self.assertTrue(rec["passed"], rec["reason"])
+            self.assertEqual(rec["workload"], "openchat_rounds")
+            self.assertEqual(set(rec["workloads_resolved"].values()), {"OK"})
+
+
+class TestAnalyzerCli(unittest.TestCase):
+    def test_invalid_job_writes_reason(self):
+        with tempfile.TemporaryDirectory() as td:
+            (Path(td) / "raw" / "runs").mkdir(parents=True)
+            rc = MA.main([str(Path(td) / "raw"), "--out", str(Path(td) / "an")])
+            self.assertEqual(rc, 3)
+            self.assertTrue((Path(td) / "an" / "JOB_INVALID.json").exists())
+
+
+class TestJobScript(unittest.TestCase):
+    P = ENG / "results" / "motivation" / "mo_job.sh"
+
+    def run_sh(self, env):
+        import subprocess
+        e = {k: v for k, v in os.environ.items() if not k.startswith(("MO_", "PDMUX_MO_"))}
+        e.update(env)
+        return subprocess.run(["bash", str(self.P)], env=e, capture_output=True, text=True, timeout=60)
+
+    def test_syntax_executable_digest(self):
+        import subprocess
+        self.assertEqual(subprocess.run(["bash", "-n", str(self.P)]).returncode, 0)
+        self.assertTrue(os.access(self.P, os.X_OK))
+        self.assertIn("8d8f67201199bd181f64aae043b6a8ec5c6772799dbf964081584684e9e9c858", self.P.read_text())
+
+    def test_config_refusals(self):
+        with tempfile.TemporaryDirectory() as td:
+            base = {"PDMUX_MO_OUT": td, "PDMUX_MO_TEST_MODE": "1"}
+            self.assertEqual(self.run_sh(dict(base)).returncode, 16)
+            self.assertEqual(self.run_sh(dict(base, MO_MODE="rehearse", MO_WORKLOAD="openchat_rounds", MO_JOB="J")).returncode, 16)   # no budget
+            r = self.run_sh(dict(base, MO_MODE="run", MO_WORKLOAD="openchat_rounds", MO_JOB="J", MO_BUDGET_MIN="10"))
+            self.assertEqual(r.returncode, 16)
+            self.assertIn("MO_RMIN", r.stderr)
+
+    def test_run_refuses_placeholder_card(self):
+        """Until the cap measurement fixes mem/cap the card holds placeholders and the runner aborts before any boot."""
+        with tempfile.TemporaryDirectory() as td:
+            pool = Path(td) / "w1.json"
+            pool.write_text(json.dumps(H.POOL))
+            r = self.run_sh({"PDMUX_MO_OUT": str(Path(td) / "o"), "PDMUX_MO_TEST_MODE": "1", "PDMUX_MO_W1_LENGTHS": str(pool), "MO_MODE": "run",
+                             "MO_WORKLOAD": "sharegpt_first", "MO_JOB": "JPH", "MO_BUDGET_MIN": "5", "MO_RMIN": "2", "MO_FACTOR": "1.2",
+                             "MO_N": "2", "MO_N_REQUESTS": "8"})
+            self.assertEqual(r.returncode, 19, r.stderr[-400:])
+            self.assertIn("ABORT_PLAN", r.stderr + r.stdout)
+            self.assertFalse((Path(td) / "o" / "raw" / "boots").exists())
