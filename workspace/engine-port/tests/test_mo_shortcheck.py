@@ -373,6 +373,15 @@ class TestJobScript(unittest.TestCase):
             self.assertIn(tok, txt)
         self.assertIn("MO_SHORTCHECK_ARGS", (VESSL / "mo_shortcheck_job.sh").read_text())
 
+    def test_r3_target_reruns_only_a31(self):
+        p = VESSL / "mo_shortcheck_r3_job.sh"
+        self.assertEqual(subprocess.run(["bash", "-n", str(p)]).returncode, 0)
+        self.assertTrue(os.access(p, os.X_OK))
+        txt = p.read_text()
+        for tok in ('--only S3 ', "--s3-cands as_is,layer_types", "mo_shortcheck_job.sh"):
+            self.assertIn(tok, txt)
+        self.assertNotIn("S4", txt.split("MO_SHORTCHECK_ARGS=")[1].splitlines()[0])
+
     def test_env_file_pins_the_probe_image(self):
         env = (VESSL / "vessl.sg312.env").read_text()
         sg312 = re.search(r'^PDMUX_VESSL_IMAGE_SG312="([^"]+)"', (VESSL / "vessl.env").read_text(), re.M).group(1)
