@@ -1,0 +1,21 @@
+{
+ "schema": "mo_shortcheck/v1",
+ "stage_status": {
+  "S3": "RAN"
+ },
+ "elapsed_min": 2.4,
+ "boots": {
+  "a31_as_is": {
+   "status": "PASS",
+   "boot_s": 68,
+   "boot_ok": true
+  },
+  "a31_layer_types": {
+   "status": "PASS",
+   "boot_s": 44,
+   "boot_ok": true,
+   "verdict_vs_as_is": "NO_ALIGNMENT_LINES"
+  }
+ },
+ "s4": {}
+}
