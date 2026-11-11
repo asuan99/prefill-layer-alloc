@@ -1,0 +1,64 @@
+                     [--safetensors-prefetch-block-size SAFETENSORS_PREFETCH_BLOCK_SIZE]
+                     [--mamba-backend MAMBA_BACKEND]
+                     [--mamba-ssu-algorithm {auto,horizontal,simple,vertical,None}]
+                     [--enable-mamba-cache-stochastic-rounding | --no-enable-mamba-cache-stochastic-rounding]
+                     [--mamba-cache-philox-rounds MAMBA_CACHE_PHILOX_ROUNDS]
+                     [--data-parallel-hybrid-lb | --no-data-parallel-hybrid-lb | -dph]
+                     [--block-size BLOCK_SIZE]
+                     [--mamba-cache-dtype {auto,bfloat16,float16,float32}]
+                     [--mamba-ssm-cache-dtype {auto,bfloat16,float16,float32}]
+                     [--mamba-block-size MAMBA_BLOCK_SIZE]
+                     [--mamba-cache-mode {align,all,none}]
+                     [--enable-mamba-shared-prefix-checkpoint | --no-enable-mamba-shared-prefix-checkpoint]
+                     [--disable-hybrid-kv-cache-manager | --no-disable-hybrid-kv-cache-manager]
+                     [--spec-method {bailing_hybrid_mtp,bailing_hybrid_v3_mtp,custom_class,deepseek_mtp,dflash,dots3_note_mtp,draft_model,dspark,eagle,eagle3,ernie_mtp,exaone4_5_mtp,exaone_moe_mtp,extract_hidden_states,gemma4_mtp,glm4_moe_lite_mtp,glm4_moe_mtp,glm5_next_mtp,glm_ocr_mtp,hy_v3_mtp,hy_v4_mtp,inkling_mtp,kimi_k3_mtp,longcat_flash_mtp,medusa,mimo_mtp,mimo_v2_mtp,minimax_m3_mtp,mlp_speculator,mtp,nemotron_h_mtp,ngram,ngram_gpu,pangu_ultra_moe_mtp,qwen3_5_mtp,qwen3_next_mtp,qwen4_exp_mtp,step3p5_mtp,suffix,None}]
+                        eager execution in hybrid for maximal performance and
+  --safetensors-prefetch-block-size SAFETENSORS_PREFETCH_BLOCK_SIZE
+MambaConfig:
+  Configuration for Mamba SSM backends.
+  --enable-mamba-cache-stochastic-rounding, --no-enable-mamba-cache-stochastic-rounding
+  --mamba-backend MAMBA_BACKEND
+                        Mamba SSU backend to use. (default:
+                        MambaBackendEnum.TRITON)
+  --mamba-cache-philox-rounds MAMBA_CACHE_PHILOX_ROUNDS
+  --mamba-ssu-algorithm {auto,horizontal,simple,vertical,None}
+                        Interleave_size=block_size: block-level alignment,
+                        Block_size should be greater than or equal to
+                        cp_kv_cache_interleave_size. Block_size should be
+  --data-parallel-hybrid-lb, --no-data-parallel-hybrid-lb, -dph
+                        Whether to use "hybrid" DP LB mode. Applies only to
+  --block-size BLOCK_SIZE
+  --enable-mamba-shared-prefix-checkpoint, --no-enable-mamba-shared-prefix-checkpoint
+                        Also register a Mamba "align" checkpoint at the
+                        `mamba_cache_mode` "align", EAGLE on the Mamba group,
+                        and a prefix match unit smaller than the Mamba block
+  --mamba-block-size MAMBA_BLOCK_SIZE
+                        for mamba cache. Can be set only when prefix caching
+  --mamba-cache-dtype {auto,bfloat16,float16,float32}
+                        The data type to use for the Mamba cache (both the
+  --mamba-cache-mode {align,all,none}
+                        The cache strategy for Mamba layers:
+                        - "all": cache the mamba state of all tokens at
+                        position i * block_size.
+                        - "align": only cache the mamba state of the last
+                        position i * block_size. This is the default when
+  --mamba-ssm-cache-dtype {auto,bfloat16,float16,float32}
+                        The data type to use for the Mamba cache (ssm state
+                        mamba_cache_dtype). If set to 'auto', the data type
+                        mamba_cache_dtype. (default: auto)
+                        Mamba prefix-cache checkpoints. ``0`` retains only
+                        scheduler block size. ``None`` retains checkpoints
+                        densely. Applies only to sliding-window and Mamba
+                        the physical KV cache block sizes (e.g. 32 vs a
+                        1024-token hybrid-model block) as long as every KV
+                        cache group's `block_size` is divisible by it,
+                        This equals to the `hash_block_size` used throughout
+                        ReplaySSM logical history length B for Mamba2. Triton
+                        Use the ReplaySSM Mamba2 decode kernel: cache recent
+                        mamba_cache_mode 'none' or 'align' (prefix caching)
+                        and the Triton or FlashInfer mamba backend; standard
+                        are most efficient when mamba_block_size is a multiple
+  --disable-hybrid-kv-cache-manager, --no-disable-hybrid-kv-cache-manager
+                        flex_attn_block_n=None, flex_attn_q_block_size=None,
+                        flex_attn_kv_block_size=None))
+  --spec-method {bailing_hybrid_mtp,bailing_hybrid_v3_mtp,custom_class,deepseek_mtp,dflash,dots3_note_mtp,draft_model,dspark,eagle,eagle3,ernie_mtp,exaone4_5_mtp,exaone_moe_mtp,extract_hidden_states,gemma4_mtp,glm4_moe_lite_mtp,glm4_moe_mtp,glm5_next_mtp,glm_ocr_mtp,hy_v3_mtp,hy_v4_mtp,inkling_mtp,kimi_k3_mtp,longcat_flash_mtp,medusa,mimo_mtp,mimo_v2_mtp,minimax_m3_mtp,mlp_speculator,mtp,nemotron_h_mtp,ngram,ngram_gpu,pangu_ultra_moe_mtp,qwen3_5_mtp,qwen3_next_mtp,qwen4_exp_mtp,step3p5_mtp,suffix,None}

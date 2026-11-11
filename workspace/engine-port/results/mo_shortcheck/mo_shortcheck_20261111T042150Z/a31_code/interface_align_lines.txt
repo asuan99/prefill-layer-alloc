@@ -1,0 +1,96 @@
+616:     def _preferred_block_size_for_backends(
+619:         default_block_size: int,
+624:         ``supports_block_size`` may be overridden to accept exact sizes only
+638:                 return backend_classes[0].get_preferred_block_size(default_block_size)
+639:             if all(b.supports_block_size(default_block_size) for b in backend_classes):
+640:                 return default_block_size
+645:                     for s in b.get_supported_kernel_block_sizes()
+654:                 if all(b.supports_block_size(candidate) for b in backend_classes):
+659:                 f"{b.get_name()}: {b.get_supported_kernel_block_sizes()}"
+666:     def update_block_size_for_backend(cls, vllm_config: "VllmConfig") -> None:
+667:         """Ensure block_size is compatible with the attention backend.
+668:         For hybrid models, also aligns block_size with mamba page sizes.
+686:         # select_common_block_size().
+687:         if not cache_config.user_specified_block_size:
+688:             preferred = cls._preferred_block_size_for_backends(
+689:                 backend_classes, CacheConfig.DEFAULT_BLOCK_SIZE, vllm_config
+691:             if preferred != CacheConfig.DEFAULT_BLOCK_SIZE:
+697:             cache_config.block_size = preferred
+699:         # Phase 2: Align block/mamba sizes for hybrid models
+701:         if model_config.is_hybrid:
+702:             cls._align_hybrid_block_size(vllm_config, backend_classes[0])
+704:         # Phase 3: Align block/page sizes when multiple KV dtypes share the
+708:             cls._align_heterogeneous_kv_block_size(vllm_config, backend_classes[0])
+711:     def _align_heterogeneous_kv_block_size(
+716:         """Align block size when several KV dtypes share one block pool.
+725:         1. Bump the primary ``block_size`` (kernel-aligned) until the primary
+750:                 block_size=1,
+787:         # block is rounded up to (never below the already-chosen block_size).
+789:             supported = backend_cls.get_supported_kernel_block_sizes()
+793:         block_alignment = max(smallest_kernel_block, cache_config.block_size)
+796:         # also cover any mamba page a hybrid model already padded.
+799:             cache_config.mamba_page_size_padded or 0,
+802:         # Smallest kernel-aligned primary block whose page covers required_page.
+803:         primary_block_size = block_alignment * cdiv(
+804:             required_page, block_alignment * primary_page
+806:         if cache_config.block_size < primary_block_size:
+807:             cache_config.block_size = primary_block_size
+811:                 primary_block_size,
+815:         shared_page = cache_config.block_size * primary_page
+820:         if cache_config.mamba_page_size_padded is not None:
+821:             cache_config.mamba_page_size_padded = shared_page
+824:     def _get_indexer_block_alignment(cls, vllm_config: "VllmConfig") -> int | None:
+825:         """Extra ``block_size`` multiple a sparse indexer needs, else ``None``.
+828:         into pool pages, so ``block_size`` must be a multiple of
+835:     def _align_hybrid_block_size(
+840:         """For hybrid attention/mamba models, ensure that the attention page
+870:             attn_page_size_1_token = MLAAttentionSpec(
+871:                 block_size=1,
+889:                 block_size=1,
+898:                     block_size=1,
+906:                 attn_page_size_1_token = lcm(tq_page, skip_page)
+908:                 attn_page_size_1_token = tq_page
+911:                 block_size=1,
+917:             attn_page_size_1_token = backend_cls.customize_spec(
+928:             mamba_page_size = max(
+933:             mamba_page_size = MambaSpec(
+936:                 block_size=-1,
+939:         if mamba_page_size == 0:
+942:         # mamba_block_size here should either be user specified value or None
+943:         mamba_block_size = (
+944:             cache_config.mamba_block_size
+945:             if cache_config.user_specified_mamba_block_size
+949:         # Get kernel block alignment from the backend's supported sizes
+951:             kernel_block_alignment_size = max(
+954:                     for s in backend_cls.get_supported_kernel_block_sizes()
+956:                 cache_config.block_size,
+960:                 # number of kernel blocks to be aligned to 128 / kernel_block_size.
+961:                 # For hybrid MLA/Mamba models, make the manager block size a
+963:                 kernel_block_alignment_size = max(kernel_block_alignment_size, 128)
+966:             # With prefix caching, align to mamba chunk size for kernel perf
+970:             base_chunk_size = mamba_block_size or model_config.get_mamba_chunk_size()
+972:             attn_tokens_per_mamba_state = cdiv(mamba_page_size, attn_page_size_1_token)
+973:             chunk_size = lcm(base_chunk_size, kernel_block_alignment_size)
+974:             attn_block_size = chunk_size * cdiv(attn_tokens_per_mamba_state, chunk_size)
+975:             cache_config.mamba_block_size = attn_block_size
+978:             # both backend alignment and mamba page size compatibility
+979:             attn_block_size = kernel_block_alignment_size * cdiv(
+980:                 mamba_page_size,
+981:                 kernel_block_alignment_size * attn_page_size_1_token,
+983:             indexer_align = cls._get_indexer_block_alignment(vllm_config)
+984:             if indexer_align:
+985:                 attn_block_size = indexer_align * cdiv(attn_block_size, indexer_align)
+987:         if cache_config.block_size < attn_block_size:
+988:             cache_config.block_size = attn_block_size
+992:                 attn_block_size,
+995:         if cache_config.mamba_cache_mode == "align":
+996:             cache_config.mamba_block_size = cache_config.block_size
+999:         attn_page_size = cache_config.block_size * attn_page_size_1_token
+1000:         assert attn_page_size >= mamba_page_size
+1002:         if attn_page_size == mamba_page_size:
+1006:             cache_config.mamba_page_size_padded is None
+1007:             or cache_config.mamba_page_size_padded != attn_page_size
+1009:             cache_config.mamba_page_size_padded = attn_page_size
+1011:                 100 * (attn_page_size - mamba_page_size) / mamba_page_size
+1240:     def support_hybrid_kv_cache(cls) -> bool:
+1241:         """Returns if the hybrid kv cache is supported by the current platform."""
