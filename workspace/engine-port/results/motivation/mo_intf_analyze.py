@@ -16,7 +16,8 @@ Registered readings (all constants from mo_spec / mo_intf_spec; the reading rule
                       where the WITHOUT member is >= SAT_HI, and the reading rule over the SLO grid says "without > with" in every block
   (2) D shift         inside a configuration (with / without): goodput of D over goodput of that configuration's best D, per seed;
                       D34 / D44 are BELOW when the ratio is under 1 - GOODPUT_LOSS and the t interval of the log ratio excludes 0
-  (3) starved class   inside one D: a class whose attainment is below CAP_ATTAIN
+  (3) starved class   inside one D: a class whose attainment is below CAP_ATTAIN; judged classes = input<=512 and input<=2048 only
+                      (user decision 2026-11-12: input>2048 is reported, the starvation of long requests is not judged here)
   (4) no D helps      every D has at least one starved class
 and, per rate, the row of the roadmap's "next action" table the readings fall on (ACTION_ROWS).
 """
@@ -38,6 +39,9 @@ V = RU.V
 MW = MS.MW
 SHORT_CLASS = MS.request_class(1)                       # "in<=512": the class the interference reading uses
 CLASSES = tuple(MS.request_class(e) for e in MS.CLASS_EDGES) + (MS.request_class(MS.CLASS_EDGES[-1] + 1),)
+JUDGED_CLASSES = CLASSES[:-1]                           # user decision 2026-11-12: the input>2048 class is reported, not judged
+NOT_JUDGED_NOTE = ("the starvation of long requests themselves is NOT judged by this cell: the input>2048 class (mostly LooGLE requests when "
+                   "the long stream is present) is reported as a descriptive value and is no input of readings (3) and (4)")
 T975 = {1: 12.706, 2: 4.303, 3: 3.182, 4: 2.776, 5: 2.571, 6: 2.447, 7: 2.365, 8: 2.306, 9: 2.262, 10: 2.228, 11: 2.201, 12: 2.179,
         13: 2.160, 14: 2.145, 15: 2.131, 16: 2.120, 17: 2.110, 18: 2.101, 19: 2.093, 20: 2.086, 21: 2.080, 22: 2.074, 23: 2.069,
         24: 2.064, 25: 2.060, 26: 2.056, 27: 2.052, 28: 2.048, 29: 2.045, 30: 2.042}      # two-sided 95 % Student t quantiles
@@ -291,12 +295,13 @@ def combine_blocks(blocks):
                     vals = [[r["att"][c] for r in b.values() if r["att"][c] is not None] for b in sv]
                     est = block_estimate(vals, f"class|{d}|{wl}|{rt}|{c}")
                     nmin = min((r["n"][c] for b in sv for r in b.values()), default=0)
-                    starved.append({"D": d, "with_long": wl, "rate": rt, "class": c, "min_n_per_run": nmin,
+                    starved.append({"D": d, "with_long": wl, "rate": rt, "class": c, "min_n_per_run": nmin, "judged": c in JUDGED_CLASSES,
                                     "starved": est["mean"] is not None and est["mean"] < MS.CAP_ATTAIN,
                                     "flag": "SMALL_N" if nmin < MS.MIN_CLASS_N else "", **est})
     actions = []
     for rt in rates:
-        s_by = {d: sorted({r["class"] for r in starved if r["D"] == d and r["rate"] == rt and r["starved"]}) for d in dgrid}
+        s_by = {d: sorted({r["class"] for r in starved if r["D"] == d and r["rate"] == rt and r["starved"] and r["class"] in JUDGED_CLASSES})
+                for d in dgrid}
         loses = {d: sorted("with" if r["with_long"] else "without" for r in shift if r["D"] == d and r["rate"] == rt and r["label"] == "BELOW_BEST")
                  for d in dgrid}
         every_d_starved = all(s_by[d] for d in dgrid)
@@ -322,6 +327,7 @@ def combine_blocks(blocks):
             "seeds": [b["seeds"] for b in blocks], "design_sha": blocks[0]["design_sha"], "flags": flags, "interference": interference,
             "d_shift": shift, "starved": starved, "actions": actions, "action_rows": ACTION_ROWS,
             "loogle_only": [dict(r, job=b["job"]) for b in blocks for r in b["loogle_only"]],
+            "judged_classes": list(JUDGED_CLASSES), "not_judged": NOT_JUDGED_NOTE,
             "method": "paired per-seed differences inside each Job; block = factor (within-block variance, df = N - B); Student t primary, "
                       "block-stratified bootstrap reported; raw points of the Jobs are not pooled",
             "constants": {"ATT_MARGIN": MS.ATT_MARGIN, "SAT_HI": MS.SAT_HI, "CAP_ATTAIN": MS.CAP_ATTAIN, "GOODPUT_LOSS": IS.GOODPUT_LOSS,

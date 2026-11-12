@@ -52,9 +52,36 @@ def is_pending(v):
 def default_fixed():
     """Constants fixed by measurements that have not run yet.  mem / cap: cap measurement; context: registered; vllm_*: bring-up of the
     vLLM 0.31.0 banner (the log patterns are GPU-unverified); sg_venv_freeze: the py3.12 image build."""
-    return {"mem": pend("cap_measurement.mem"), "cap": pend("cap_measurement.cap"), "context": 20480,
-            "vllm_chunk": pend("vllm_banner.max_num_batched_tokens"), "vllm_backend": pend("vllm_banner.attention_backend"),
-            "sg_venv_freeze": pend("image_build.sg312_pip_freeze_sha256")}
+    f = {"mem": pend("cap_measurement.mem"), "cap": pend("cap_measurement.cap"), "context": 20480,
+         "vllm_chunk": pend("vllm_banner.max_num_batched_tokens"), "vllm_backend": pend("vllm_banner.attention_backend"),
+         "sg_venv_freeze": pend("image_build.sg312_pip_freeze_sha256")}
+    f.update(registered_values())
+    return f
+
+
+# Values that a measurement / rehearsal fixes are registered as DATA (registered_fixed.json), not by editing this file: the rehearsal
+# gate binds to the harness CODE digest (mo_rehearsal.harness_digest), so a value written into the code would invalidate the very
+# rehearsal that produced it (the venv freeze digest is read from a rehearsal record; mem / cap from the cap measurement).  The values
+# still bind every Job through the plan sha and the card sha.  Each entry needs a source; only placeholder keys may be registered.
+REGISTERED_FILE = HERE / "registered_fixed.json"
+REGISTERABLE = ("mem", "cap", "vllm_chunk", "vllm_backend", "sg_venv_freeze")
+
+
+def registered_values(path=None):
+    import json
+    p = Path(path or REGISTERED_FILE)
+    if not p.exists():
+        return {}
+    out = {}
+    for k, v in json.loads(p.read_text()).get("values", {}).items():
+        if k not in REGISTERABLE:
+            raise ValueError(f"{p.name}: '{k}' is not a registerable placeholder {REGISTERABLE}")
+        if not isinstance(v, dict) or "value" not in v or not v.get("source"):
+            raise ValueError(f"{p.name}: '{k}' needs {{'value': ..., 'source': ...}}")
+        if is_pending(v["value"]):
+            raise ValueError(f"{p.name}: '{k}' is still a placeholder")
+        out[k] = v["value"]
+    return out
 
 
 REHEARSAL_FIXED = {"mem": 0.6, "cap": 48, "context": 20480, "vllm_chunk": 8192, "vllm_backend": "FLASHINFER",
@@ -300,6 +327,9 @@ def plan_problems(plan, allow_placeholders=False):
     if kind == "LOOGLE_INTERFERENCE":                                 # paired with / without LooGLE over the static D arms
         import mo_intf_spec
         return mo_intf_spec.plan_problems(plan, allow_placeholders)
+    if kind == "PRE_LADDER":                                          # rate-grid search, not a measurement
+        import mo_ladder
+        return mo_ladder.plan_problems(plan, allow_placeholders)
     if kind != "MOTIVATION_GRID":                                     # cap measurement plans (per-boot mem / cap) have their own checker
         import mo_cap_spec
         return mo_cap_spec.plan_problems(plan, allow_placeholders)

@@ -1,0 +1,5 @@
+{
+ "schema": "motivation.registered_fixed/v1",
+ "note": "Values fixed by a measurement or a rehearsal (mo_spec.registered_values). Registerable keys: mem, cap, vllm_chunk, vllm_backend, sg_venv_freeze. Each entry is {\"value\": ..., \"source\": \"<Job name / file the value was read from>\"}. This file is data, not harness code: registering a value does not change the harness digest of a rehearsal record. Empty = every placeholder is still PENDING.",
+ "values": {}
+}

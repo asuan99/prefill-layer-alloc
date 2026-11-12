@@ -480,12 +480,24 @@ class TestActionRows(unittest.TestCase):
         self.assertEqual((a["row"], a["resolving_D"]), (3, [16, 24]))
 
     def test_row4_starved_the_same_at_every_d(self):
-        a = self.row(att=lambda d, wl, c: 0.70 if (wl and c == "in>2048") else 1.0)
+        a = self.row(att=lambda d, wl, c: 0.70 if (wl and c == "in<=2048") else 1.0)
         self.assertEqual(a["row"], 4)
         self.assertTrue(a["every_D_has_a_starved_class"])
 
+    def test_long_input_class_is_reported_but_not_judged(self):
+        """User decision 2026-11-12 (2nd): readings (3) and (4) use input<=512 and input<=2048 only."""
+        co = IA.combine_blocks(synth(att=lambda d, wl, c: 0.50 if (wl and c == "in>2048") else 1.0))
+        a = co["actions"][0]
+        self.assertEqual((a["row"], a["every_D_has_a_starved_class"]), (1, False))
+        self.assertTrue(all(v == [] for v in a["starved_by_D"].values()))
+        long = [r for r in co["starved"] if r["class"] == "in>2048" and r["with_long"]]
+        self.assertTrue(long and all(r["starved"] and not r["judged"] for r in long))       # still in the table as a descriptive value
+        self.assertTrue(all(r["judged"] for r in co["starved"] if r["class"] != "in>2048"))
+        self.assertEqual(co["judged_classes"], ["in<=512", "in<=2048"])
+        self.assertIn("starvation of long requests themselves is NOT judged", co["not_judged"])
+
     def test_row5_different_classes_starved_at_different_d(self):
-        a = self.row(att=lambda d, wl, c: 0.70 if wl and c == ("in<=512" if d in (34, 44) else "in>2048") else 1.0)
+        a = self.row(att=lambda d, wl, c: 0.70 if wl and c == ("in<=512" if d in (34, 44) else "in<=2048") else 1.0)
         self.assertEqual(a["row"], 5)
 
     def test_row5_every_d_loses_on_one_side(self):
@@ -713,6 +725,10 @@ class TestMutants(unittest.TestCase):
         b = IA.analyze_block(self.out1)
         return all(r["n"] == round(0.05 / 0.95 * r["rate"] * SHORT_DURATION) * 4 for r in b["loogle_only"])
 
+    def o_long_class_not_judged(self):
+        co = IA.combine_blocks(synth(att=lambda d, wl, c: 0.50 if (wl and c == "in>2048") else 1.0))
+        return co["actions"][0]["row"] == 1 and not co["actions"][0]["every_D_has_a_starved_class"]
+
     def test_each_mutant_is_caught(self):
         real_read, real_est, real_interf, real_d_arm, real_fixed = MA.read_label, IA.block_estimate, G.interference, IS.d_arm, IS.fixed_values
 
@@ -747,6 +763,7 @@ class TestMutants(unittest.TestCase):
             ("second block reuses the first block's seeds", mock.patch.dict(IS.BLOCK_SEEDS, {2: IS.BLOCK_SEEDS[1]}), self.o_seeds_disjoint),
             ("split check read for one D only", mock.patch.object(IS, "D_GRID", (44,)), self.o_split_per_d),
             ("LooGLE cell counts every long-input request", mock.patch.object(MW, "LONG_PHASE", "sharegpt_first"), self.o_long_tag),
+            ("input>2048 class judged again", mock.patch.object(IA, "JUDGED_CLASSES", IA.CLASSES), self.o_long_class_not_judged),
         ]
         for name, patch, oracle in mutants:
             self.assertTrue(oracle(), f"oracle of '{name}' does not hold on the unmutated code")

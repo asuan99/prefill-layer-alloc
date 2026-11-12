@@ -42,7 +42,10 @@ SPARE_SEEDS = (20261115, 20261116)                         # declared re-runs on
 SECOND_BLOCK_SEEDS = (20261117, 20261118, 20261119, 20261120)   # 2026-11-12: seeds of the second full-block Job of the interference cell
 #                                                            (two Jobs x 4 seeds, user decision); disjoint from SEEDS and SPARE_SEEDS,
 #                                                            which keep their roles.  Master hashes: trace_registry.json.
-QUANTILES = (0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
+PRE_LADDER_SEEDS = (20261121, 20261122)                    # 2026-11-12: seeds of the pre-ladder (rate-grid search, not a measurement); two,
+#                                                            as the earlier capacity ladders (ph_spec.CAP_SEEDS), disjoint from every
+#                                                            measurement seed.  Master hashes: trace_registry.json.
+QUANTILES =(0.01, 0.05, 0.25, 0.50, 0.75, 0.90, 0.95, 0.99)
 WORKLOADS = ("sharegpt_first", "openchat_rounds", "arxiv_summ", "loogle_longdep")
 
 TOK_MAGIC = b"PDMUX-WL-TOKENS v1\n"
