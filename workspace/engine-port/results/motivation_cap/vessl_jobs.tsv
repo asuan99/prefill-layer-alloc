@@ -1,2 +1,3 @@
 submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
 2026-11-12T09:04:10Z	pdmux-motivation-cap-e6f88d7-20261112090400	e6f88d765f5d8d88f9e6a8cb7115eb228187da45	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82	workspace/engine-port/results/motivation/mo_cap_job.sh		no
+2026-11-12T14:21:32Z	pdmux-motivation-cap-5cf749b-20261112142122	5cf749bf559738ed9ff07fa27f9b3fac70eb4f8c	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82	workspace/engine-port/results/motivation/mo_cap_job.sh		no
