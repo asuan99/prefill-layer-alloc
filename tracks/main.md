@@ -47,7 +47,8 @@
 - **봉인 문서 정오·잔여 정리** / worktree `agent-a33b…`·`agent-af8a…`는 다른 세션 종료 후 삭제 · `fix/gate14-tci-analyze` 브랜치 유지 · PROPOSAL §4 배너는 달았음 · `handoff-report/claude_web_review_prompt_2026-10-28.md` 커밋 여부 · `/tmp/gate_t_*` 11개 삭제(권고) · 구판 runtime manifest 갱신(권고) · presubmit 차단 2건 범위 한정 OVERRIDE(권고) · roofline η 수식 §6 한 줄(권고) · 진단 PREREG rev2 addendum(`7af52ffb`) 문턱 그대로(권고)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out
 ## 실행 중·미회수 Job
-- 없음(2026-11-12). `results/mo_shortcheck/vessl_jobs.tsv` 단기 Job 3건 회수·sha 검증. Workspace 3개 standby
+- **고정 배치 리허설** `pdmux-motivation-cap-e6f88d7-20261112090400`(slug `job-lxfjjl7xulda`, 커밋 e6f88d76, 예산 210분): 09:04Z 제출, 10:58Z까지 `scheduling`. 병합 뒤 코드 digest가 바뀌어 이 기록은 본 측정의 문을 열지 못함(venv digest·GPU 첫 실행 점검용) → 고정 배치 리허설 1회 재실행 필요. 회수 `scripts/vessl/fetch.sh motivation_cap <job name>`, 제출 기록 `results/motivation_cap/vessl_jobs.tsv`
+- **사전 사다리(측정 아님)** dry-run 완료·제출 승인 대기(커밋 `191c9447`): arm SG mixed·PD-mux D44·vLLM(간섭 대상은 SG mixed·D16·D44), 최저 도착률 sharegpt_first 2.0·openchat 1.0·arXiv 0.1·간섭 짧은 요청 2.0, 12 boot·216 run·추정 7.35시간·예산 600분. 사전 사다리·간섭 셀 배선 main 병합 `2d8ccd04`, 리허설 값은 `registered_fixed.json`(코드 digest 밖) 등록 방식(사용자 수용 2026-11-12, 사전등록 감사 대상)
 ## 금지 서술 (링크만)
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 · RESULT_costterms §17 · Phase B 판정서 인용 금지 · `reports/audit/2026-11-08_unaudited_r1/` 각 판정서 · "슬롯 상한이 hybrid 고유" · M3 판정서 · J1 크기 문장 · AJ-2 J-H1 값 · 이번 세션 예상 값(`predict.json`)은 측정 아님
 ## 최근 로그
@@ -55,4 +56,3 @@
 - 2026-11-11~12(main): 교수 보고 후속 — static D 이동·부류별 굶김 근거 검토, D 스윕 seed 간 분산 재집계, 간섭 셀 설계 변경을 로드맵에 반영·재발행(Job 시간 정정: 7 arm seed 8 한 Job 약 38시간, 5 arm seed 4 Job 2개 약 34시간) · 사용자 승인(11-12): 토큰 파일 볼륨 업로드, 이 변경분 커밋 · 상한 측정 하네스 구현 중(branch `worktree-agent-a9085be06a95ec059`, 미병합)
 - 2026-11-10(main): py3.12 부팅 프로브 회수(SG piecewise·cap 256·mem 전부 부팅, PD-mux piecewise 미포획, 2¹⁸ 입력은 프로브 길이 오류로 미검증), 엔진 계측 병합, 프로브 후속 결정 3건
 - 2026-11-09(main): 관측 지점 코드 확정·관측 지도 HTML, 기준선 결정·감사 r1, SLO 사후 계산 정리, opchar 병합 시도(인용 정지로 중단)
-- 2026-11-07~09(main): handoff 정리·promote 8·9차·Phase B 결과 감사 r1·미감사 8건 감사 r1·Mamba CUDA graph 코드 대조(SGLang·vLLM)·motivation 공백 정리 Doc + 예상 값 차트 4개·용량 정의 4종 정리·용어 정의
