@@ -1,0 +1,12 @@
+status=OK
+utc=2026-11-11T04:21:40Z
+src=/opt/pdmux/sglang_engine_dev/python
+dst=/opt/pdmux/sglang_pristine/python
+ref_path=/opt/pdmux/prefill-layer-alloc/workspace/engine-port/env/sglang_v0.5.10_python_tree.sha256
+ref_sha256=1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3
+ref_overridden=0
+origin=copied
+reason=
+tree_manifest_sha256=1bd84d884e53468ccfd65f38806ea02cd855cc08d6ac18d31f88bac48a1c3dd3
+tree_entries=2258
+extras=sglang/_version.py
