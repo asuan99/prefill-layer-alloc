@@ -7,7 +7,9 @@ Measurements are named by what they observe (no M1/D1 numbering).
   * Arms (ARM_PARAMS): SGLang v0.5.10 on /opt/sg312-venv (interpreter chosen per arm, booted through scripts/vessl/engine_tree.py boot),
     vLLM 0.31.0 unchanged (/opt/vllm-venv).  An arm NAME states its whole bundle (bundle_name).
   * mem and cap are PLACEHOLDERS ("PENDING:...") until the cap measurement fixes them; a plan/card with a placeholder is a rehearsal-only
-    artefact (plan_problems / mo_card.card_placeholders), never launchable.
+    artefact (plan_problems / mo_card.card_placeholders), never launchable.  The cap measurement is its own harness (mo_cap_spec /
+    mo_cap_runner / mo_cap_analyze, Job script mo_cap_job.sh): its boots carry their own mem / cap, and mo_cap_analyze.fix_cap_mem +
+    apply_fix turn its serving comparison into the values that replace the placeholders.
   * Grid rule: one registered base grid + ONE registered extension (EXT_COUNT rungs above the top).  An extension is its own full-block Job;
     points of different Jobs are never merged (mo_analyze.merge_points refuses).
   * Order: the arms of a Job boot in a seeded random permutation; the anchor arm boots first and last with the registered anchor cell.
@@ -294,6 +296,9 @@ def sha(o):
 
 
 def plan_problems(plan, allow_placeholders=False):
+    if plan.get("kind", "MOTIVATION_GRID") != "MOTIVATION_GRID":      # cap measurement plans (per-boot mem / cap) have their own checker
+        import mo_cap_spec
+        return mo_cap_spec.plan_problems(plan, allow_placeholders)
     out = []
     ids = [r["run_id"] for b in plan["boots"] for r in b["runs"]]
     if len(ids) != len(set(ids)):

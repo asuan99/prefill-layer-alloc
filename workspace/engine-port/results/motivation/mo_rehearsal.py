@@ -33,6 +33,10 @@ STAGES = ("plan", "card", "boots", "card_checks", "runs", "schema", "analyzer", 
 def _harness_files():
     files = sorted(HERE.glob("mo_*.py"))
     files += [SP.HERE / n for n in ("sb_spec.py", "sb_runner.py", "sb_loadgen.py", "stock_metrics.py")]
+    ct = HERE.parent / "cap_char" / "costterms_harness"            # cap measurement: imported sealed cost-term code + analytic terms
+    files += [ct / n for n in ("ct_spec.py", "ct_client.py", "ct_extract.py")]
+    files += [SP.ENG / "scripts" / "costmodel" / n for n in ("analytic_terms.py", "dstar_model.py")]
+    files += [SP.ENG / "scripts" / "compo" / "make_variant.py"]
     files += sorted(SP.PH_DIR.glob("ph_*.py"))
     files += [SP.ENGINE_TREE_PY, SP.ENG / "benchmarks" / "pdmux_eval" / "trace_loadgen.py", SP.ENG / "benchmarks" / "pdmux_eval" / "abs_mono_loadgen.py"]
     files += [HERE / "workloads" / "gen_traces.py", HERE / "workloads" / "mw_lib.py", SP.ENG / "scripts" / "multigpu" / "mg_x_pretokenize.py"]
@@ -76,14 +80,37 @@ def resolve_workloads(w1_pool, token_dir=None, n=4):
     return out
 
 
-def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=None, digest=None, workload="W1", **kw):
-    """Run the whole pass; return (and persist) the record.  Never raises on a stage failure: the record says which stage failed."""
+def record_path(rehearsal_dir, digest, kind=None):
+    """Rehearsal record of a harness digest.  The grid measurement keeps <digest16>.json; every other plan kind (cap measurement: fixed
+    batch, serving cap/mem) has its own record <digest16>.<kind>.json -- a pass of one kind never opens the gate of another."""
+    d = Path(rehearsal_dir or REHEARSAL_DIR)
+    return d / (f"{digest[:16]}.json" if kind in (None, "MOTIVATION_GRID") else f"{digest[:16]}.{kind}.json")
+
+
+def new_record(job, digest=None, workload="W1", kind=None):
+    return {"schema": "motivation.rehearsal/v1", "job": job, "rehearsal_commit": current_commit(), "harness_digest": digest or harness_digest(),
+            "stages": {s: False for s in STAGES}, "passed": False, "reason": None, "verdict_rows": 0, "workload": workload,
+            "kind": kind or "MOTIVATION_GRID"}
+
+
+def write_record(rec, out, rehearsal_dir=None):
+    rec["passed"] = all(rec["stages"].values())
+    p = record_path(rehearsal_dir, rec["harness_digest"], rec.get("kind"))
+    p.parent.mkdir(parents=True, exist_ok=True)
+    MR.dump(rec, Path(out) / "REHEARSAL.json")
+    MR.dump(rec, p)
+    return rec
+
+
+def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=None, digest=None, workload="W1", plan=None,
+             analyze_fn=None, write_fn=None, **kw):
+    """Run the whole pass; return (and persist) the record.  Never raises on a stage failure: the record says which stage failed.
+    `plan` (a rehearsal plan of another kind, e.g. mo_cap_spec.serving_plan) with its `analyze_fn` / `write_fn` replaces the grid plan."""
     out = Path(out)
-    rec = {"schema": "motivation.rehearsal/v1", "job": job, "rehearsal_commit": current_commit(), "harness_digest": digest or harness_digest(),
-           "stages": {s: False for s in STAGES}, "passed": False, "reason": None, "verdict_rows": 0, "workload": workload}
+    rec = new_record(job, digest, workload, plan.get("kind") if plan else None)
     rec["workloads_resolved"] = resolve_workloads(w1_pool, kw.pop("token_dir", None))
     try:
-        plan = rehearsal_plan(job, rmin, workload=workload)
+        plan = plan or rehearsal_plan(job, rmin, workload=workload)
         bad = MS.plan_problems(plan)
         if bad:
             raise RuntimeError(f"plan: {bad}")
@@ -105,9 +132,9 @@ def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=
         if probs:
             raise RuntimeError(f"schema: {probs[:3]}")
         rec["stages"]["schema"] = True
-        result = MA.analyze_job(job_data)
+        result = (analyze_fn or MA.analyze_job)(job_data)
         rec["stages"]["analyzer"] = True
-        MA.write_outputs(result, out / "analysis")
+        (write_fn or MA.write_outputs)(result, out / "analysis")
         rec["verdict_rows"] = len(result["verdict_rows"])
         rec["stages"]["verdict_table"] = rec["verdict_rows"] > 0
         rec["verdict_table_sha"] = MS.sha(result["verdict_rows"])
@@ -115,19 +142,13 @@ def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=
         rec["reason"] = f"{e.status}: {e.reason}"
     except Exception as e:  # noqa: BLE001
         rec["reason"] = f"{type(e).__name__}: {e}"
-    rec["passed"] = all(rec["stages"].values())
-    d = Path(rehearsal_dir or REHEARSAL_DIR)
-    d.mkdir(parents=True, exist_ok=True)
-    MR.dump(rec, out / "REHEARSAL.json")
-    MR.dump(rec, d / f"{rec['harness_digest'][:16]}.json")
-    return rec
+    return write_record(rec, out, rehearsal_dir)
 
 
 def launch_gate(plan, rehearsal_dir=None, digest=None):
     """-> None (launch allowed) or the refusal reason."""
     digest = digest or harness_digest()
-    d = Path(rehearsal_dir or REHEARSAL_DIR)
-    f = d / f"{digest[:16]}.json"
+    f = record_path(rehearsal_dir, digest, plan.get("kind"))
     if not f.exists():
         return f"NO_REHEARSAL_RECORD for harness digest {digest[:16]} (commit {current_commit()}): run `mo_runner.py rehearse` first"
     rec = json.loads(f.read_text())

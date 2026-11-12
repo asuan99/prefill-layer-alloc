@@ -31,6 +31,47 @@ RUN_KEYS = ("schema_version", "run_id", "kind", "cell", "seed", "arm", "boot_id"
             "t_load_start_epoch", "t_load_end_epoch", "realized_split")
 
 
+# ---- fixed-batch cell record of the cap measurement (motivation.cap_fixed_batch/v1; mo_cap_runner writes one per cell) -----------------
+# identity  schema_version cell_id job_name boot_id arm gpu_uuid hostname card_sha round
+# cell      model bs c c_in O abort_at window_iters trim_iters time_only
+# boot      cap mem banner = {max_total_num_tokens, max_running_requests, context_len} (the values the feasibility rule used)
+# window    t_first_send t_abort t_end window_reached server_alive_after clock_pair = [wall, monotonic]
+# requests  [{rid t_send chunks=[[t_mono, cumulative_tokens], ...] prompt_tokens completion_tokens finish error aborted}]  (every chunk
+#           of every request; the step time is derived from these stamps post hoc, nothing is reduced at record time)
+FIXED_CELL_KEYS = ("schema_version", "cell_id", "job_name", "boot_id", "arm", "gpu_uuid", "hostname", "card_sha", "round", "model", "bs", "c",
+                   "c_in", "O", "abort_at", "window_iters", "trim_iters", "time_only", "cap", "mem", "banner", "t_first_send", "t_abort",
+                   "t_end", "window_reached", "server_alive_after", "clock_pair", "requests")
+FIXED_REQUEST_KEYS = ("rid", "t_send", "chunks", "prompt_tokens", "completion_tokens", "finish", "error", "aborted")
+FIXED_SCHEMA_VERSION = "motivation.cap_fixed_batch/v1"
+
+
+def validate_fixed_cell(rec):
+    """-> list of problems of one fixed-batch cell record; empty = it satisfies the schema (not: the cell is a valid measurement)."""
+    miss = [k for k in FIXED_CELL_KEYS if k not in rec]
+    if miss:
+        return [f"cell {rec.get('cell_id')}: missing {miss}"]
+    out, cid = [], rec["cell_id"]
+    if rec["schema_version"] != FIXED_SCHEMA_VERSION:
+        out.append(f"{cid}: schema_version {rec['schema_version']} != {FIXED_SCHEMA_VERSION}")
+    if len(rec["requests"]) != rec["bs"]:
+        out.append(f"{cid}: {len(rec['requests'])} requests != bs {rec['bs']}")
+    if not isinstance(rec["banner"], dict) or rec["banner"].get("max_total_num_tokens") is None:
+        out.append(f"{cid}: banner.max_total_num_tokens missing")
+    for r in rec["requests"]:
+        m = [k for k in FIXED_REQUEST_KEYS if k not in r]
+        if m:
+            out.append(f"{cid}/{r.get('rid')}: missing {m}")
+            continue
+        ch = r["chunks"]
+        if any(b[0] < a[0] or b[1] <= a[1] for a, b in zip(ch, ch[1:])):
+            out.append(f"{cid}/{r['rid']}: chunks not monotone in time / cumulative tokens")
+        if ch and ch[-1][1] != r["completion_tokens"]:
+            out.append(f"{cid}/{r['rid']}: completion_tokens {r['completion_tokens']} != last cumulative count {ch[-1][1]}")
+        if ch and ch[0][0] < r["t_send"]:
+            out.append(f"{cid}/{r['rid']}: first chunk precedes the send time")
+    return out
+
+
 def chunk_deltas_from_itl(token_itl_ms, observed):
     """Tokens per stream chunk from the ITL list: a token whose gap to the previous token is exactly 0.0 shares its chunk."""
     if not observed:

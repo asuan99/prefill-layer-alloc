@@ -107,9 +107,15 @@ def workload_facts(plan, w1_pool):
     return MW.pool_facts(plan.get("workload", "W1"), w1_pool, pool_facts)
 
 
+def arms_expect(plan):
+    """{arm name: {"expect": ...}} of every boot.  A boot whose arm carries its own fixed values (cap measurement: mem / cap differ per
+    boot) is checked against THOSE, not against the plan-wide ones."""
+    return {b["arm"]: {"expect": arm_expect(b["arm_def"], b["arm_def"].get("fixed") or plan["fixed"])} for b in plan["boots"]}
+
+
 def build_card(plan, w1_pool):
     """Card of a plan.  Trace facts are computed for EVERY run of the plan from the registered pool."""
-    arms = {b["arm"]: {"expect": arm_expect(b["arm_def"], plan["fixed"])} for b in plan["boots"]}
+    arms = arms_expect(plan)
     trace = {}
     for b in plan["boots"]:
         for r in b["runs"]:
