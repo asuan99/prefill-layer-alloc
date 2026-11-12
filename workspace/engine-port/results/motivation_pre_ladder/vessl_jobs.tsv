@@ -1,0 +1,2 @@
+submitted_utc	job_name	commit	spec	rate_usd_h	image	target	array	fetched
+2026-11-12T14:22:48Z	pdmux-motivation-pre-ladder-c03e6c0-20261112142238	c03e6c0ea4a9de05dd6be6c7a1417a0b1f8eb003	resourcespec-a100x1	1.48	ghcr.io/asuan99/sglang-py312-runtime@sha256:4414b5f98e43325848f3e15cfe40f05ba3d95d30463c3f30b9a8a557ded94a82	workspace/engine-port/results/motivation/mo_ladder_job.sh		no
