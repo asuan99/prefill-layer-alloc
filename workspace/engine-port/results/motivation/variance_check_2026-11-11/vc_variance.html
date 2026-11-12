@@ -1,0 +1,80 @@
+<!doctype html>
+<html lang="ko"><head><meta charset="utf-8"><title>static D seed 간 분산 점검 (2026-11-11)</title>
+<style>body{font-family:sans-serif;max-width:60rem;margin:2rem auto;line-height:1.5;font-size:.92rem}table{border-collapse:collapse;margin:.6rem 0}td,th{border:1px solid #bbb;padding:.2rem .5rem;text-align:right}th{background:#eee}td:first-child,th:first-child{text-align:left}.warn{background:#fff3e0;border-left:4px solid #e65100;padding:.4rem .8rem}.blk{color:#888}</style></head><body>
+<h1>static D seed 간 분산 점검: motivation 사전등록용 (2026-11-11, result-analyst)</h1>
+<p>CPU 재집계이며 새 판정 등급은 없다. 스크립트는 <code>vc_variance.py</code>, 수치 전체는 <code>vc_variance.json</code>에 있다. 봉인 분석기 <code>pi_analyze</code>와 <code>ph_verdict</code>는 import만 했다.</p>
+<div class="warn"><b>범위.</b> 원자료는 policy_implfix R Job(<code>…131429</code>, GPU-a23e1152, digest 0a5d9c3c 플래그 OFF, Nano-9B-v2, W1 EVAL 셀, D마다 boot 1개, seed 1–4)이다. HI 구간은 용량을 넘는다(TTFT≤SLO 비율 0.33–0.37). 그래서 HI와 ALL의 D 사이 <b>배율은 인용하지 않는다</b>(게이트 4 차단). 아래 표에는 그 칸의 부호와 분산만 적었다. 이 분산은 ShareGPT 채팅형 셀에서 나온 값이다. LooGLE 혼합 셀로 그대로 옮겨진다는 보장은 없다.</div>
+
+<h2>1. 보고 값 재현 (대조 전용, 인용 금지)</h2>
+<table><tr><th>양</th><th>보고</th><th>재계산</th></tr>
+<tr><td>G24/G44 · G16/G44 · G34/G44 · G64/G44</td><td>0.733 · 0.395 · 0.985 · 0.995</td><td>0.7330 · 0.3949 · 0.9853 · 0.9953</td></tr>
+<tr><td>HI G64/G44 (paired t CI)</td><td>0.983 [0.937, 1.028]</td><td>0.9828 [0.9369, 1.0284]</td></tr>
+<tr><td>LO D16 통과율</td><td>0.562</td><td>0.5617</td></tr>
+<tr><td>E-1…E-8</td><td>HIT×5, MISS×3</td><td>같음</td></tr></table>
+<p>점검 결과: seed마다 5개 D의 trace hash가 같다. GPU는 1개이고 D마다 boot가 1개다. run마다 segment가 6개이며 분모는 duration의 합이다(max를 쓰면 분모가 4.3–4.6배 작아진다).</p>
+<p>주의: 의뢰서에 근사로 쓴 +4.4% [−0.6, +9.5]는 D 스윕에서 나온 값이 <b>아니다</b>. P Job(PM5 셀)의 <code>s44-e1ty</code> 대 <code>s44-e1t</code> 쌍 값이며 sd(ln)은 0.030이다.</p>
+
+<h2>2. D별 goodput (req/s, seed 4개, mean ± SD, CV)</h2>
+<table><tr><th>D</th><th>ALL</th><th>LO</th><th>HI</th></tr>
+<tr><td>16</td><td>0.868 ± 0.074 (8.5%)</td><td>1.410 ± 0.122 (8.6%)</td><td>0.037 ± 0.010 (26%)</td></tr>
+<tr><td>24</td><td>1.611 ± 0.020 (1.2%)</td><td>2.513 ± 0.029 (1.1%)</td><td>0.121 ± 0.015 (12%)</td></tr>
+<tr><td>34</td><td>2.166 ± 0.070 (3.2%)</td><td>2.513 ± 0.030 (1.2%)</td><td>1.567 ± 0.143 (9.1%)</td></tr>
+<tr><td>44</td><td>2.199 ± 0.068 (3.1%)</td><td>2.514 ± 0.029 (1.2%)</td><td>1.640 ± 0.140 (8.5%)</td></tr>
+<tr><td>64</td><td>2.188 ± 0.076 (3.5%)</td><td>2.513 ± 0.028 (1.1%)</td><td>1.612 ± 0.163 (10.1%)</td></tr></table>
+<p>LO에서는 D24 이상이 통과율 1.000이다. 따라서 LO goodput은 도착률과 같고, 그 SD는 trace 도착 수의 SD다. 이 SD는 D 사이 차이에 대해 아무 정보도 주지 않는다(천장).</p>
+
+<h2>3. 같은 seed끼리의 비 G_D/G_44: seed별 값, CI 반폭</h2>
+<table><tr><th>쌍 · 구간</th><th>seed 1–4</th><th>평균</th><th>sd(ln)</th><th>t(3) 반폭</th><th>bootstrap 반폭</th></tr>
+<tr><td>D16/D44 ALL</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.080</td><td>12.8%</td><td>6.6%</td></tr>
+<tr><td>D16/D44 LO</td><td>0.544 0.565 0.619 0.514</td><td>0.559</td><td>0.078</td><td>12.4%</td><td>6.5%</td></tr>
+<tr><td>D16/D44 HI</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.286</td><td>45%</td><td>23%</td></tr>
+<tr><td>D24/D44 ALL</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.023</td><td>3.7%</td><td>2.0%</td></tr>
+<tr><td>D24/D44 LO</td><td>0.999–1.000</td><td>0.999</td><td>0.0002</td><td>0.04%</td><td>0.02%</td></tr>
+<tr><td>D24/D44 HI</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.168</td><td>27%</td><td>14%</td></tr>
+<tr><td>D34/D44 ALL</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.0019</td><td>0.30%</td><td>0.16%</td></tr>
+<tr><td>D34/D44 HI</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.0085</td><td>1.35%</td><td>0.76%</td></tr>
+<tr><td>D64/D44 ALL</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.0079</td><td>1.25%</td><td>0.63%</td></tr>
+<tr><td>D64/D44 HI</td><td class="blk">부호 −</td><td class="blk">(차단)</td><td>0.029</td><td>4.7%</td><td>2.4%</td></tr></table>
+<p>n=4에서 bootstrap 반폭은 t 반폭의 약 0.5배다. <b>t가 보수적이다.</b> 판단에는 t를 쓴다. 같은 셀에서 boot 2개(D44)를 비교한 placebo(H Job, <code>s44-rep</code> 대 <code>s44</code>)의 sd(ln)은 ALL 0.0016, HI 0.0059이고 평균 차이는 −0.09%와 −0.39%다. 즉 arm 사이 차이가 클수록 seed마다의 비도 더 흔들린다.</p>
+
+<h2>4. 두 D의 goodput 비 차이: 필요한 관측 차이 (%)</h2>
+<p>sd(ln)은 n=4에서 추정한 값을 그대로 썼다. 표의 칸 형식은 0 배제 / 3% 배제 / 80% 검출력 MDE(0 대비)다. n별 칸은 집단 안 <b>최대</b> sd(ln)로 계산했다(pooled 값은 JSON에 있다). "상한"은 그 sd의 df=3 χ² 단측 95% 상한으로 계산한 값이다.</p>
+<table><tr><th>집단 · 구간</th><th>sd(ln) pooled / max</th><th>n=4</th><th>n=6</th><th>n=8</th><th>n=8 (sd 상한)</th></tr>
+<tr><td>고원 안(34·44·64) ALL</td><td>0.0064 / 0.0079</td><td>1.3 / 4.3 / 1.7</td><td>0.8 / 3.9 / 1.1</td><td>0.7 / 3.7 / 0.9</td><td>1.9 / 5.0 / 2.7</td></tr>
+<tr><td>고원 안 HI</td><td>0.023 / 0.029</td><td>4.8 / 7.9 / 6.3</td><td>3.1 / 6.2 / 4.3</td><td>2.5 / 5.6 / 3.4</td><td>7.4 / 10.6 / 10.4</td></tr>
+<tr><td>고원 밖(16·24 대 고원) ALL</td><td>0.059 / 0.082</td><td>13.9 / 17.3 / 18.5</td><td>8.9 / 12.2 / 12.3</td><td>7.1 / 10.3 / 9.9</td><td>22 / 26 / 32</td></tr>
+<tr><td>고원 밖 LO (D16 쌍)</td><td>0.078</td><td>13.3 / 16.7 / 17.8</td><td>8.6 / 11.9 / 11.8</td><td>6.8 / 10.0 / 9.5</td><td>21 / 25 / 30</td></tr>
+<tr><td>고원 밖 HI</td><td>0.23 / 0.29</td><td>59 / 64 / 83</td><td>36 / 40 / 51</td><td>28 / 31 / 40</td><td>(무의미)</td></tr></table>
+<p>고원 안과 고원 밖은 분산이 5–10배 다르므로 따로 계획해야 한다. 고원 밖 HI의 큰 분산은 good 요청 수가 거의 0일 때 ln 비가 흔들려서 생긴다(D16 HI ≈ 0.03 req/s).</p>
+
+<h2>5. attainment (TTFT 3000 ms / ITL 60 ms) 기준</h2>
+<table><tr><th>D</th><th>LO 평균 ± seed SD</th><th>HI 평균 ± seed SD</th><th>segment(200건) SD HI / 이항 SD</th></tr>
+<tr><td>16</td><td>0.562 ± 0.044</td><td>0.010 ± 0.003</td><td>0.008 / 0.007 (LO 0.068 / 0.035)</td></tr>
+<tr><td>24</td><td>1.000 ± 0</td><td>0.029 ± 0.004</td><td>0.012 / 0.012</td></tr>
+<tr><td>34</td><td>1.000 ± 0</td><td>0.361 ± 0.031</td><td>0.033 / 0.034</td></tr>
+<tr><td>44</td><td>1.000 ± 0</td><td>0.369 ± 0.029</td><td>0.034 / 0.034</td></tr>
+<tr><td>64</td><td>1.000 ± 0</td><td>0.361 ± 0.033</td><td>0.038 / 0.034</td></tr></table>
+<p>HI에서 seed 간 SD는 요청 수에 대한 이항 SD와 거의 같다. D16 LO처럼 ITL 경계 근처에서는 이항 SD의 약 2배다. 같은 seed끼리 D를 짝지으면(1200건/run) 고원 쌍의 차이 SD는 0.002–0.009로, margin 0.03보다 훨씬 작다. placebo에 등록 읽기 규칙을 적용하면 세 구간 모두 <code>SLO_DEPENDENT</code>이고 잘못된 부호는 나오지 않았다.</p>
+<p><b>motivation 설계 단위(rung당 120건)에 가까운 자료</b>: CAP1R W1(120건, seed 2개, 다른 GPU·digest 65cbb49d, 참고)에서 informative 칸의 seed SD는 0.039(38칸)이고, 같은 rung의 D 대 D44 짝 차이 SD는 0.038(36쌍, 상한 0.047)이다.</p>
+<table><tr><th>짝 차이 SD 0.038 가정</th><th>n=4</th><th>n=6</th><th>n=8</th></tr>
+<tr><td>seed 평균 차이의 SD</td><td>0.019</td><td>0.015</td><td>0.013</td></tr>
+<tr><td>참 차이 0일 때 |차이| &gt; 0.03일 확률 (SLO 점 1개)</td><td>0.11</td><td>0.05</td><td>0.025</td></tr>
+<tr><td>80% 확률로 0.03을 넘는 참 차이</td><td>0.046</td><td>0.043</td><td>0.041</td></tr></table>
+<p>CAP2 W3(긴 입력, 48건, seed 2개)에서는 짝 차이 SD가 0.081이었다. 0.03 초과 확률은 n=4에서 0.46, n=8에서 0.29다. 즉 margin 0.03은 W3 단위에서는 잡음 크기 안에 있다.</p>
+
+<h2>6. 요청 부류별 표본 수 (CLASS_EDGES 512 / 2048)</h2>
+<table><tr><th>원천</th><th>≤512</th><th>≤2048</th><th>&gt;2048</th></tr>
+<tr><td>R run (1200건, D44, seed 1–4)</td><td>1050–1065</td><td>111–120</td><td>18–30</td></tr>
+<tr><td>CAP1R run (120건, D44)</td><td>97–115</td><td>4–18</td><td>0–7</td></tr>
+<tr><td>간섭 셀 잠정 trace (300 s, short rate 2/3/4, 등록 seed 4개)</td><td>503–533 / 768–790 / 1030–1062</td><td>49–63 / 75–93 / 104–122</td><td>LooGLE 32/47/63 + ShareGPT 꼬리 12–18 / 17–26 / 20–32</td></tr></table>
+<p>&gt;2048 부류에는 LooGLE 요청과 ShareGPT 꼬리가 함께 들어간다. 그 부류의 run당 표본은 44–95건이다. p=0.5일 때 이항 SD는 0.05–0.075이므로 그 칸 하나의 해상도는 margin 0.03보다 거칠다. CAP1R 120건 run에서는 ≤2048 부류와 &gt;2048 부류가 MIN_CLASS_N 20에 못 미친다.</p>
+
+<h2>7. LooGLE 혼합 셀로 옮길 때</h2>
+<p>[유도·참고] CAP2 W3의 칸별 seed SD는 0.106이다. 요청 수만으로 보정한 CAP1R 기대값 0.039×√(120/48)=0.062보다 약 1.7배 크다. 긴 입력 부하에서 seed 간 분산이 요청 수 이상으로 커진다는 방향의 근거이지만, seed 2개이고 셀·SLO·GPU가 다르다. 간섭 셀에서 긴 요청 32–63건의 도착 위치가 seed마다 짧은 요청의 통과율을 흔드는 효과는 측정된 적이 없다. 크기는 <b>미지</b>다.</p>
+
+<h2>8. 측정하지 않은 것</h2>
+<ul><li>D마다 boot가 1개라 boot 사이 분산은 이 셀에서 D44 하나(H Job placebo, 다른 GPU)로만 봤다. 다른 D에서 boot 효과는 미측정이다.</li>
+<li>sd 추정 자체가 df=3이다. χ² 상한은 점추정의 2.9배(n=4 단일 쌍)다.</li>
+<li>LooGLE 혼합 셀의 seed 간 분산은 직접 측정한 적이 없다(위 §7).</li>
+<li>LO 구간은 D24 이상에서 천장이라 비포화 저부하에서의 D 쌍 분산은 이 자료에 없다. 비포화 칸은 과부하 HI와 D16뿐이고, 과부하 구간 분산은 run 길이에 의존한다.</li></ul>
+</body></html>

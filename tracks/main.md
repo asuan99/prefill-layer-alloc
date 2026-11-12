@@ -53,7 +53,7 @@
 128k 프로브 감사 금지 문안 · gate 감사 r1/r2 · telemetry 비대칭 감사 §3 · PREREG §9-2·§1-9 · RESULT_costterms §17 · Phase B 판정서 인용 금지 · `reports/audit/2026-11-08_unaudited_r1/` 각 판정서 · "슬롯 상한이 hybrid 고유" · M3 판정서 · J1 크기 문장 · AJ-2 J-H1 값 · 이번 세션 예상 값(`predict.json`)은 측정 아님
 ## 최근 로그
 - 2026-11-10~12(main): 단기 Job 3·4차 회수(a31 비-hybrid 부팅 PASS)·main 병합·worktree 삭제, KV 용량 차이 설명(블록 1312 반올림), 로드맵 v7, 하네스 잔여 4건 구현(GPU 미실행, 회귀 2,066개 중 실패 62 = main 기록과 같은 수·전부 sglang import)
-- 2026-11-11(main): 교수 보고 후속 — static D 이동·부류별 굶김 근거 검토, D 스윕 seed 간 분산 재집계, 간섭 셀 설계 변경을 로드맵에 반영(artifact 재발행 여부는 본문 참조)
+- 2026-11-11~12(main): 교수 보고 후속 — static D 이동·부류별 굶김 근거 검토, D 스윕 seed 간 분산 재집계, 간섭 셀 설계 변경을 로드맵에 반영·재발행(Job 시간 정정: 7 arm seed 8 한 Job 약 38시간, 5 arm seed 4 Job 2개 약 34시간) · 사용자 승인(11-12): 토큰 파일 볼륨 업로드, 이 변경분 커밋 · 상한 측정 하네스 구현 중(branch `worktree-agent-a9085be06a95ec059`, 미병합)
 - 2026-11-10(main): py3.12 부팅 프로브 회수(SG piecewise·cap 256·mem 전부 부팅, PD-mux piecewise 미포획, 2¹⁸ 입력은 프로브 길이 오류로 미검증), 엔진 계측 병합, 프로브 후속 결정 3건
 - 2026-11-09(main): 관측 지점 코드 확정·관측 지도 HTML, 기준선 결정·감사 r1, SLO 사후 계산 정리, opchar 병합 시도(인용 정지로 중단)
 - 2026-11-07~09(main): handoff 정리·promote 8·9차·Phase B 결과 감사 r1·미감사 8건 감사 r1·Mamba CUDA graph 코드 대조(SGLang·vLLM)·motivation 공백 정리 Doc + 예상 값 차트 4개·용량 정의 4종 정리·용어 정의
