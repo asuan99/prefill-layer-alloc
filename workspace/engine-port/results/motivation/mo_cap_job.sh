@@ -5,7 +5,8 @@
 #   PDMUX_VESSL_ENV=workspace/engine-port/scripts/vessl/vessl.sg312.env scripts/vessl/launch.sh --campaign motivation_cap \
 #     --target workspace/engine-port/results/motivation/mo_cap_job.sh \
 #     --env PDMUX_MOCAP_PART=fixed --env PDMUX_MOCAP_MODE=rehearse --env PDMUX_MOCAP_JOB=<job> --env PDMUX_MOCAP_BUDGET_MIN=<min>
-#   ... --env PDMUX_MOCAP_PART=fixed   --env PDMUX_MOCAP_MODE=run --env PDMUX_MOCAP_JOB=<job> --env PDMUX_MOCAP_BUDGET_MIN=<min>
+#   ... --env PDMUX_MOCAP_PART=fixed   --env PDMUX_MOCAP_MODE=run --env PDMUX_MOCAP_JOB=<job> --env PDMUX_MOCAP_BUDGET_MIN=<min> \
+#       --env PDMUX_MOCAP_ROUND=1|2      (one Job per round, user decision 2026-11-12; the two rounds are compared by mo_cap_analyze.py rounds)
 #   ... --env PDMUX_MOCAP_PART=serving --env PDMUX_MOCAP_MODE=run --env PDMUX_MOCAP_JOB=<job> --env PDMUX_MOCAP_BUDGET_MIN=<min> \
 #       --env PDMUX_MOCAP_WORKLOAD=<w> --env PDMUX_MOCAP_RMIN=<r> --env PDMUX_MOCAP_FACTOR=<f> [--env PDMUX_MOCAP_EXPECT_CARD_SHA=<sha>]
 # (launch.sh passes only PDMUX_* names, hence the prefix.)
@@ -38,6 +39,9 @@ export PDMUX_HEARTBEAT_S=0        # measurement Job: no heartbeat (patched boots
 case "${part}" in fixed|serving) ;; *) echo "ABORT_CONFIG: PDMUX_MOCAP_PART must be fixed|serving; got '${part}'" >&2; exit 16 ;; esac
 case "${mode}" in rehearse|run) ;; *) echo "ABORT_CONFIG: PDMUX_MOCAP_MODE must be rehearse|run; got '${mode}'" >&2; exit 16 ;; esac
 [[ -n "${job}" && "${budget}" =~ ^[0-9]+$ ]] || { echo "ABORT_CONFIG: PDMUX_MOCAP_JOB and PDMUX_MOCAP_BUDGET_MIN (minutes) required" >&2; exit 16; }
+if [[ "${part}" == fixed && "${mode}" == run ]]; then
+  [[ "${PDMUX_MOCAP_ROUND:-}" =~ ^[12]$ ]] || { echo "ABORT_CONFIG: PDMUX_MOCAP_ROUND (1|2) required: one Job per round" >&2; exit 16; }
+fi
 if [[ "${part}" == serving && "${mode}" == run ]]; then
   for v in PDMUX_MOCAP_WORKLOAD PDMUX_MOCAP_RMIN PDMUX_MOCAP_FACTOR; do
     [[ -n "${!v:-}" ]] || { echo "ABORT_CONFIG: ${v} required for the serving part (the rate grid comes from the pre-ladder)" >&2; exit 16; }
@@ -72,6 +76,7 @@ fi
 common=(--part "${part}" --job "${job}")
 if [[ "${part}" == fixed ]]; then
   common+=(--variant-src "${snap}")
+  [[ "${mode}" == run ]] && common+=(--round "${PDMUX_MOCAP_ROUND}")
 else
   common+=(--w1-lengths "${out}/w1_lengths.json")
   [[ -n "${wl}" ]] && common+=(--workload "${wl}")

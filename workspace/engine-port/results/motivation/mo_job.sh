@@ -4,13 +4,16 @@
 #
 #   PDMUX_VESSL_ENV=workspace/engine-port/scripts/vessl/vessl.sg312.env scripts/vessl/launch.sh --campaign motivation \
 #     --target workspace/engine-port/results/motivation/mo_job.sh \
-#     --env MO_MODE=rehearse --env MO_WORKLOAD=openchat_rounds --env MO_JOB=<job> --env MO_BUDGET_MIN=<min>
-#   ... --env MO_MODE=run --env MO_WORKLOAD=<w> --env MO_JOB=<job> --env MO_RMIN=<r> --env MO_FACTOR=<f> --env MO_N=<rungs> \
-#       --env MO_N_REQUESTS=<n> --env MO_BUDGET_MIN=<min> [--env MO_ROLE=extension] [--env MO_EXPECT_CARD_SHA=<sha>]
+#     --env PDMUX_MO_MODE=rehearse --env PDMUX_MO_WORKLOAD=openchat_rounds --env PDMUX_MO_JOB=<job> --env PDMUX_MO_BUDGET_MIN=<min>
+#   ... --env PDMUX_MO_MODE=run --env PDMUX_MO_WORKLOAD=<w> --env PDMUX_MO_JOB=<job> --env PDMUX_MO_RMIN=<r> --env PDMUX_MO_FACTOR=<f> \
+#       --env PDMUX_MO_N=<rungs> --env PDMUX_MO_N_REQUESTS=<n> --env PDMUX_MO_BUDGET_MIN=<min> [--env PDMUX_MO_ROLE=extension] \
+#       [--env PDMUX_MO_EXPECT_CARD_SHA=<sha>]
+# launch.sh passes --env only for PDMUX_* names, so every knob is PDMUX_MO_<NAME> (2026-11-12: the first version documented MO_<NAME>,
+# which launch.sh refuses).  The unprefixed MO_<NAME> spelling is still read for local runs; a PDMUX_MO_<NAME> value wins.
 #
-# MO_MODE=rehearse: full pass over the real arm list (one rung, few requests) on MO_WORKLOAD + the CPU trace/token check of every
+# MODE=rehearse: full pass over the real arm list (one rung, few requests) on the workload + the CPU trace/token check of every
 #   registered workload; writes the rehearsal record (results/motivation/rehearsals/<digest16>.json) that the launch gate requires.
-# MO_MODE=run: plan -> card (refused if MO_EXPECT_CARD_SHA is set and differs) -> run (the runner refuses W1, placeholders in the card,
+# MODE=run: plan -> card (refused if PDMUX_MO_EXPECT_CARD_SHA is set and differs) -> run (the runner refuses W1, placeholders in the card,
 #   and a plan without a passed rehearsal record for this harness digest) -> analysis with the Job's clock trace.
 # Preflight (rc != 0 stops the Job before any boot): exactly one GPU, engine digest 8d8f6720 (dev_tree_edits #40), pristine tree
 #   preserved, ShareGPT source present (warm-up / W1 pool), token files resolved by the runner (sha256 = registered).
@@ -21,6 +24,10 @@ here="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 eng="$(cd "${here}/../.." && pwd)"
 name="${PDMUX_JOB_NAME:-local-$(date -u +%Y%m%d%H%M%S)}"
 data="${PDMUX_DATA:-/data}"
+for v in MODE WORKLOAD JOB BUDGET_MIN RMIN FACTOR N N_REQUESTS ROLE EXPECT_CARD_SHA RESUME; do
+  p="PDMUX_MO_${v}"
+  [[ -n "${!p:-}" ]] && printf -v "MO_${v}" '%s' "${!p}"
+done
 mode="${MO_MODE:-}"
 wl="${MO_WORKLOAD:-}"
 job="${MO_JOB:-}"
@@ -29,10 +36,10 @@ expected_digest="8d8f67201199bd181f64aae043b6a8ec5c6772799dbf964081584684e9e9c85
 out="${PDMUX_MO_OUT:-${eng}/results/motivation_runs/${name}}"
 raw="${out}/raw"
 
-case "${mode}" in rehearse|run) ;; *) echo "ABORT_CONFIG: MO_MODE must be rehearse|run; got '${mode}'" >&2; exit 16 ;; esac
-[[ -n "${wl}" && -n "${job}" && "${budget}" =~ ^[0-9]+$ ]] || { echo "ABORT_CONFIG: MO_WORKLOAD, MO_JOB, MO_BUDGET_MIN (minutes) required" >&2; exit 16; }
+case "${mode}" in rehearse|run) ;; *) echo "ABORT_CONFIG: PDMUX_MO_MODE must be rehearse|run; got '${mode}'" >&2; exit 16 ;; esac
+[[ -n "${wl}" && -n "${job}" && "${budget}" =~ ^[0-9]+$ ]] || { echo "ABORT_CONFIG: PDMUX_MO_WORKLOAD, PDMUX_MO_JOB, PDMUX_MO_BUDGET_MIN (minutes) required" >&2; exit 16; }
 if [[ "${mode}" == run ]]; then
-  for v in MO_RMIN MO_FACTOR MO_N MO_N_REQUESTS; do [[ -n "${!v:-}" ]] || { echo "ABORT_CONFIG: ${v} required for MO_MODE=run" >&2; exit 16; }; done
+  for v in MO_RMIN MO_FACTOR MO_N MO_N_REQUESTS; do [[ -n "${!v:-}" ]] || { echo "ABORT_CONFIG: PDMUX_${v} required for PDMUX_MO_MODE=run" >&2; exit 16; }; done
 fi
 mkdir -p "${out}" || { echo "ERROR: cannot create ${out}" >&2; exit 2; }
 

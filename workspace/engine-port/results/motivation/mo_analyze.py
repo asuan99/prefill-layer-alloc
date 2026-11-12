@@ -110,8 +110,10 @@ def by_arm_rate(job):
 
 
 # ---- Job validity ----------------------------------------------------------------------------------------------------------------
-def job_problems(job):
-    """-> (problems, flags).  problems are fatal (no verdict table); flags are reported next to every table."""
+def job_problems(job, cell_key=None, split_fn=None):
+    """-> (problems, flags).  problems are fatal (no verdict table); flags are reported next to every table.
+    cell_key(run) = identity of a cell across arms (default (rate, seed); a plan with several workloads per arm adds the workload);
+    split_fn(job) replaces split_check for plans with more than one split-check boot."""
     pr, fl = [], []
     plan, card = job["plan"], job["card"]
     if plan is None or card is None:
@@ -148,7 +150,7 @@ def job_problems(job):
     # same (rate, seed) -> same trace hash across arms
     th = {}
     for r in grid_runs(job):
-        th.setdefault((r["spec"]["rate"], r["seed"]), set()).add(r["trace_hash"])
+        th.setdefault(cell_key(r) if cell_key else (r["spec"]["rate"], r["seed"]), set()).add(r["trace_hash"])
     for k, v in th.items():
         if len(v) > 1:
             pr.append(f"trace hash differs between arms at rate/seed {k}")
@@ -157,7 +159,7 @@ def job_problems(job):
     an = anchor_check(job)
     if an.get("flag"):
         fl.append(an["flag"])
-    sc = split_check(job)
+    sc = (split_fn or split_check)(job)
     if sc.get("flag"):
         fl.append(sc["flag"])
     if an.get("problem"):

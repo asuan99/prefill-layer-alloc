@@ -48,7 +48,8 @@ TOTAL_SM = CT.TOTAL_SM                                  # 108, unpartitioned
 NANO_DECLARED_MAX = 131072                              # contexts above it are TIME_ONLY (the model declares no quality there)
 MODELS = {"nano": {"n_A": 4, "n_M": 27, "weights": "real", "tag": "nano-a4-realweights"},
           "a31": {"n_A": 31, "n_M": 0, "weights": "dummy", "tag": "nano-a31-dummyweights"}}
-USER_STATED_CELLS = {"nano": 75, "a31": 60}             # tracks/main.md; NOT reproduced by the documented rule (see cell_count_gap)
+USER_STATED_CELLS = {"nano": 75, "a31": 60}             # record only: the first statement (tracks/main.md 2026-11-10) was not reproduced by
+#                                                         the documented rule; the user decided 90 / 72 (2026-11-12).  See cell_count_gap.
 SERVING_COMBOS = ((0.6, 48), (0.75, 48), (0.75, 128), (0.75, 256))      # (mem, cap)
 SERVING_RUNGS, SERVING_SEEDS_MIN = 4, MS.MIN_SEEDS
 # memory budget of the pre-data cell table: the boot-log values reports/motivation_gap_2026-11-09/predict_motivation_charts.py used when
@@ -59,8 +60,8 @@ VARIANT_DIRNAME = "variant_a31"
 
 # ---- values the definition leaves open: (value, source).  A non-rehearsal plan needs every key in CONFIRMED. ------------------------
 PROPOSED = {
-    "fb_cell_rule": ("weights + b*s + b*c*k <= mem * visible", "the rule of predict_motivation_charts.py (its regime_fit); it gives 90 / 72 "
-                     "cells on the 12 x 9 grid, not the 75 / 60 the track file states -- the table is not registered until this is settled"),
+    "fb_cell_rule": ("weights + b*s + b*c*k <= mem * visible", "the rule of predict_motivation_charts.py (its regime_fit): 90 / 72 cells on "
+                     "the 12 x 9 grid (162); user decision 2026-11-12: this table, not the earlier 75 / 60"),
     "fb_boot_rule": ("cap_equals_batch", "the cell rule charges state memory b x s, i.e. one boot per batch size with cap = b (18 boots per "
                                          "round); 'min_boots' covers the same cells with 4 boots per round but assumes the step time does not "
                                          "depend on cap"),
@@ -72,7 +73,8 @@ PROPOSED = {
                   "contexts below 1024 the window is c // 2 steps so that it does not span more than half the context"),
     "fb_ramp_steps": (CT.VANILLA_RAMP_STEPS, "cost-term harness allowance for decode steps before every request has joined (64)"),
     "fb_kv_frac": (CT.FEASIBLE_KV_FRAC, "cost-term harness run-time feasibility margin (0.95 of the banner token pool)"),
-    "fb_rounds": ((1, 2), "roadmap: '135 cells, 2 rounds'; both rounds in ONE Job (the round is the repetition, not a second Job)"),
+    "fb_rounds": ((1, 2), "roadmap: 2 rounds; user decision 2026-11-12: ONE Job per round (a Job stays under 6 hours), so a measurement "
+                          "plan holds exactly one of these rounds and the two rounds are compared, never merged (mo_cap_analyze.round_agreement)"),
     "fb_anchor": (("nano", 8, 8192), "anchor cell re-measured in the first and last boot; no source for the choice of cell"),
     "fb_anchor_drift_ln": (CT.AGREE_LN, "cost-term harness agreement bound ln(1.03), used here for anchor drift and round agreement"),
     "fb_timing": ("client_token_stamps", "measurement boots carry no probe; the step time is the per-token gap seen by the client"),
@@ -81,7 +83,11 @@ PROPOSED = {
     "sv_run_s": (300.0, "roadmap GPU-time table: 10.7 load-hours / 128 cells"),
     "sv_context": (20480, "mo_spec.default_fixed context"),
 }
-CONFIRMED = frozenset()
+# User decision 2026-11-12: every value above is confirmed (cell table 90 / 72, cap = batch, one Job per round, the two serving arms, and
+# the values inherited from the cost-term harness).  A value added to PROPOSED later is NOT confirmed until it is listed here.
+CONFIRMED = frozenset((
+    "fb_cell_rule", "fb_boot_rule", "fb_arm", "fb_nano_weights", "fb_context_length", "fb_ctx_total_max", "fb_window", "fb_ramp_steps",
+    "fb_kv_frac", "fb_rounds", "fb_anchor", "fb_anchor_drift_ln", "fb_timing", "sv_arms", "sv_anchor_combo", "sv_run_s", "sv_context"))
 
 
 def P(key):
@@ -139,7 +145,7 @@ def cell_table_summary(mem=FB_MEM):
     out = {}
     for m in MODELS:
         cells = predicted_cells(m, mem)
-        out[m] = {"n": len(cells), "user_stated": USER_STATED_CELLS[m],"s_bytes": s_bytes(m), "k_bytes_per_token": k_bytes(m),
+        out[m] = {"n": len(cells), "user_stated": USER_STATED_CELLS[m], "s_bytes": s_bytes(m), "k_bytes_per_token": k_bytes(m),
                   "max_context_by_batch": {b: max((c for bb, c in cells if bb == b), default=None) for b in BATCHES},
                   "n_time_only": sum(1 for _, c in cells if time_only(c))}
     return out
@@ -316,7 +322,9 @@ def fixed_plan(job, rounds=None, rehearsal=False, rule=None, only=None):
     boot.  Rehearsal: round 1, the real boot list, ONE cell per boot (its shortest context).  `only` = {(model, cap): [(b, c), ...]}
     selects boots and cells of the table for a smoke pass; a selection is a rehearsal plan by definition (the checker refuses it otherwise)."""
     rule = rule or P("fb_boot_rule")
-    rounds = (1,) if rehearsal else tuple(rounds or P("fb_rounds"))
+    if rounds is None and not rehearsal:
+        raise ValueError("a measurement plan names its round: one Job per round")
+    rounds = (1,) if rehearsal else tuple(rounds)
     am, ab, ac = P("fb_anchor")
     sel = None if only is None else {f"{m}|{cap}": [list(c) for c in cells] for (m, cap), cells in only.items()}
 
@@ -375,6 +383,8 @@ def fixed_plan_problems(plan, allow_placeholders=False, confirmed=None):
     rule, sel = plan["boot_rule"], plan.get("only")
     if sel is not None and not plan["rehearsal"]:
         out.append("a cell selection is a rehearsal-only plan")
+    if not plan["rehearsal"] and (len(plan["rounds"]) != 1 or plan["rounds"][0] not in P("fb_rounds")):
+        out.append(f"rounds {plan['rounds']}: a measurement Job holds exactly one registered round {list(P('fb_rounds'))}")
     for rnd in plan["rounds"]:
         got = [(b["model"], b["cap"]) for b in boots if b["role"] == "meas" and b["round"] == rnd]
         if got != [k for k in fb_boot_order(job, rnd, rule) if sel is None or f"{k[0]}|{k[1]}" in sel]:
@@ -585,12 +595,13 @@ def main(argv=None):
     ap.add_argument("--rmin", type=float, default=1.0)
     ap.add_argument("--factor", type=float, default=1.5)
     ap.add_argument("--rule")
+    ap.add_argument("--round", type=int, default=1)
     a = ap.parse_args(argv)
     if a.what == "table":
         out = {"cells": cell_table_summary(), "gap_vs_user_stated": cell_count_gap(), "boots": {m: {r: len(boot_cells(m, r)) for r in ("cap_equals_batch", "min_boots")} for m in MODELS},
                "refused_under_predicted_banner": {m: predicted_infeasible(m, a.rule) for m in MODELS}}
     elif a.what == "fixed":
-        p = fixed_plan(a.job, rule=a.rule)
+        p = fixed_plan(a.job, rounds=(a.round,), rule=a.rule)
         out = {"plan_sha": MS.sha(p), "problems": fixed_plan_problems(p), "estimate": estimate_fixed(p)}
     elif a.what == "serving":
         p = serving_plan(a.job, a.workload, a.rmin, a.factor)

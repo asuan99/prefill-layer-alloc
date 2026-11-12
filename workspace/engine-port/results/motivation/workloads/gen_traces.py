@@ -148,7 +148,7 @@ def seal_data():
     masters = {}
     for w in L.WORKLOADS:
         masters[w] = {}
-        for s in L.SEEDS + L.SPARE_SEEDS:
+        for s in L.SEEDS + L.SPARE_SEEDS + (L.SECOND_BLOCK_SEEDS if w in ("sharegpt_first", "loogle_longdep") else ()):
             masters[w][str(s)] = PH.trace_hash([segment("m", w, master_records(w, s, pools[w]))])
     pairs = {}
     for s in L.SEEDS:
@@ -159,7 +159,8 @@ def seal_data():
                 raise SystemExit("pairing broken: short stream differs")
             pairs[f"{s}|{rate}"] = {"with_long": PH.trace_hash(with_seg), "without_long": PH.trace_hash(wo_seg),
                                     "short_stream": short_hash(sa), "n_short": len(sa), "n_long": with_seg[0]["n_long"]}
-    return {"schema": SCHEMA, "seeds": list(L.SEEDS), "spare_seeds": list(L.SPARE_SEEDS), "master_n": MASTER_N,
+    return {"schema": SCHEMA, "seeds": list(L.SEEDS), "spare_seeds": list(L.SPARE_SEEDS), "second_block_seeds": list(L.SECOND_BLOCK_SEEDS),
+            "master_n": MASTER_N,
             "arrival": "unit-rate Poisson master, rung = t/rate prefix (ph_trace._rng key excludes the rate)",
             "interference": {"long_share": LONG_SHARE, "duration_s": INTERFERENCE_DURATION,
                              "provisional_short_rates": list(PROVISIONAL_SHORT_RATES),

@@ -174,10 +174,19 @@ class TestCellTable(unittest.TestCase):
         self.assertEqual(CS.k_bytes("a31"), CS.AT.kv_bytes_per_token(CS.AT.nano9b_v2(31, 0)))
 
     def test_documented_rule_gives_90_and_72_not_the_stated_75_and_60(self):
-        """The stated counts are NOT reproduced; the difference is pinned here so that it cannot disappear unnoticed."""
+        """The first stated counts were not reproduced; the user decided 90 / 72 (2026-11-12).  75 / 60 stays as a record only."""
         self.assertEqual({m: len(CS.predicted_cells(m)) for m in CS.MODELS}, {"nano": 90, "a31": 72})
         self.assertEqual(CS.cell_count_gap(), {"nano": 15, "a31": 12})
-        self.assertIn("fb_cell_rule", CS.open_items())
+        self.assertEqual(CS.USER_STATED_CELLS, {"nano": 75, "a31": 60})
+
+    def test_user_decisions_of_2026_11_12_are_confirmed_and_new_values_are_not(self):
+        self.assertEqual(CS.open_items(), [])
+        self.assertEqual(set(CS.CONFIRMED), set(CS.PROPOSED))
+        self.assertEqual((CS.P("fb_boot_rule"), CS.P("sv_arms"), CS.P("fb_rounds")), ("cap_equals_batch", ("SG_MIXED_8192", "PDMUX_BUNDLE"), (1, 2)))
+        with mock.patch.dict(CS.PROPOSED, {"new_value": (1, "no decision yet")}):
+            self.assertEqual(CS.open_items(), ["new_value"])                    # listed explicitly: nothing is confirmed by default
+            self.assertTrue(any("UNCONFIRMED" in x for x in CS.fixed_plan_problems(CS.fixed_plan("J", rounds=(1,)))))
+        self.assertTrue(all(MS.is_pending(v) for v in CS.FIX_RULE.values()))     # the rule thresholds stay with the pre-registration
 
     def test_same_table_as_the_prediction_script(self):
         d = json.loads((ENG.parents[1] / "reports" / "motivation_gap_2026-11-09" / "predict_motivation_charts.json").read_text())
@@ -235,18 +244,18 @@ class TestFixedPlan(unittest.TestCase):
         self.fx.start()
         self.addCleanup(self.fx.stop)
 
-    def test_full_plan_is_clean_and_covers_the_table_twice(self):
-        plan = CS.fixed_plan("JF")
+    def test_round_plan_is_clean_and_covers_the_table_once(self):
+        plan = CS.fixed_plan("JF", rounds=(1,))
         self.assertEqual(CS.fixed_plan_problems(plan), [])
         self.assertEqual(MS.plan_problems(plan), [])                                  # mo_spec dispatches by plan kind
         meas = [b for b in plan["boots"] if b["role"] == "meas"]
-        self.assertEqual(len(meas), 2 * 18)
-        self.assertEqual(sum(len(b["cells"]) for b in meas), 2 * (90 + 72))
+        self.assertEqual(len(meas), 18)
+        self.assertEqual(sum(len(b["cells"]) for b in meas), 90 + 72)
         self.assertEqual((plan["boots"][0]["role"], plan["boots"][-1]["role"]), ("anchor", "anchor"))
         self.assertEqual(plan["boots"][0]["cells"], plan["boots"][-1]["cells"])
 
     def test_boot_is_unpartitioned_uninstrumented_chunked_at_mem_082(self):
-        for b in CS.fixed_plan("JF")["boots"]:
+        for b in CS.fixed_plan("JF", rounds=(1,))["boots"]:
             a = b["arm_def"]
             self.assertEqual((a["tree"], a["env"]), ("pristine", {}))
             self.assertNotIn("--enable-pdmux", a["cmd"])
@@ -266,12 +275,12 @@ class TestFixedPlan(unittest.TestCase):
         self.assertNotEqual(CS.fb_boot_order("J1", 1), CS.fb_boot_keys())               # not the registration order
 
     def test_time_only_cells_run_last(self):
-        for b in CS.fixed_plan("JF")["boots"]:
+        for b in CS.fixed_plan("JF", rounds=(1,))["boots"]:
             t = [CS.time_only(c[1]) for c in b["cells"]]
             self.assertEqual(t, sorted(t))
 
     def test_checker_rejects_each_mutation(self):
-        base = CS.fixed_plan("JF")
+        base = CS.fixed_plan("JF", rounds=(1,))
         i = next(k for k, b in enumerate(base["boots"]) if b["role"] == "meas" and len(b["cells"]) > 2 and CS.time_only(b["cells"][-1][1]))
 
         def mut(fn):
@@ -292,12 +301,26 @@ class TestFixedPlan(unittest.TestCase):
         self.assertIn("weight loading", mut(lambda p: p["boots"][i]["arm_def"]["cmd"].extend(["--load-format", "dummy"])
                                             if p["boots"][i]["model"] == "nano" else p["boots"][i]["arm_def"]["cmd"].remove("--load-format")))
 
+    def test_one_job_per_round(self):
+        with self.assertRaises(ValueError):
+            CS.fixed_plan("JF")                                                     # a measurement plan names its round
+        both = CS.fixed_plan("JF", rounds=(1, 2))
+        self.assertTrue(any("exactly one registered round" in x for x in CS.fixed_plan_problems(both)))
+        self.assertTrue(any("exactly one registered round" in x for x in CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(3,)))))
+        r1, r2 = CS.fixed_plan("JF", rounds=(1,)), CS.fixed_plan("JF", rounds=(2,))
+        self.assertEqual(CS.fixed_plan_problems(r2), [])
+        self.assertNotEqual(r1["boot_order"], r2["boot_order"])                    # each round has its own seeded order
+        self.assertLess(CS.estimate_fixed(r1)["total_h"], 6.0)                     # the reason for the split
+        self.assertGreater(CS.estimate_fixed(both)["total_h"], 6.0)
+
     def test_unconfirmed_values_and_placeholders_block_a_measurement_plan_only(self):
         self.p.stop()
         self.fx.stop()
         try:
-            bad = " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF")))
-            self.assertIn("UNCONFIRMED design values", bad)
+            with mock.patch.object(CS, "CONFIRMED", frozenset()):
+                self.assertIn("UNCONFIRMED design values", " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,)))))
+            bad = " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,))))
+            self.assertNotIn("UNCONFIRMED", bad)                                # decided 2026-11-12
             self.assertIn("PLACEHOLDER", bad)                                   # the py3.12 venv freeze digest is still unregistered
             self.assertNotIn("mem", re.findall(r"PLACEHOLDER[^|]*", bad)[0])    # ... but mem / cap are NOT placeholders here
             self.assertEqual(CS.fixed_plan_problems(CS.fixed_plan("JF", rehearsal=True)), [])
@@ -306,11 +329,11 @@ class TestFixedPlan(unittest.TestCase):
             self.fx.start()
 
     def test_time_estimate_adds_up(self):
-        plan = CS.fixed_plan("JF")
+        plan = CS.fixed_plan("JF", rounds=(1,))
         e = CS.estimate_fixed(plan)
-        self.assertEqual((e["boots"], e["cells"]), (38, 326))
+        self.assertEqual((e["boots"], e["cells"]), (20, 164))
         self.assertAlmostEqual(e["total_min"], e["cell_min"] + e["boot_min"] + e["start_min"], delta=0.11)
-        self.assertEqual(e["boot_min"], 38 * 6.0)
+        self.assertEqual(e["boot_min"], 20 * 6.0)
         self.assertGreater(CS.est_cell_s("nano", 8, 262144), CS.est_cell_s("nano", 8, 8192))
         self.assertGreater(CS.est_cell_s("a31", 1, 65536), CS.est_cell_s("nano", 1, 65536))     # more attention layers
 
@@ -513,18 +536,31 @@ class TestFixedEndToEnd(unittest.TestCase):
 
 
 class TestFixedFullTable(unittest.TestCase):
-    def test_whole_table_two_rounds_raw_to_cell_table(self):
-        """The measurement plan itself (38 boots, 2 x 162 cells) through the fake engine: every cell VALID, both rounds agree, the
-        five top-context cells carry TIME_ONLY, and the result is a 162-row table."""
-        with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)):
-            plan = CS.fixed_plan("JFULL")
-            with tempfile.TemporaryDirectory() as td:
-                out, _, res = run_fixed(plan, td)
-                an = CA.analyze_fixed(out)
-        self.assertTrue(all(b["status"] == "done" for b in res))
-        self.assertEqual(an["counts"], {"nano": {"planned": 180, "valid": 180, "infeasible": 0}, "a31": {"planned": 144, "valid": 144, "infeasible": 0}})
-        self.assertEqual((an["flags"], len(an["verdict_rows"])), ([], 162))
-        self.assertTrue(all(r["n_rounds_valid"] == 2 and "ROUND_DISAGREE" not in r["labels"] for r in an["verdict_rows"]))
+    def test_whole_table_two_round_jobs_raw_to_cell_table_and_round_agreement(self):
+        """The two measurement plans themselves (one Job per round: 20 boots, 162 cells each) through the fake engine: every cell VALID,
+        the five top-context cells carry TIME_ONLY, each Job gives its own 162-row table, and the rounds are compared without merging."""
+        ans = []
+        with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)), \
+                tempfile.TemporaryDirectory() as td:
+            for rnd in (1, 2):
+                with mock.patch.dict(os.environ, {"PDMUX_JOB_NAME": f"job-round{rnd}"}):
+                    out, _, res = run_fixed(CS.fixed_plan(f"JFULL{rnd}", rounds=(rnd,)), Path(td) / str(rnd))
+                    self.assertTrue(all(b["status"] == "done" for b in res))
+                    ans.append(CA.analyze_fixed(out))
+        an = ans[0]
+        self.assertEqual(an["counts"], {"nano": {"planned": 90, "valid": 90, "infeasible": 0}, "a31": {"planned": 72, "valid": 72, "infeasible": 0}})
+        self.assertEqual((an["flags"], len(an["verdict_rows"]), an["rounds"]), ([], 162, [1]))
+        ra = CA.round_agreement(ans[0], ans[1])
+        self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 162, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0}, False, [1, 2]))
+        slow = copy.deepcopy(ans[1])
+        slow["verdict_rows"][0]["step_ms"] *= 1.05
+        slow["verdict_rows"][1]["step_ms"] = None
+        self.assertEqual(CA.round_agreement(ans[0], slow)["n"], {"AGREE": 160, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 1})
+        with self.assertRaises(ValueError):
+            CA.round_agreement(ans[0], ans[0])                                   # the same round / the same Job twice
+        with self.assertRaises(ValueError):
+            CA.round_agreement(ans[0], dict(ans[1], rehearsal=True))
+        self.assertTrue(all(r["n_rounds_valid"] == 1 for r in an["verdict_rows"]))
         self.assertEqual(sum(1 for r in an["verdict_rows"] if "TIME_ONLY" in r["labels"]), 5)
         worst = max(abs(r["step_ms"] / truth_step_ms(r["model"], r["bs"], r["ctx_mean"]) - 1) for r in an["cell_rows"])
         self.assertLess(worst, 0.005)
@@ -572,7 +608,7 @@ class TestFixedRunTimeRules(unittest.TestCase):
 
     def test_real_plan_refuses_to_launch_without_a_rehearsal_record(self):
         with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)):
-            plan = CS.fixed_plan("JREAL")
+            plan = CS.fixed_plan("JREAL", rounds=(1,))
             card = CR.fixed_card(plan)
             with tempfile.TemporaryDirectory() as td:
                 gate = lambda p: MH.launch_gate(p, Path(td) / "none", "c" * 64)       # noqa: E731
@@ -582,8 +618,9 @@ class TestFixedRunTimeRules(unittest.TestCase):
                 self.assertFalse((Path(td) / "raw" / "boots").exists())
 
     def test_unconfirmed_values_refuse_a_measurement_run(self):
-        plan = CS.fixed_plan("JREAL")
-        with tempfile.TemporaryDirectory() as td:
+        with mock.patch.object(CS, "CONFIRMED", frozenset()):
+            plan = CS.fixed_plan("JREAL", rounds=(1,))
+        with tempfile.TemporaryDirectory() as td, mock.patch.object(CS, "CONFIRMED", frozenset()):
             with self.assertRaises(CR.JobAbort) as cm:
                 CR.run_fixed_job(plan, CR.fixed_card(plan), Path(td) / "raw", fixed_server(), gate_fn=lambda p: None, variant_fn=variant_fn)
             self.assertEqual(cm.exception.status, "ABORT_PLAN")
@@ -782,7 +819,7 @@ class TestRehearsal(unittest.TestCase):
             self.assertFalse((rd / ("d" * 16 + ".json")).exists())              # not the grid measurement's record
             self.assertTrue((Path(td) / "raw" / "analysis" / "cell_table.csv").exists())
             with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)):
-                self.assertIsNone(MH.launch_gate(CS.fixed_plan("JREAL"), rd, "d" * 64))
+                self.assertIsNone(MH.launch_gate(CS.fixed_plan("JREAL", rounds=(1,)), rd, "d" * 64))
                 self.assertIn("NO_REHEARSAL_RECORD", MH.launch_gate(CS.serving_plan("JS", "W1", 3.0, 1.3), rd, "d" * 64))
                 self.assertIn("NO_REHEARSAL_RECORD", MH.launch_gate(MS.make_plan("JG", TH.GRID3, fixed=dict(MS.REHEARSAL_FIXED)), rd, "d" * 64))
 
@@ -854,10 +891,11 @@ class TestJobScript(unittest.TestCase):
             self.assertEqual(r.returncode, 16)
             self.assertIn("PDMUX_MOCAP_WORKLOAD", r.stderr)
 
-    def test_run_refuses_before_any_boot_while_values_are_unconfirmed(self):
+    def test_run_refuses_before_any_boot_while_the_card_has_a_placeholder(self):
         with tempfile.TemporaryDirectory() as td:
             r = self.run_sh({"PDMUX_MOCAP_OUT": str(Path(td) / "o"), "PDMUX_MOCAP_TEST_MODE": "1", "PDMUX_MOCAP_VARIANT_SRC": str(SRC),
-                             "PDMUX_MOCAP_PART": "fixed", "PDMUX_MOCAP_MODE": "run", "PDMUX_MOCAP_JOB": "JSH", "PDMUX_MOCAP_BUDGET_MIN": "5"})
+                             "PDMUX_MOCAP_PART": "fixed", "PDMUX_MOCAP_MODE": "run", "PDMUX_MOCAP_JOB": "JSH", "PDMUX_MOCAP_BUDGET_MIN": "5",
+                             "PDMUX_MOCAP_ROUND": "1"})
             self.assertEqual(r.returncode, 19, r.stderr[-400:])
             self.assertIn("ABORT_PLAN", r.stderr + r.stdout)
             self.assertFalse((Path(td) / "o" / "raw" / "boots").exists())
@@ -927,7 +965,7 @@ class TestMutants(unittest.TestCase):
 
     def o_order_checked(self):
         with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)):
-            p = CS.fixed_plan("JF")
+            p = CS.fixed_plan("JF", rounds=(1,))
             p["boots"].insert(2, p["boots"].pop(1))
             p["boot_order"] = [b["arm"] for b in p["boots"]]
             return any("registered permutation" in x for x in CS.fixed_plan_problems(p))

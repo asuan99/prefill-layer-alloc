@@ -72,7 +72,8 @@ def resolve_workloads(w1_pool, token_dir=None, n=4):
     out = {}
     for wl in MW.WORKLOADS:
         try:
-            run = {"run_id": "resolve", "workload": wl, "rate": 1.0, "seed": MW.SEEDS[0], "n_requests": n}
+            run = {"run_id": "resolve", "workload": wl, "rate": 1.0, "seed": MW.SEEDS[0], "n_requests": n,
+                   "duration_s": 60.0}                                   # read by the interference pair only (3 LooGLE records)
             MW.with_input_ids(MW.build_segments(run, w1_pool), MW.store_for(wl, token_dir))
             out[wl] = "OK"
         except Exception as e:  # noqa: BLE001
@@ -93,8 +94,23 @@ def new_record(job, digest=None, workload="W1", kind=None):
             "kind": kind or "MOTIVATION_GRID"}
 
 
+def observed_venv_freeze(out):
+    """{interpreter venv freeze sha256 seen by the boots of a pass: [arm names]} (mo_card.observe_boot "venv_freeze").  The py3.12 venv
+    digest (mo_spec "sg_venv_freeze") has no recorded value yet; the first GPU rehearsal is where it is read, and it is registered from
+    this field -- never from a rehearsal card, which accepts any value."""
+    seen = {}
+    for p in sorted((Path(out) / "boots").glob("*/boot.json")):
+        try:
+            b = json.loads(p.read_text())
+        except ValueError:
+            continue
+        seen.setdefault(str((b.get("observed") or {}).get("venv_freeze")), []).append(b.get("arm"))
+    return {k: sorted(set(v)) for k, v in seen.items()}
+
+
 def write_record(rec, out, rehearsal_dir=None):
     rec["passed"] = all(rec["stages"].values())
+    rec["observed_venv_freeze"] = observed_venv_freeze(out)
     p = record_path(rehearsal_dir, rec["harness_digest"], rec.get("kind"))
     p.parent.mkdir(parents=True, exist_ok=True)
     MR.dump(rec, Path(out) / "REHEARSAL.json")

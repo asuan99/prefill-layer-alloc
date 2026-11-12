@@ -296,7 +296,11 @@ def sha(o):
 
 
 def plan_problems(plan, allow_placeholders=False):
-    if plan.get("kind", "MOTIVATION_GRID") != "MOTIVATION_GRID":      # cap measurement plans (per-boot mem / cap) have their own checker
+    kind = plan.get("kind", "MOTIVATION_GRID")
+    if kind == "LOOGLE_INTERFERENCE":                                 # paired with / without LooGLE over the static D arms
+        import mo_intf_spec
+        return mo_intf_spec.plan_problems(plan, allow_placeholders)
+    if kind != "MOTIVATION_GRID":                                     # cap measurement plans (per-boot mem / cap) have their own checker
         import mo_cap_spec
         return mo_cap_spec.plan_problems(plan, allow_placeholders)
     out = []

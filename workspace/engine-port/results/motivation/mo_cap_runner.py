@@ -278,7 +278,9 @@ def rehearse_serving(job, w1_pool, out, make_server, replay_fn, rmin=3.0, factor
 # ---- CLI --------------------------------------------------------------------------------------------------------------------------------------
 def _plan(a):
     if a.part == "fixed":
-        return CS.fixed_plan(a.job, rehearsal=a.rehearsal)
+        if not a.rehearsal and a.round is None:
+            raise SystemExit("ABORT_CONFIG: the fixed-batch part needs --round (one Job per round)")
+        return CS.fixed_plan(a.job, rounds=None if a.rehearsal else (a.round,), rehearsal=a.rehearsal)
     return CS.serving_plan(a.job, a.workload, a.rmin, a.factor, rehearsal=a.rehearsal,
                            n_requests=MH.REHEARSAL_N_REQUESTS if a.rehearsal else None)
 
@@ -294,6 +296,7 @@ def main(argv=None):
         p.add_argument("--workload", default=MS.WORKLOAD)
         p.add_argument("--rmin", type=float)
         p.add_argument("--factor", type=float)
+        p.add_argument("--round", type=int)
         p.add_argument("--rehearsal", action="store_true")
         p.add_argument("--w1-lengths")
         p.add_argument("--variant-src")

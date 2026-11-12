@@ -134,8 +134,6 @@ def fixed_problems(job):
                 pr.append(f"{c['cell_id']}: cell is not in the plan of its boot")
     if len({c["job_name"] for b in job["boots"] for c in b["cells"]}) > 1:
         pr.append("cell records of several Jobs in one raw directory")
-    if not plan["rehearsal"] and len(plan["rounds"]) < 2:
-        fl.append("SINGLE_ROUND")
     an = fixed_anchor(job)
     if an.get("problem"):
         pr.append(an["problem"])
@@ -217,6 +215,32 @@ def doubling_gain(summary):
             for (m, bs, c) in sorted(tp) if bs > 1 and tp[(m, bs, c)] and tp.get((m, bs // 2, c))]
 
 
+def round_agreement(res_a, res_b):
+    """The two round Jobs side by side (one Job per round, user decision 2026-11-12).  Nothing is merged: each cell keeps its two step
+    times and gets |ln(step_b / step_a)|; above the registered bound -> ROUND_DISAGREE.  Each Job's own anchor drift is carried along, so
+    a disagreement can be read against the drift inside the Jobs.  Refuses two results of the same round or of the same Job."""
+    ra, rb = res_a["rounds"], res_b["rounds"]
+    if res_a["rehearsal"] or res_b["rehearsal"]:
+        raise ValueError("round agreement is read on measurement Jobs, not rehearsals")
+    if len(ra) != 1 or len(rb) != 1 or ra == rb or res_a["job"] == res_b["job"]:
+        raise ValueError(f"round agreement needs two different Jobs of two different rounds; got rounds {ra} / {rb}")
+    a = {(r["model"], r["bs"], r["c"]): r for r in res_a["verdict_rows"]}
+    b = {(r["model"], r["bs"], r["c"]): r for r in res_b["verdict_rows"]}
+    rows, bound = [], CS.P("fb_anchor_drift_ln")
+    for k in sorted(set(a) | set(b)):
+        x, y = (a.get(k) or {}).get("step_ms"), (b.get(k) or {}).get("step_ms")
+        row = {"model": k[0], "bs": k[1], "c": k[2], "step_ms": {str(ra[0]): x, str(rb[0]): y}}
+        if x is None or y is None:
+            row["label"] = "ONE_ROUND_ONLY"
+        else:
+            row["abs_ln_ratio"] = abs(math.log(y / x))
+            row["label"] = "ROUND_DISAGREE" if row["abs_ln_ratio"] > bound else "AGREE"
+        rows.append(row)
+    return {"jobs": [res_a["job"], res_b["job"]], "rounds": [ra[0], rb[0]], "bound": bound, "rows": rows, "merged": False,
+            "anchor": {str(ra[0]): res_a["anchor"], str(rb[0]): res_b["anchor"]}, "flags": {str(ra[0]): res_a["flags"], str(rb[0]): res_b["flags"]},
+            "n": {lab: sum(1 for r in rows if r["label"] == lab) for lab in ("AGREE", "ROUND_DISAGREE", "ONE_ROUND_ONLY")}}
+
+
 class JobInvalid(MA.JobInvalid):
     pass
 
@@ -230,6 +254,7 @@ def analyze_fixed(raw):
     summ = cell_summary(rows)
     names = sorted({c["job_name"] for b in job["boots"] for c in b["cells"]})
     return {"job": names[0] if len(names) == 1 else names, "kind": CS.KIND_FIXED, "rehearsal": job["plan"]["rehearsal"], "flags": fl,
+            "rounds": list(job["plan"]["rounds"]),
             "anchor": fixed_anchor(job), "cell_rows": rows, "verdict_rows": summ, "doubling_gain": doubling_gain(summ),
             "counts": {m: {"planned": sum(1 for b in job["plan"]["boots"] if b["role"] == "meas" and b["model"] == m for _ in b["cells"]),
                            "valid": sum(1 for r in rows if r["model"] == m and r["status"] == "VALID"),
@@ -444,16 +469,22 @@ def write_serving(res, out_dir):
 
 
 def main(argv=None):
-    """mo_cap_analyze.py fixed|serving RAW --out DIR [--clk CLK_CSV]"""
+    """mo_cap_analyze.py fixed|serving RAW --out DIR [--clk CLK_CSV]   |   mo_cap_analyze.py rounds RAW_ROUND_A --other RAW_ROUND_B --out DIR"""
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("part", choices=("fixed", "serving"))
+    ap.add_argument("part", choices=("fixed", "serving", "rounds"))
     ap.add_argument("raw")
     ap.add_argument("--out", required=True)
     ap.add_argument("--clk")
+    ap.add_argument("--other")
     a = ap.parse_args(argv)
     try:
-        if a.part == "fixed":
+        if a.part == "rounds":
+            res = round_agreement(analyze_fixed(a.raw), analyze_fixed(a.other))
+            Path(a.out).mkdir(parents=True, exist_ok=True)
+            (Path(a.out) / "round_agreement.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
+            print(json.dumps(res["n"]))
+        elif a.part == "fixed":
             print(write_fixed(analyze_fixed(a.raw), a.out))
         else:
             print(write_serving(analyze_serving(a.raw, a.clk), a.out))
