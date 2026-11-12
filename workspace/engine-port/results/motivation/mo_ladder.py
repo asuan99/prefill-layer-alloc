@@ -65,6 +65,8 @@ SHAPES = {"chat": {"factor": SP.P.CAP_FACTOR["W1"], "n": SP.P.CAP_N_RATES["W1"],
 ARM_OPTIONS = {
     "all_arms": {"default": MS.ARM_KEYS, "interference_short": IS.ARM_KEYS},
     "baseline_and_bundle": {"default": (MS.PRIMARY_KEY, MS.BUNDLE_KEY), "interference_short": (MS.PRIMARY_KEY, "PDMUX_D16", "PDMUX_D44")},
+    # user decision 2026-11-12: the earlier chat ladders had vLLM holding the highest rate, so the grid top needs it
+    "baseline_bundle_vllm": {"default": (MS.PRIMARY_KEY, MS.BUNDLE_KEY, "VLLM"), "interference_short": (MS.PRIMARY_KEY, "PDMUX_D16", "PDMUX_D44")},
     "primary_baseline_only": {"default": (MS.PRIMARY_KEY,), "interference_short": (MS.PRIMARY_KEY,)},
 }
 
