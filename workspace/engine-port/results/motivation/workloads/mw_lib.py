@@ -13,6 +13,7 @@ shared content (LooGLE document, openchat conversation prefix) is stored once.  
 """
 from __future__ import annotations
 
+import os
 import hashlib
 import json
 import math
@@ -21,7 +22,7 @@ import sys
 from array import array
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent  # not resolve(): results/ is a symlink on VESSL
 ENG = HERE.parents[2]                                      # workspace/engine-port
 PH_DIR = ENG / "results" / "cap_char" / "policy_harness"   # ph_trace.py (existing trace logic, reused)
 MG_DIR = ENG / "scripts" / "multigpu"                      # mg_x_pretokenize.py (existing arXiv token file reader)

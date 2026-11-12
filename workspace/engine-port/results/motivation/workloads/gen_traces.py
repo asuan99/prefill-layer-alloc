@@ -21,12 +21,13 @@ Interference cell (paired), all from one seed:
 """
 from __future__ import annotations
 
+import os
 import argparse
 import json
 import sys
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent  # not resolve(): results/ is a symlink on VESSL
 sys.path.insert(0, str(HERE))
 import mw_lib as L  # noqa: E402
 import ph_trace as PH  # noqa: E402

@@ -12,6 +12,7 @@ manifest_parts/<name>.json and, where listed, a token file (raw, not committed).
 """
 from __future__ import annotations
 
+import os
 import argparse
 import glob
 import json
@@ -19,7 +20,7 @@ import sys
 from array import array
 from pathlib import Path
 
-HERE = Path(__file__).resolve().parent
+HERE = Path(os.path.abspath(__file__)).parent  # not resolve(): results/ is a symlink on VESSL
 sys.path.insert(0, str(HERE))
 import mw_lib as L  # noqa: E402
 

@@ -16,6 +16,16 @@ import argparse
 import json
 import sys
 
+import os
+import sys
+from pathlib import Path
+
+# the script dir Python puts on sys.path is symlink-resolved; on VESSL results/ is a symlink into the run volume, where scripts/ does
+# not exist, so sealed specs imported from there cannot find scripts/costmodel.  Import siblings through the path as invoked.
+_HERE = str(Path(os.path.abspath(__file__)).parent)
+if sys.path[0] != _HERE:
+    sys.path.insert(0, _HERE)
+
 import mo_intf_spec as IS
 import mo_intf_analyze as IA
 import mo_spec as MS
