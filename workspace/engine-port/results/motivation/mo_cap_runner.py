@@ -97,7 +97,7 @@ def run_cell(tr, cell_id, bs, c, rnd, context, timeout):
     ci, o, ab = CS.c_in(c), CS.o_tokens(c), CS.abort_at(c)
     ids = CT.prompt_ids("FB", bs, c, rnd, ci)
     rec = {"cell_id": cell_id, "bs": bs, "c": c, "c_in": ci, "O": o, "abort_at": ab, "window_iters": CS.window_iters(c),
-           "trim_iters": CS.trim_iters(), "time_only": CS.time_only(c), "round": rnd,
+           "trim_iters": CS.trim_iters(), "round": rnd,
            "clock_pair": tr.clock_pair() if hasattr(tr, "clock_pair") else None}
     rec["t_first_send"] = tr.now()
     hs = [tr.start(f"{cell_id}-q{i}", ids, o) for i in range(bs)]

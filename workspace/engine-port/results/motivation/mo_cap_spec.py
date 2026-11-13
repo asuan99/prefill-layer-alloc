@@ -3,7 +3,7 @@
 estimates.  CPU only; starts no server.  Nothing here is a measurement.
 
 Two parts, each its own Job kind:
-  * fixed batch (KIND_FIXED): context 2^7..2^18 x batch 1..256 (both x2 steps), memory-permitted cells only, unpartitioned 108 SM, chunked
+  * fixed batch (KIND_FIXED): context 2^7..2^17 x batch 1..256 (both x2 steps), memory-permitted cells only, unpartitioned 108 SM, chunked
     fill, mem fraction 0.82, models Nano-9B-v2 and a31 (Nano skeleton, all-attention composition).  Observes the decode step time of a
     batch held at a context, and from it tokens/s and the analytic bytes per step (analytic_terms) per second.
   * serving cap/mem comparison (KIND_SERVING): mem {0.6, 0.75} at cap 48 + cap {48, 128, 256} at mem 0.75 = 4 combinations x 2 arms x
@@ -41,15 +41,17 @@ KIND_FIXED, KIND_SERVING = "CAP_FIXED_BATCH", "CAP_MEM_SERVING"
 SCHEMA_FIXED = "motivation.cap_fixed_batch/v1"
 
 # ---- user definition (tracks/main.md, 2026-11-10) ---------------------------------------------------------------------------------
-CONTEXTS = tuple(2 ** i for i in range(7, 19))          # 128 .. 262,144
+CONTEXTS = tuple(2 ** i for i in range(7, 18))          # 128 .. 131,072 (user decision 2026-11-13: the 2^18 column is not measured)
 BATCHES = tuple(2 ** j for j in range(0, 9))            # 1 .. 256
 FB_MEM = 0.82
 TOTAL_SM = CT.TOTAL_SM                                  # 108, unpartitioned
-NANO_DECLARED_MAX = 131072                              # contexts above it are TIME_ONLY (the model declares no quality there)
+NANO_CONTEXT_LIMIT = 131072                             # context length SGLang derives for Nano-9B-v2; a larger --context-length is
+#                                                         refused at boot (ValueError) unless SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1,
+#                                                         which the inherited boot path (sb_runner) removes: no boot may exceed this
 MODELS = {"nano": {"n_A": 4, "n_M": 27, "weights": "real", "tag": "nano-a4-realweights"},
           "a31": {"n_A": 31, "n_M": 0, "weights": "dummy", "tag": "nano-a31-dummyweights"}}
 USER_STATED_CELLS = {"nano": 75, "a31": 60}             # record only: the first statement (tracks/main.md 2026-11-10) was not reproduced by
-#                                                         the documented rule; the user decided 90 / 72 (2026-11-12).  See cell_count_gap.
+#                                                         the documented rule; the user decided the rule's table (2026-11-12; 86 / 71 on the 2^7..2^17 grid).  See cell_count_gap.
 SERVING_COMBOS = ((0.6, 48), (0.75, 48), (0.75, 128), (0.75, 256))      # (mem, cap)
 SERVING_RUNGS, SERVING_SEEDS_MIN = 4, MS.MIN_SEEDS
 # memory budget of the pre-data cell table: the boot-log values reports/motivation_gap_2026-11-09/predict_motivation_charts.py used when
@@ -60,15 +62,21 @@ VARIANT_DIRNAME = "variant_a31"
 
 # ---- values the definition leaves open: (value, source).  A non-rehearsal plan needs every key in CONFIRMED. ------------------------
 PROPOSED = {
-    "fb_cell_rule": ("weights + b*s + b*c*k <= mem * visible", "the rule of predict_motivation_charts.py (its regime_fit): 90 / 72 cells on "
-                     "the 12 x 9 grid (162); user decision 2026-11-12: this table, not the earlier 75 / 60"),
+    "fb_cell_rule": ("weights + b*s + b*c*k <= mem * visible", "the rule of predict_motivation_charts.py (its regime_fit: 90 / 72 on 12 x 9); user "
+                     "decision 2026-11-12: this table, not the earlier 75 / 60; user decision 2026-11-13: without the 2^18 column, i.e. "
+                     "86 / 71 cells on the 11 x 9 grid (157)"),
     "fb_boot_rule": ("cap_equals_batch", "the cell rule charges state memory b x s, i.e. one boot per batch size with cap = b (18 boots per "
                                          "round); 'min_boots' covers the same cells with 4 boots per round but assumes the step time does not "
                                          "depend on cap"),
     "fb_arm": ("SG_CHUNKED_8192", "'chunked fill, unpartitioned 108 SM': the pristine-tree chunked arm of mo_spec, no instrumentation"),
     "fb_nano_weights": ("real", "Nano with its weights (the 16.58 GiB boot-log value); a31 has no trained weights -> --load-format dummy"),
-    "fb_context_length": (262144, "py3.12 boot probe 2026-11-09: --context-length 262144 booted; larger values untested"),
-    "fb_ctx_total_max": (262032, "same probe: 262,016 input + 16 output served; 262,127 input returned 15 of 16 tokens"),
+    "fb_context_length": (NANO_CONTEXT_LIMIT, "the context length SGLang derives for Nano-9B-v2 (131072).  --context-length 262144 is "
+                          "refused at boot without SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN=1 (observed 2026-11-13: all 20 boots of the "
+                          "rehearsal Job died on it; the 2026-11-09 probe that booted 262144 had that variable set, which the boot path "
+                          "here removes); user decision 2026-11-13: no override, the 2^18 column is dropped"),
+    "fb_ctx_total_max": (NANO_CONTEXT_LIMIT - 112, "input + output of a cell stay 112 tokens below the context length: the margin the "
+                         "2026-11-09 probe verified at 262144 (262,016 input + 16 output served; 262,127 input returned 15 of 16 tokens).  "
+                         "NOT probed at 131072"),
     "fb_window": ((CT.WINDOW_ITERS, CT.TRIM_ITERS, CT.MARGIN_ITERS), "cost-term harness T1 window (300 steps, trim 16, margin 16); for "
                   "contexts below 1024 the window is c // 2 steps so that it does not span more than half the context"),
     "fb_ramp_steps": (CT.VANILLA_RAMP_STEPS, "cost-term harness allowance for decode steps before every request has joined (64)"),
@@ -83,7 +91,7 @@ PROPOSED = {
     "sv_run_s": (300.0, "roadmap GPU-time table: 10.7 load-hours / 128 cells"),
     "sv_context": (20480, "mo_spec.default_fixed context"),
 }
-# User decision 2026-11-12: every value above is confirmed (cell table 90 / 72, cap = batch, one Job per round, the two serving arms, and
+# User decision 2026-11-12: every value above is confirmed (the cell rule's table, cap = batch, one Job per round, the two serving arms, and
 # the values inherited from the cost-term harness).  A value added to PROPOSED later is NOT confirmed until it is listed here.
 CONFIRMED = frozenset((
     "fb_cell_rule", "fb_boot_rule", "fb_arm", "fb_nano_weights", "fb_context_length", "fb_ctx_total_max", "fb_window", "fb_ramp_steps",
@@ -127,10 +135,6 @@ def k_bytes(model):
     return AT.kv_bytes_per_token(arch(model))
 
 
-def time_only(c):
-    return c > NANO_DECLARED_MAX
-
-
 # ---- pre-data cell table ---------------------------------------------------------------------------------------------------------------
 def fits_predicted(model, b, c, mem=FB_MEM):
     """Memory rule of the pre-data table [derived]: weights + b x s + b x c x k <= mem x visible GPU memory."""
@@ -146,8 +150,7 @@ def cell_table_summary(mem=FB_MEM):
     for m in MODELS:
         cells = predicted_cells(m, mem)
         out[m] = {"n": len(cells), "user_stated": USER_STATED_CELLS[m], "s_bytes": s_bytes(m), "k_bytes_per_token": k_bytes(m),
-                  "max_context_by_batch": {b: max((c for bb, c in cells if bb == b), default=None) for b in BATCHES},
-                  "n_time_only": sum(1 for _, c in cells if time_only(c))}
+                  "max_context_by_batch": {b: max((c for bb, c in cells if bb == b), default=None) for b in BATCHES}}
     return out
 
 
@@ -180,8 +183,9 @@ def x_tokens(c):
 
 
 def c_in(c):
-    """Input tokens of a cell.  The top context cannot be centred: input + output must stay within the probe-verified total.  The
-    shift is a property of the REGISTERED context length only; a server that logs a shorter context gets the cell refused, not shrunk."""
+    """Input tokens of a cell.  The top context (= the context length) cannot be centred: input + output must stay within
+    fb_ctx_total_max, so its input is shifted down (the cell then carries CTX_OFF_NOMINAL).  The shift is a property of the REGISTERED
+    context length only; a server that logs a shorter context gets the cell refused, not shrunk."""
     return min(c - x_tokens(c), P("fb_ctx_total_max") - o_tokens(c))
 
 
@@ -301,10 +305,10 @@ def _rng(*salt):
 
 
 def _order_cells(job, boot_id, cells):
-    """Seeded order; TIME_ONLY contexts last and ascending (a server death there cannot take a shorter context with it)."""
-    norm = [x for x in cells if not time_only(x[1])]
-    _rng("cells", job, boot_id).shuffle(norm)
-    return [list(x) for x in norm] + [list(x) for x in sorted(x for x in cells if time_only(x[1]))]
+    """Seeded order of a boot's cells."""
+    out = [list(x) for x in cells]
+    _rng("cells", job, boot_id).shuffle(out)
+    return out
 
 
 def fb_boot_keys(rule=None):
@@ -360,6 +364,10 @@ def _common_arm_problems(b, rehearsal, allow_placeholders):
         out.append(f"{b['boot_id']}: pristine boot with PD-mux env/argv")
     if not arm_states_its_values(a):
         out.append(f"{b['boot_id']}: the argv does not carry the cap / mem the arm name states")
+    ctx = _argv_value(a["cmd"], "--context-length")
+    if a["engine"] == "sglang" and (ctx is None or not ctx.isdigit() or int(ctx) > NANO_CONTEXT_LIMIT):
+        out.append(f"{b['boot_id']}: --context-length {ctx} is not a value within the model's derived limit {NANO_CONTEXT_LIMIT} "
+                   "(SGLang refuses the boot)")
     if not allow_placeholders and not rehearsal and (any(x in (MS.MEM_TOKEN, MS.CAP_TOKEN) for x in a["cmd"])
                                                      or any(MS.is_pending(v) for v in a["fixed"].values())):
         out.append(f"{b['boot_id']}: PLACEHOLDER in the boot's fixed values {sorted(k for k, v in a['fixed'].items() if MS.is_pending(v))}")
@@ -410,9 +418,6 @@ def fixed_plan_problems(plan, allow_placeholders=False, confirmed=None):
             out.append(f"{b['boot_id']}: a cell's batch exceeds the boot cap")
         if rule == "cap_equals_batch" and b["role"] == "meas" and any(c[0] != b["cap"] for c in b["cells"]):
             out.append(f"{b['boot_id']}: boot rule cap_equals_batch violated")
-        t = [time_only(c[1]) for c in b["cells"]]
-        if t != sorted(t):
-            out.append(f"{b['boot_id']}: TIME_ONLY contexts must come last")
         dummy = "--load-format" in a["cmd"]
         if dummy != (MODELS[b["model"]]["weights"] == "dummy"):
             out.append(f"{b['boot_id']}: weight loading differs from the registered model")

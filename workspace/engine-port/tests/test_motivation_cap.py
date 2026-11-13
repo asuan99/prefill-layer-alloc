@@ -99,7 +99,7 @@ def run_fixed(plan, td, tamper=None, truth=None, gate=lambda p: None, budget=Non
     return out, card, res
 
 
-def small_fixed_plan(job="JF", keep=((("nano", 8), ((8, 512), (8, 8192))), (("a31", 4), ((4, 256), (4, 2048))), (("nano", 2), ((2, 262144),)))):
+def small_fixed_plan(job="JF", keep=((("nano", 8), ((8, 512), (8, 8192))), (("a31", 4), ((4, 256), (4, 2048))), (("nano", 2), ((2, 131072),)))):
     """A smoke selection: a few chosen cells of the table (the full table is exercised by the plan tests, not sent through the fake)."""
     return CS.fixed_plan(job, rehearsal=True, only=dict(keep))
 
@@ -163,7 +163,7 @@ def coupled_replay(capacity):
 # ---- 1. cell table -----------------------------------------------------------------------------------------------------------------------
 class TestCellTable(unittest.TestCase):
     def test_grid_is_the_user_definition(self):
-        self.assertEqual(CS.CONTEXTS, tuple(2 ** i for i in range(7, 19)))
+        self.assertEqual(CS.CONTEXTS, tuple(2 ** i for i in range(7, 18)))          # 2^18 dropped: user decision 2026-11-13
         self.assertEqual(CS.BATCHES, (1, 2, 4, 8, 16, 32, 64, 128, 256))
         self.assertEqual(CS.FB_MEM, 0.82)
 
@@ -173,10 +173,14 @@ class TestCellTable(unittest.TestCase):
         self.assertEqual(CS.s_bytes("a31"), 0)
         self.assertEqual(CS.k_bytes("a31"), CS.AT.kv_bytes_per_token(CS.AT.nano9b_v2(31, 0)))
 
-    def test_documented_rule_gives_90_and_72_not_the_stated_75_and_60(self):
-        """The first stated counts were not reproduced; the user decided 90 / 72 (2026-11-12).  75 / 60 stays as a record only."""
-        self.assertEqual({m: len(CS.predicted_cells(m)) for m in CS.MODELS}, {"nano": 90, "a31": 72})
-        self.assertEqual(CS.cell_count_gap(), {"nano": 15, "a31": 12})
+    def test_documented_rule_gives_86_and_71_not_the_stated_75_and_60(self):
+        """The first stated counts were not reproduced; the user decided the rule's table (2026-11-12: 90 / 72 with the 2^18 column;
+        2026-11-13: 86 / 71 without it).  75 / 60 stays as a record only."""
+        self.assertEqual({m: len(CS.predicted_cells(m)) for m in CS.MODELS}, {"nano": 86, "a31": 71})
+        self.assertEqual(CS.cell_count_gap(), {"nano": 11, "a31": 11})
+        with mock.patch.object(CS, "CONTEXTS", CS.CONTEXTS + (262144,)):         # the dropped column = exactly these five cells
+            gone = {m: sorted(set(CS.predicted_cells(m)) - {x for x in CS.predicted_cells(m) if x[1] <= 131072}) for m in CS.MODELS}
+        self.assertEqual(gone, {"nano": [(1, 262144), (2, 262144), (4, 262144), (8, 262144)], "a31": [(1, 262144)]})
         self.assertEqual(CS.USER_STATED_CELLS, {"nano": 75, "a31": 60})
 
     def test_user_decisions_of_2026_11_12_are_confirmed_and_new_values_are_not(self):
@@ -191,14 +195,13 @@ class TestCellTable(unittest.TestCase):
     def test_same_table_as_the_prediction_script(self):
         d = json.loads((ENG.parents[1] / "reports" / "motivation_gap_2026-11-09" / "predict_motivation_charts.json").read_text())
         self.assertEqual(d["regime_fit"], {"Nano": 90, "a31": 72})
-        got = {(r["m"], r["b"], r["c"]) for r in d["regime"] if r["fit"]}
+        got = {(r["m"], r["b"], r["c"]) for r in d["regime"] if r["fit"] and r["c"] <= CS.NANO_CONTEXT_LIMIT}      # the script's 2^18 column is not measured
         self.assertEqual(got, {("Nano" if m == "nano" else m, b, c) for m in CS.MODELS for b, c in CS.predicted_cells(m)})
 
-    def test_table_reacts_to_mem_and_marks_time_only(self):
+    def test_table_reacts_to_mem_and_stays_within_the_context_limit(self):
         self.assertLess(len(CS.predicted_cells("nano", 0.6)), len(CS.predicted_cells("nano", 0.82)))
-        self.assertTrue(CS.time_only(262144))
-        self.assertFalse(CS.time_only(131072))
-        self.assertEqual(CS.cell_table_summary()["nano"]["n_time_only"], 4)
+        self.assertEqual(max(CS.CONTEXTS), CS.NANO_CONTEXT_LIMIT)
+        self.assertEqual(CS.cell_table_summary()["nano"]["max_context_by_batch"][1], 131072)
 
     def test_banner_rule(self):
         ctx = CS.P("fb_context_length")
@@ -209,7 +212,7 @@ class TestCellTable(unittest.TestCase):
         self.assertTrue(any("capture" in r for r in CS.fits_banner(8, 8192, 10 ** 9, 8, ctx, capturable=False)))
         self.assertTrue(any("banner" in r for r in CS.fits_banner(8, 8192, None, 8, ctx)))
         self.assertTrue(any("context_length" in r for r in CS.fits_banner(1, 8192, 10 ** 9, 8, 8192)))
-        self.assertTrue(any("context_length" in r for r in CS.fits_banner(1, 262144, 10 ** 9, 8, 131072)))      # a clamped context refuses, never shrinks
+        self.assertTrue(any("context_length" in r for r in CS.fits_banner(1, 131072, 10 ** 9, 8, 65536)))      # a clamped context refuses, never shrinks
 
     def test_every_predicted_cell_passes_the_banner_rule_under_its_predicted_boot(self):
         for rule in ("cap_equals_batch", "min_boots"):
@@ -229,9 +232,14 @@ class TestCellTable(unittest.TestCase):
             self.assertEqual(CS.abort_at(c), 1 + 16 + w + 2)
             self.assertGreater(CS.c_in(c), 0)
             self.assertLessEqual(CS.c_in(c) + CS.o_tokens(c), CS.P("fb_ctx_total_max"))
-            if c < 262144:                                    # the window is centred on c
+            self.assertLess(CS.c_in(c) + CS.o_tokens(c), CS.P("fb_context_length"))      # input + output fit the boot's context length
+            if c < 131072:                                    # the window is centred on c
                 self.assertEqual(CS.c_in(c) + 1 + 16 + w // 2, c)
-        self.assertLess(CS.c_in(262144), 262144 - CS.x_tokens(262144))       # the top context is shifted down, not centred
+        self.assertEqual(CS.P("fb_ctx_total_max"), 131072 - 112)
+        self.assertLess(CS.c_in(131072), 131072 - CS.x_tokens(131072))       # the top context is shifted down, not centred
+        self.assertEqual(CS.c_in(131072) + CS.o_tokens(131072), CS.P("fb_ctx_total_max"))
+        with mock.patch.dict(CS.PROPOSED, {"fb_ctx_total_max": (10 ** 9, "")}):   # without the shift the top cells are refused, not sent
+            self.assertTrue(any("context_length" in r for r in CS.fits_banner(1, 131072, 10 ** 9, 1, CS.P("fb_context_length"))))
 
 
 # ---- 2. plans ------------------------------------------------------------------------------------------------------------------------------
@@ -250,7 +258,7 @@ class TestFixedPlan(unittest.TestCase):
         self.assertEqual(MS.plan_problems(plan), [])                                  # mo_spec dispatches by plan kind
         meas = [b for b in plan["boots"] if b["role"] == "meas"]
         self.assertEqual(len(meas), 18)
-        self.assertEqual(sum(len(b["cells"]) for b in meas), 90 + 72)
+        self.assertEqual(sum(len(b["cells"]) for b in meas), 86 + 71)
         self.assertEqual((plan["boots"][0]["role"], plan["boots"][-1]["role"]), ("anchor", "anchor"))
         self.assertEqual(plan["boots"][0]["cells"], plan["boots"][-1]["cells"])
 
@@ -263,9 +271,9 @@ class TestFixedPlan(unittest.TestCase):
             self.assertEqual(TH._flag(a["cmd"], "--chunked-prefill-size"), "8192")
             self.assertEqual(TH._flag(a["cmd"], "--mem-fraction-static"), "0.82")
             self.assertEqual(TH._flag(a["cmd"], "--max-running-requests"), str(b["cap"]))
-            self.assertEqual(TH._flag(a["cmd"], "--context-length"), "262144")
+            self.assertEqual(TH._flag(a["cmd"], "--context-length"), "131072")
             self.assertEqual("--load-format" in a["cmd"], b["model"] == "a31")
-            for part in (f"cap{b['cap']}", "mem0.82", "ctx262144", "pristinetree", "chunked", CS.MODELS[b["model"]]["tag"]):
+            for part in (f"cap{b['cap']}", "mem0.82", "ctx131072", "pristinetree", "chunked", CS.MODELS[b["model"]]["tag"]):
                 self.assertIn(part, a["name"])
 
     def test_order_is_seeded_by_job_and_round(self):
@@ -274,14 +282,35 @@ class TestFixedPlan(unittest.TestCase):
         self.assertNotEqual(CS.fb_boot_order("J1", 1), CS.fb_boot_order("J1", 2))
         self.assertNotEqual(CS.fb_boot_order("J1", 1), CS.fb_boot_keys())               # not the registration order
 
-    def test_time_only_cells_run_last(self):
-        for b in CS.fixed_plan("JF", rounds=(1,))["boots"]:
-            t = [CS.time_only(c[1]) for c in b["cells"]]
-            self.assertEqual(t, sorted(t))
+    def test_no_boot_exceeds_the_context_length_the_model_derives(self):
+        """2026-11-13: every boot of the rehearsal Job died because --context-length 262144 > 131072 (Nano-9B-v2's derived limit) and the
+        boot path removes SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN.  Every plan of both parts, argv and plan field."""
+        limit = 131072
+        plans = [CS.fixed_plan("JF", rounds=(1,)), CS.fixed_plan("JF", rounds=(2,)), CS.fixed_plan("JF", rehearsal=True), small_fixed_plan(),
+                 CS.fixed_plan("JF", rounds=(1,), rule="min_boots"),
+                 CS.serving_plan("JS", "W1", 3.0, 1.3), CS.serving_plan("JS", "W1", 3.0, 1.3, rehearsal=True)]
+        n = 0
+        for plan in plans:
+            self.assertLessEqual(plan.get("context_length", 0), limit)
+            for b in plan["boots"]:
+                a = b["arm_def"]
+                self.assertEqual(a["engine"], "sglang")
+                self.assertLessEqual(int(TH._flag(a["cmd"], "--context-length")), limit, b["boot_id"])
+                self.assertLessEqual(a["fixed"]["context"], limit)
+                self.assertNotIn("SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN", a["env"])
+                for c in b.get("cells", []):                           # fixed batch: the cell itself fits the boot's context
+                    self.assertLess(CS.c_in(c[1]) + CS.o_tokens(c[1]), int(TH._flag(a["cmd"], "--context-length")))
+                n += 1
+        self.assertGreater(n, 60)
+        self.assertLessEqual(max(CS.CONTEXTS), limit)
+        p = CS.fixed_plan("JF", rounds=(1,))                           # the plan checker states it as well
+        cmd = p["boots"][3]["arm_def"]["cmd"]
+        cmd[cmd.index("--context-length") + 1] = "262144"
+        self.assertTrue(any("derived limit" in x for x in CS.fixed_plan_problems(p)))
 
     def test_checker_rejects_each_mutation(self):
         base = CS.fixed_plan("JF", rounds=(1,))
-        i = next(k for k, b in enumerate(base["boots"]) if b["role"] == "meas" and len(b["cells"]) > 2 and CS.time_only(b["cells"][-1][1]))
+        i = next(k for k, b in enumerate(base["boots"]) if b["role"] == "meas" and len(b["cells"]) > 2)
 
         def mut(fn):
             p = copy.deepcopy(base)
@@ -292,7 +321,6 @@ class TestFixedPlan(unittest.TestCase):
         self.assertIn("registered permutation", mut(lambda p: p["boots"].insert(2, p["boots"].pop(1))))
         self.assertIn("anchor boot must be first and last", mut(lambda p: p["boots"].append(p["boots"].pop(0))))
         self.assertIn("cell table", mut(lambda p: p["boots"][i]["cells"].pop(0)))
-        self.assertIn("TIME_ONLY", mut(lambda p: p["boots"][i]["cells"].reverse()))
         self.assertIn("does not carry the cap / mem", mut(lambda p: p["boots"][i]["arm_def"]["cmd"].__setitem__(
             p["boots"][i]["arm_def"]["cmd"].index("--mem-fraction-static") + 1, "0.6")))
         self.assertIn("un-instrumented", mut(lambda p: p["boots"][i]["arm_def"]["env"].update(PDMUX_DECODE_PROBE_PATH="x")))
@@ -331,10 +359,10 @@ class TestFixedPlan(unittest.TestCase):
     def test_time_estimate_adds_up(self):
         plan = CS.fixed_plan("JF", rounds=(1,))
         e = CS.estimate_fixed(plan)
-        self.assertEqual((e["boots"], e["cells"]), (20, 164))
+        self.assertEqual((e["boots"], e["cells"]), (20, 159))
         self.assertAlmostEqual(e["total_min"], e["cell_min"] + e["boot_min"] + e["start_min"], delta=0.11)
         self.assertEqual(e["boot_min"], 20 * 6.0)
-        self.assertGreater(CS.est_cell_s("nano", 8, 262144), CS.est_cell_s("nano", 8, 8192))
+        self.assertGreater(CS.est_cell_s("nano", 8, 131072), CS.est_cell_s("nano", 8, 8192))
         self.assertGreater(CS.est_cell_s("a31", 1, 65536), CS.est_cell_s("nano", 1, 65536))     # more attention layers
 
 
@@ -489,12 +517,12 @@ class TestFixedEndToEnd(unittest.TestCase):
 
     def test_window_is_centred_on_the_cell_context_except_at_the_top(self):
         for r in self.an["cell_rows"]:
-            if r["c"] < 262144:
+            if r["c"] < 131072:
                 self.assertLess(abs(r["ctx_mean"] - r["c"]), 2.0, r["cell_id"])
                 self.assertNotIn("CTX_OFF_NOMINAL", r["labels"])
             else:
                 self.assertIn("CTX_OFF_NOMINAL", r["labels"])
-                self.assertIn("TIME_ONLY", r["labels"])
+        self.assertTrue(any(r["c"] == 131072 for r in self.an["cell_rows"]))
 
     def test_traffic_uses_analytic_terms_at_the_realized_context(self):
         for r in (x for x in self.an["cell_rows"] if x["status"] == "VALID"):
@@ -537,8 +565,8 @@ class TestFixedEndToEnd(unittest.TestCase):
 
 class TestFixedFullTable(unittest.TestCase):
     def test_whole_table_two_round_jobs_raw_to_cell_table_and_round_agreement(self):
-        """The two measurement plans themselves (one Job per round: 20 boots, 162 cells each) through the fake engine: every cell VALID,
-        the five top-context cells carry TIME_ONLY, each Job gives its own 162-row table, and the rounds are compared without merging."""
+        """The two measurement plans themselves (one Job per round: 20 boots, 157 cells each) through the fake engine: every cell VALID,
+        the seven top-context cells (c = the context length, input shifted down) carry CTX_OFF_NOMINAL, each Job gives its own 157-row table, and the rounds are compared without merging."""
         ans = []
         with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)), \
                 tempfile.TemporaryDirectory() as td:
@@ -548,20 +576,21 @@ class TestFixedFullTable(unittest.TestCase):
                     self.assertTrue(all(b["status"] == "done" for b in res))
                     ans.append(CA.analyze_fixed(out))
         an = ans[0]
-        self.assertEqual(an["counts"], {"nano": {"planned": 90, "valid": 90, "infeasible": 0}, "a31": {"planned": 72, "valid": 72, "infeasible": 0}})
-        self.assertEqual((an["flags"], len(an["verdict_rows"]), an["rounds"]), ([], 162, [1]))
+        self.assertEqual(an["counts"], {"nano": {"planned": 86, "valid": 86, "infeasible": 0}, "a31": {"planned": 71, "valid": 71, "infeasible": 0}})
+        self.assertEqual((an["flags"], len(an["verdict_rows"]), an["rounds"]), ([], 157, [1]))
         ra = CA.round_agreement(ans[0], ans[1])
-        self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 162, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0}, False, [1, 2]))
+        self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 157, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0}, False, [1, 2]))
         slow = copy.deepcopy(ans[1])
         slow["verdict_rows"][0]["step_ms"] *= 1.05
         slow["verdict_rows"][1]["step_ms"] = None
-        self.assertEqual(CA.round_agreement(ans[0], slow)["n"], {"AGREE": 160, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 1})
+        self.assertEqual(CA.round_agreement(ans[0], slow)["n"], {"AGREE": 155, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 1})
         with self.assertRaises(ValueError):
             CA.round_agreement(ans[0], ans[0])                                   # the same round / the same Job twice
         with self.assertRaises(ValueError):
             CA.round_agreement(ans[0], dict(ans[1], rehearsal=True))
         self.assertTrue(all(r["n_rounds_valid"] == 1 for r in an["verdict_rows"]))
-        self.assertEqual(sum(1 for r in an["verdict_rows"] if "TIME_ONLY" in r["labels"]), 5)
+        self.assertEqual(sorted((r["model"], r["bs"], r["c"]) for r in an["verdict_rows"] if "CTX_OFF_NOMINAL" in r["labels"]),
+                         [("a31", 1, 131072), ("a31", 2, 131072)] + [("nano", b, 131072) for b in (1, 2, 4, 8, 16)])
         worst = max(abs(r["step_ms"] / truth_step_ms(r["model"], r["bs"], r["ctx_mean"]) - 1) for r in an["cell_rows"])
         self.assertLess(worst, 0.005)
         gain = {(g["model"], g["c"], g["bs"]): g["gain"] for g in an["doubling_gain"]}
@@ -637,7 +666,7 @@ class TestCellWindow(unittest.TestCase):
         mk = lambda rid, ch: {"rid": rid, "t_send": 8.0, "chunks": ch, "prompt_tokens": 100, "completion_tokens": ch[-1][1],   # noqa: E731
                               "finish": "abort", "error": None, "aborted": True}
         return {"cell_id": "x", "model": "nano", "bs": 2, "c": 128, "c_in": 100, "O": 200, "abort_at": n, "window_iters": win, "trim_iters": trim,
-                "time_only": False, "round": 1, "requests": [mk("a", early), mk("b", late)]}
+                "round": 1, "requests": [mk("a", early), mk("b", late)]}
 
     def test_window_starts_after_the_last_join(self):
         w = CA.cell_window(self.cell())
@@ -991,7 +1020,7 @@ class TestMutants(unittest.TestCase):
         return all(sum(1 for x, y in zip(hi, lo) if x != y) == 1 for hi, lo, _ in CA.serving_pairs()) and len(CA.serving_pairs()) == 4
 
     def o_table(self):
-        return {m: len(CS.predicted_cells(m)) for m in CS.MODELS} == {"nano": 90, "a31": 72}
+        return {m: len(CS.predicted_cells(m)) for m in CS.MODELS} == {"nano": 86, "a31": 71}
 
     def o_anchor_drift(self):
         job = CA.load_fixed(self.fout)
@@ -1042,7 +1071,7 @@ class TestMutants(unittest.TestCase):
             ("pairs across two factors", mock.patch.object(CS, "SERVING_COMBOS", ((0.6, 48), (0.75, 128), (0.75, 256), (0.75, 48), (0.6, 256))),
              self.o_one_factor_pairs),
             ("cell rule drops the state term", mock.patch.object(CS, "s_bytes", lambda m: 0), self.o_table),
-            ("cell rule at another mem", mock.patch.object(CS, "FB_MEM", 0.6), lambda: len(CS.predicted_cells("nano", CS.FB_MEM)) == 90),
+            ("cell rule at another mem", mock.patch.object(CS, "FB_MEM", 0.6), lambda: len(CS.predicted_cells("nano", CS.FB_MEM)) == 86),
             ("anchor drift bound is infinite", mock.patch.dict(CS.PROPOSED, {"fb_anchor_drift_ln": (float("inf"), "")}), self.o_anchor_drift),
         ]
         for name, patch, oracle in mutants:

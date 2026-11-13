@@ -11,7 +11,7 @@
 #       --env PDMUX_MOCAP_WORKLOAD=<w> --env PDMUX_MOCAP_RMIN=<r> --env PDMUX_MOCAP_FACTOR=<f> [--env PDMUX_MOCAP_EXPECT_CARD_SHA=<sha>]
 # (launch.sh passes only PDMUX_* names, hence the prefix.)
 #
-# PART=fixed  : context 2^7..2^18 x batch 1..256, memory-permitted cells, Nano + a31, mem 0.82, pristine tree, no instrumentation.
+# PART=fixed  : context 2^7..2^17 x batch 1..256, memory-permitted cells, Nano + a31, mem 0.82, pristine tree, no instrumentation.
 # PART=serving: mem {0.6, 0.75} at cap 48 + cap {48, 128, 256} at mem 0.75, 2 arms x 4 rungs x 4 seeds; the rate grid has no default.
 # MODE=rehearse: full pass over the real boot list with one cell (fixed) / one rung and few requests (serving); writes the rehearsal
 #   record of that part, which the launch gate of MODE=run requires.

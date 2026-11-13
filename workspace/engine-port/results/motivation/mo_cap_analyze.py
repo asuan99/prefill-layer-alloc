@@ -70,12 +70,10 @@ def _tok_time(chunks, n):
 def cell_window(rec):
     """Decode step of one cell from the client stamps.  Reach = the first token of the LAST request to join (every request is then
     decoding); trim tokens of that request are skipped, the window is its next window_iters tokens and must close before any request
-    ended by length.  Status: BENCH_INVALID > WINDOW_SHORT > VALID.  Labels (never exclusions): CTX_OFF_NOMINAL, TIME_ONLY."""
+    ended by length.  Status: BENCH_INVALID > WINDOW_SHORT > VALID.  Label (never an exclusion): CTX_OFF_NOMINAL."""
     reqs, bs, ci, o = rec["requests"], rec["bs"], rec["c_in"], rec["O"]
     trim, win = rec["trim_iters"], rec["window_iters"]
     base = {"cell_id": rec["cell_id"], "model": rec["model"], "bs": bs, "c": rec["c"], "round": rec["round"], "labels": []}
-    if rec.get("time_only"):
-        base["labels"].append("TIME_ONLY")
     ok = len(reqs) == bs and all(r.get("error") is None and r.get("prompt_tokens") == ci and rec["abort_at"] <= (r.get("completion_tokens") or 0) <= o
                                  and r.get("finish") in ("abort", "length") for r in reqs)
     if not ok:

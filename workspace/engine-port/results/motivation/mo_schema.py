@@ -33,13 +33,13 @@ RUN_KEYS = ("schema_version", "run_id", "kind", "cell", "seed", "arm", "boot_id"
 
 # ---- fixed-batch cell record of the cap measurement (motivation.cap_fixed_batch/v1; mo_cap_runner writes one per cell) -----------------
 # identity  schema_version cell_id job_name boot_id arm gpu_uuid hostname card_sha round
-# cell      model bs c c_in O abort_at window_iters trim_iters time_only
+# cell      model bs c c_in O abort_at window_iters trim_iters
 # boot      cap mem banner = {max_total_num_tokens, max_running_requests, context_len} (the values the feasibility rule used)
 # window    t_first_send t_abort t_end window_reached server_alive_after clock_pair = [wall, monotonic]
 # requests  [{rid t_send chunks=[[t_mono, cumulative_tokens], ...] prompt_tokens completion_tokens finish error aborted}]  (every chunk
 #           of every request; the step time is derived from these stamps post hoc, nothing is reduced at record time)
 FIXED_CELL_KEYS = ("schema_version", "cell_id", "job_name", "boot_id", "arm", "gpu_uuid", "hostname", "card_sha", "round", "model", "bs", "c",
-                   "c_in", "O", "abort_at", "window_iters", "trim_iters", "time_only", "cap", "mem", "banner", "t_first_send", "t_abort",
+                   "c_in", "O", "abort_at", "window_iters", "trim_iters", "cap", "mem", "banner", "t_first_send", "t_abort",
                    "t_end", "window_reached", "server_alive_after", "clock_pair", "requests")
 FIXED_REQUEST_KEYS = ("rid", "t_send", "chunks", "prompt_tokens", "completion_tokens", "finish", "error", "aborted")
 FIXED_SCHEMA_VERSION = "motivation.cap_fixed_batch/v1"
