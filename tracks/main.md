@@ -47,7 +47,7 @@
 - **봉인 문서 정오·잔여 정리** / worktree `agent-a33b…`·`agent-af8a…`는 다른 세션 종료 후 삭제 · `fix/gate14-tci-analyze` 브랜치 유지 · PROPOSAL §4 배너는 달았음 · `handoff-report/claude_web_review_prompt_2026-10-28.md` 커밋 여부 · `/tmp/gate_t_*` 11개 삭제(권고) · 구판 runtime manifest 갱신(권고) · presubmit 차단 2건 범위 한정 OVERRIDE(권고) · roofline η 수식 §6 한 줄(권고) · 진단 PREREG rev2 addendum(`7af52ffb`) 문턱 그대로(권고)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out
 ## 실행 중·미회수 Job
-- **고정 배치 리허설(3차 제출)** `pdmux-motivation-cap-bcbb02e-20261113032507`(slug `job-adpqf9ze4zmk`, 예산 210분, 2026-11-13 03:25Z). 종료 후 `observed_venv_freeze`를 `registered_fixed.json`에 등록. 회수 `scripts/vessl/fetch.sh motivation_cap <job name>`
+- **고정 배치 리허설 3차** `pdmux-motivation-cap-bcbb02e-20261113032507`: rc 19, 회수함. 20 boot 전부 기동 실패 — `--context-length 262144`가 Nano 유도 한계 131072를 넘고, 러너가 승계한 `sb_runner` env가 `SGLANG_ALLOW_OVERWRITE_LONGER_CONTEXT_LEN`을 지움(11-09 프로브는 이 변수를 켜고 부팅했음, spec 주석이 이를 빠뜨림). venv digest 미확보. 2¹⁸ 열 처리 = 사용자 결정 대기
 - **사전 사다리(측정 아님, 2차 제출)** `pdmux-motivation-pre-ladder-938c3be-20261113032517`(slug `job-vg1sld1el005`, 예산 600분, 03:25Z): arm SG mixed·PD-mux D44·vLLM(간섭 대상 SG mixed·D16·D44), 최저 도착률 sharegpt_first 2.0·openchat 1.0·arXiv 0.1·간섭 짧은 요청 2.0, 12 boot·216 run·추정 7.35시간. 회수 `scripts/vessl/fetch.sh motivation_pre_ladder <job name>`
 - 직전 제출 2건(11-12 14:21Z)은 GPU 배정 약 7시간 50분 대기 뒤 첫 boot 전 import 오류로 실패(rc 1·16, 회수함): VESSL에서 `results/`가 심볼릭 링크라 `scripts/` 모듈을 못 찾음 → 수정 `bcbb02eb` + 배치 재현 시험 `tests/test_motivation_vessl_layout.py`. 첫 제출(옛 코드)은 미시작 상태로 종료
 ## 금지 서술 (링크만)
