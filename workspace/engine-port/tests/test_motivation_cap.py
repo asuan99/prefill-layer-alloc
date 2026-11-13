@@ -843,7 +843,15 @@ class TestRehearsal(unittest.TestCase):
             self.assertTrue(rec["passed"], rec["reason"])
             self.assertEqual(rec["kind"], CS.KIND_FIXED)
             self.assertEqual(len(rec["arm_names"]), 18)                         # every (model, cap); the anchor arm is one of them
-            self.assertEqual(rec["verdict_rows"], 18)
+            top = sum(len(CS.rehearsal_top_cells(m)) for m in CS.MODELS)
+            self.assertEqual(top, 4)                                            # per model: smallest and largest batch at the top context
+            self.assertEqual(rec["verdict_rows"], 18 + top)                     # one cell per boot + the top-context cells (2026-11-13)
+            plan = CS.fixed_plan("JRF", rehearsal=True)
+            ran = {(b["model"], tuple(c)) for b in plan["boots"] for c in b["cells"]}
+            for m in CS.MODELS:
+                for cell in CS.rehearsal_top_cells(m):
+                    self.assertEqual(cell[1], CS.CONTEXTS[-1])
+                    self.assertIn((m, cell), ran)
             self.assertTrue((rd / ("d" * 16 + f".{CS.KIND_FIXED}.json")).exists())
             self.assertFalse((rd / ("d" * 16 + ".json")).exists())              # not the grid measurement's record
             self.assertTrue((Path(td) / "raw" / "analysis" / "cell_table.csv").exists())

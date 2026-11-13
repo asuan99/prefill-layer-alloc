@@ -321,9 +321,15 @@ def fb_boot_order(job, rnd, rule=None):
     return keys
 
 
+def rehearsal_top_cells(model):
+    """(b, c) at the top context that the rehearsal runs for `model`: the smallest and the largest batch the cell table has there."""
+    bs = sorted(b for b, c in predicted_cells(model) if c == CONTEXTS[-1])
+    return {(bs[0], CONTEXTS[-1]), (bs[-1], CONTEXTS[-1])} if bs else set()
+
+
 def fixed_plan(job, rounds=None, rehearsal=False, rule=None, only=None):
     """One Job: anchor boot -> for every round, every (model, cap) boot once in a seeded permutation, its cells in seeded order -> anchor
-    boot.  Rehearsal: round 1, the real boot list, ONE cell per boot (its shortest context).  `only` = {(model, cap): [(b, c), ...]}
+    boot.  Rehearsal: round 1, the real boot list, ONE cell per boot (its shortest context) plus rehearsal_top_cells.  `only` = {(model, cap): [(b, c), ...]}
     selects boots and cells of the table for a smoke pass; a selection is a rehearsal plan by definition (the checker refuses it otherwise)."""
     rule = rule or P("fb_boot_rule")
     if rounds is None and not rehearsal:
@@ -347,7 +353,14 @@ def fixed_plan(job, rounds=None, rehearsal=False, rule=None, only=None):
             if sel is not None:
                 cells = _order_cells(job, bid, [tuple(c) for c in sel[f"{model}|{cap}"]])
             else:
-                cells = [list(min(cells, key=lambda x: (x[1], -x[0])))] if rehearsal else _order_cells(job, bid, cells)
+                if rehearsal:
+                    first = list(min(cells, key=lambda x: (x[1], -x[0])))
+                    # user decision 2026-11-13: the top context (input shifted down to fit fb_ctx_total_max, never probed at 131072)
+                    # is rehearsed too -- per model, its smallest and its largest batch at CONTEXTS[-1]
+                    top = [list(x) for x in cells if tuple(x) in rehearsal_top_cells(model)]
+                    cells = [first] + [x for x in top if x != first]
+                else:
+                    cells = _order_cells(job, bid, cells)
             boots.append(boot(bid, model, cap, cells, "meas", rnd))
     boots.append(boot(f"{job}_anchor_end", am, ab, [[ab, ac]], "anchor", 0, anchor="end"))
     return {"job": job, "kind": KIND_FIXED, "rehearsal": bool(rehearsal), "rounds": list(rounds), "boot_rule": rule, "mem": FB_MEM, "only": sel,
