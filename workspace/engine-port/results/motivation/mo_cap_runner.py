@@ -122,6 +122,37 @@ def feasibility(b, facts):
     return rows
 
 
+def restart_after_death(srv, b, a, card, bdir, make_server, n, banner, py_version_fn, freeze_fn):
+    """-> (server, None) or (server, boot label).  The dead server's log is kept as server.death<n>.log; the new server must match the card
+    (a mismatch aborts the Job as at the first start), show the same token pool, and pass the warm-up + greedy check again."""
+    dead = srv.stop()
+    if srv.log.exists():
+        srv.log.replace(bdir / f"server.death{n}.log")
+    srv = make_server(bdir, a)
+    status = srv.start()
+    log_text = srv.log.read_text(errors="replace") if srv.log.exists() else ""
+    tp = bdir / f"tree_{a['name']}.json"
+    observed = MC.observe_boot(a, getattr(srv, "cmd", None), json.loads(tp.read_text()) if tp.exists() else {}, log_text, py_version_fn,
+                               freeze_fn, bdir)
+    rec = {"boot_id": b["boot_id"], "restart": n, "dead_server": dead, "status": status, "observed": observed, **stamp()}
+    try:
+        if status != "ok":
+            return srv, "SERVER_DEATH"
+        bad = MC.check_arm(card, b["arm"], observed)
+        if bad:
+            reason = MC.format_mismatches(b["boot_id"], b["arm"], bad)
+            dump({"boot_id": b["boot_id"], "arm": b["arm"], "mismatches": bad, "reason": reason, "observed": observed}, bdir / "CARD_MISMATCH.json")
+            raise JobAbort("ABORT_CARD_MISMATCH", reason, b["boot_id"])
+        facts = X.parse_boot_log(log_text)
+        rec["kv_tokens"] = (facts.get("final") or {}).get("max_total_num_tokens")
+        if rec["kv_tokens"] != banner["max_total_num_tokens"] or X.logged_cap(facts) != banner["max_running_requests"]:
+            return srv, "RESTART_BANNER_DIFFERS"
+        rec["warmup"] = C.run_warmup(srv.tr, f"{b['boot_id']}-r{n}")
+        return srv, None if rec["warmup"]["warmup_ok"] and rec["warmup"]["greedy_ok"] else "INVALID_CORRECTNESS"
+    finally:
+        dump(rec, bdir / f"restart_{n}.json")
+
+
 # ---- one boot -------------------------------------------------------------------------------------------------------------------------------
 def run_fixed_boot(b, card, out, make_server, ctx, py_version_fn=MC.probe_python_version, freeze_fn=MC.freeze_sha, variant_fn=None):
     bdir = Path(out) / "boots" / b["boot_id"]
@@ -160,7 +191,7 @@ def run_fixed_boot(b, card, out, make_server, ctx, py_version_fn=MC.probe_python
     dump(feas, bdir / "feasibility.json")              # every planned cell has a row before the first cell is sent
     banner = {"max_total_num_tokens": (facts.get("final") or {}).get("max_total_num_tokens"), "max_running_requests": X.logged_cap(facts),
               "context_len": X.logged_context(facts)}
-    tr, done, label = srv.tr, [], "done"
+    tr, done, label, deaths = srv.tr, [], "done", []
     kv = banner["max_total_num_tokens"]
     try:
         if not any(f["run"] for f in feas):
@@ -173,31 +204,41 @@ def run_fixed_boot(b, card, out, make_server, ctx, py_version_fn=MC.probe_python
                 label = "INVALID_CORRECTNESS"
         dump(wu, bdir / "correctness.json")
         if label == "done" and "skipped" not in wu:
+            todo = [f for f in feas if f["run"]]
             with open(bdir / "cells.jsonl", "a") as fh:
-                for f in feas:
-                    if not f["run"]:
-                        continue
-                    if not srv.alive():
+                while todo:
+                    f = todo.pop(0)
+                    if not srv.alive():                     # died while idle: no cell to attribute the death to
                         label = "SERVER_DEATH"
                         break
                     bs, c = f["bs"], f["c"]
                     rec = run_cell(tr, f"{b['boot_id']}_b{bs}_c{c}", bs, c, b["round"], banner["context_len"],
                                    max(600.0, 5.0 * CS.est_cell_s(b["model"], bs, c)))
                     rec.update(schema_version=CS.SCHEMA_FIXED, boot_id=b["boot_id"], arm=b["arm"], card_sha=card["card_sha"], model=b["model"],
-                               cap=b["cap"], mem=a["params"]["mem"], banner=banner, server_alive_after=srv.alive(), **stamp())
+                               cap=b["cap"], mem=a["params"]["mem"], banner=banner, server_alive_after=srv.alive(), restart_index=len(deaths),
+                               **stamp())
                     fh.write(json.dumps(rec) + "\n")          # one line = one finished cell
                     fh.flush()
                     done.append(rec["cell_id"])
-                    if not rec["server_alive_after"]:
-                        label = "SERVER_DEATH"
+                    if rec["server_alive_after"]:
+                        tr.sleep(CS.SETTLE_S)
+                        continue
+                    # user decision 2026-11-14: a cell that kills the server is a row of the table (SERVER_DEATH), not the end of the boot.
+                    # The cell is never re-sent; the remaining cells run on a fresh server of the same arm, re-checked against the card.
+                    deaths.append(rec["cell_id"])
+                    if not todo:
                         break
-                    tr.sleep(CS.SETTLE_S)
-            if label == "done":
+                    srv, why = restart_after_death(srv, b, a, card, bdir, make_server, len(deaths), banner, py_version_fn, freeze_fn)
+                    if why:
+                        label = why
+                        break
+                    tr = srv.tr
+            if label == "done" and srv.alive():
                 C.run_trailer(tr, b["boot_id"])
     finally:
         info = srv.stop()
-    dump({"boot_id": b["boot_id"], "status": label, "cells": done, "server": info, **stamp()}, bdir / "DONE.json")
-    return {"boot_id": b["boot_id"], "status": label, "cells": done}
+    dump({"boot_id": b["boot_id"], "status": label, "cells": done, "server_deaths": deaths, "server": info, **stamp()}, bdir / "DONE.json")
+    return {"boot_id": b["boot_id"], "status": label, "cells": done, "server_deaths": deaths}
 
 
 def run_fixed_job(plan, card, out, make_server, resume=False, gate_fn=None, py_version_fn=MC.probe_python_version, freeze_fn=MC.freeze_sha,
@@ -260,6 +301,10 @@ def rehearse_fixed(job, out, make_server, rehearsal_dir=None, digest=None, **kw)
             raise RuntimeError("boot failures: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done"))
         job_data = CA.load_fixed(out)
         cells = [c for b in job_data["boots"] for c in b["cells"]]
+        rec["server_deaths"] = [c["cell_id"] for c in cells if not c["server_alive_after"]]
+        low = [c["cell_id"] for c in cells if not c["server_alive_after"] and c["c"] != CS.CONTEXTS[-1]]
+        if low:                                         # a death at the top context is a finding of the pass; anywhere else it is a defect
+            raise RuntimeError(f"server death below the top context: {low}")
         rec["stages"]["runs"] = len(cells) == sum(1 for b in job_data["boots"] for f in b["feasibility"] if f["run"]) and bool(cells)
         probs = [m for c in cells for m in SC.validate_fixed_cell(c)]
         if probs:

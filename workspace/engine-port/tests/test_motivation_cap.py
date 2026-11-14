@@ -576,7 +576,8 @@ class TestFixedFullTable(unittest.TestCase):
                     self.assertTrue(all(b["status"] == "done" for b in res))
                     ans.append(CA.analyze_fixed(out))
         an = ans[0]
-        self.assertEqual(an["counts"], {"nano": {"planned": 86, "valid": 86, "infeasible": 0}, "a31": {"planned": 71, "valid": 71, "infeasible": 0}})
+        self.assertEqual(an["counts"], {"nano": {"planned": 86, "valid": 86, "infeasible": 0, "server_death": 0},
+                                            "a31": {"planned": 71, "valid": 71, "infeasible": 0, "server_death": 0}})
         self.assertEqual((an["flags"], len(an["verdict_rows"]), an["rounds"]), ([], 157, [1]))
         ra = CA.round_agreement(ans[0], ans[1])
         self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 157, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0}, False, [1, 2]))
@@ -609,7 +610,7 @@ class TestFixedRunTimeRules(unittest.TestCase):
             self.assertEqual(row[(64, 32768)]["status"], "INFEASIBLE_BY_RULE")
             self.assertIn("0.95", row[(64, 32768)]["detail"])
             self.assertEqual(row[(64, 128)]["status"], "VALID")
-            self.assertEqual(an["counts"]["nano"], {"planned": 2, "valid": 1, "infeasible": 1})
+            self.assertEqual(an["counts"]["nano"], {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0})
             cells = [c for b in CA.load_fixed(out)["boots"] for c in b["cells"]]
             self.assertFalse(any(c["c"] == 32768 for c in cells))
 
@@ -623,6 +624,47 @@ class TestFixedRunTimeRules(unittest.TestCase):
             with self.assertRaises(MA.JobInvalid) as cm:
                 CA.analyze_fixed(out)
             self.assertIn("status died", str(cm.exception))
+
+    def test_a_cell_that_kills_the_server_is_a_row_and_the_boot_goes_on(self):
+        # user decision 2026-11-14: a server death inside a cell marks that cell, restarts the server and runs the remaining cells
+        keep = ((("nano", 8), ((8, 512),)), (("nano", 2), ((2, 131072), (2, 512), (2, 2048))))
+        plan = small_fixed_plan("JD", keep)
+        target = next(b for b in plan["boots"] if b["role"] == "meas" and b["cap"] == 2)
+        first_is_death = tuple(target["cells"][-1]) != (2, 131072)       # a death at the last cell needs no restart
+        with tempfile.TemporaryDirectory() as td:
+            out, _, res = run_fixed(plan, td, truth={"die_on_input_ge": 100000})
+            self.assertEqual({b["status"] for b in res}, {"done"})
+            r = next(b for b in res if b["boot_id"] == target["boot_id"])
+            self.assertEqual(len(r["cells"]), 3)                           # every planned cell has a record; the dead one is not re-sent
+            self.assertEqual(r["server_deaths"], [f"{target['boot_id']}_b2_c131072"])
+            bdir = out / "boots" / target["boot_id"]
+            self.assertEqual((bdir / "restart_1.json").exists(), first_is_death)
+            self.assertEqual((bdir / "server.death1.log").exists(), first_is_death)
+            if first_is_death:
+                self.assertIn("illegal memory access", (bdir / "server.death1.log").read_text())
+                self.assertTrue(json.loads((bdir / "restart_1.json").read_text())["warmup"]["greedy_ok"])
+            an = CA.analyze_fixed(out)
+            st = {(x["bs"], x["c"]): x["status"] for x in an["cell_rows"] if x["boot_id"] == target["boot_id"]}
+            self.assertEqual(st, {(2, 131072): "SERVER_DEATH", (2, 512): "VALID", (2, 2048): "VALID"})
+            self.assertEqual(an["counts"]["nano"]["server_death"], 1)
+            row = next(x for x in an["verdict_rows"] if (x["model"], x["bs"], x["c"]) == ("nano", 2, 131072))
+            self.assertEqual((row["n_rounds_valid"], row["statuses"]), (0, ["SERVER_DEATH"]))
+
+    def test_restart_that_shows_another_pool_ends_the_boot(self):
+        keep = ((("nano", 8), ((8, 512),)), (("nano", 2), ((2, 131072), (2, 512), (2, 2048))))
+        plan = small_fixed_plan("JD", keep)
+        target = next(b for b in plan["boots"] if b["role"] == "meas" and b["cap"] == 2)
+        if tuple(target["cells"][-1]) == (2, 131072):
+            self.skipTest("seeded order puts the death last: no restart in this plan")
+        real = CR.restart_after_death
+
+        def other_pool(srv, b, a, card, bdir, make_server, n, banner, *rest):
+            return real(srv, b, a, card, bdir, make_server, n, dict(banner, max_total_num_tokens=banner["max_total_num_tokens"] + 1), *rest)
+        with tempfile.TemporaryDirectory() as td, mock.patch.object(CR, "restart_after_death", other_pool):
+            out, _, res = run_fixed(plan, td, truth={"die_on_input_ge": 100000})
+            self.assertEqual(next(b for b in res if b["boot_id"] == target["boot_id"])["status"], "RESTART_BANNER_DIFFERS")
+            with self.assertRaises(MA.JobInvalid):
+                CA.analyze_fixed(out)
 
     def test_anchor_drift_is_flagged(self):
         plan = small_fixed_plan()
@@ -860,6 +902,18 @@ class TestRehearsal(unittest.TestCase):
                 self.assertIn("NO_REHEARSAL_RECORD", MH.launch_gate(CS.serving_plan("JS", "W1", 3.0, 1.3), rd, "d" * 64))
                 self.assertIn("NO_REHEARSAL_RECORD", MH.launch_gate(MS.make_plan("JG", TH.GRID3, fixed=dict(MS.REHEARSAL_FIXED)), rd, "d" * 64))
 
+    def test_fixed_rehearsal_passes_with_deaths_at_the_top_context_only(self):
+        with tempfile.TemporaryDirectory() as td:
+            rec = CR.rehearse_fixed("JRD", Path(td) / "raw", fixed_server(truth={"die_on_input_ge": 100000}), rehearsal_dir=Path(td) / "rec",
+                                    digest="d" * 64, py_version_fn=TH.fake_py, freeze_fn=TH.fake_freeze, variant_fn=variant_fn)
+            self.assertTrue(rec["passed"], rec["reason"])
+            self.assertEqual(len(rec["server_deaths"]), 4)                  # the four top-context cells, named in the record
+            self.assertTrue(all(c.endswith(f"_c{CS.CONTEXTS[-1]}") for c in rec["server_deaths"]))
+        with tempfile.TemporaryDirectory() as td:                           # a death below the top context is a defect, not a finding
+            rec = CR.rehearse_fixed("JRD", Path(td) / "raw", fixed_server(truth={"die_on_input_ge": 5000}), rehearsal_dir=Path(td) / "rec",
+                                    digest="d" * 64, py_version_fn=TH.fake_py, freeze_fn=TH.fake_freeze, variant_fn=variant_fn)
+            self.assertFalse(rec["passed"])
+
     def test_fixed_rehearsal_names_the_failing_stage(self):
         plan = CS.fixed_plan("JRF", rehearsal=True)
         target = plan["boots"][3]["boot_id"]
@@ -974,7 +1028,7 @@ class TestMutants(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             out, _, res = run_fixed(small_fixed_plan(keep=((("nano", 64), ((64, 128), (64, 32768))),)), td, budget=SMALL_BUDGET)
             an = CA.analyze_fixed(out)
-            return all(b["status"] == "done" for b in res) and an["counts"]["nano"] == {"planned": 2, "valid": 1, "infeasible": 1}
+            return all(b["status"] == "done" for b in res) and an["counts"]["nano"] == {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0}
 
     def o_last_join(self):
         return abs(CA.cell_window(TestCellWindow().cell())["step_ms"] - 10.0) < 1e-6
