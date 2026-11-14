@@ -378,6 +378,12 @@ class TestCard(unittest.TestCase):
             MR.run_job(self.plan, self.card, Path(td) / "raw", make_server(), fake_replay, POOL, py_version_fn=fake_py, freeze_fn=fr, warmup_s=5.0)
             self.assertFalse((Path(td) / "raw" / "JOB_ABORTED.json").exists())
 
+    def test_boot_directory_under_the_engine_root_still_normalizes_to_dir(self):
+        # GPU rehearsal 5 (2026-11-14): the Job writes boots under {ENG}/results/..., and the root was replaced before the boot directory
+        bdir = Path(SP.ENG) / "results" / "motivation_cap_runs" / "J" / "raw" / "boots" / "B"
+        argv = ["py", "--model-path", str(bdir / "variant_a31"), "--port", "30000", str(Path(SP.ENG) / "x")]
+        self.assertEqual(MC.norm_argv(argv, bdir), ["py", "--model-path", "{dir}/variant_a31", "{ENG}/x"])
+
     def test_e2e_boot_order_violation_aborts(self):
         plan, card = self.plan, self.card
         swapped = copy.deepcopy(plan)

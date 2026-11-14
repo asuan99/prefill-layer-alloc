@@ -72,9 +72,10 @@ def norm_argv(argv, bdir=None):
         if x == "--port":
             skip = True
             continue
-        x = str(x).replace(str(SP.ENG), "{ENG}")
-        if bdir:
+        x = str(x)
+        if bdir:                                        # first: on a Job the boot directory lies under the engine-port root
             x = x.replace(str(bdir), "{dir}")
+        x = x.replace(str(SP.ENG), "{ENG}")
         out.append(x)
     return out
 
