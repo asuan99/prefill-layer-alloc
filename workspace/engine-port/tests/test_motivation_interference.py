@@ -561,7 +561,8 @@ class TestRehearsal(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             rec = self.reh(td, {"JRI_splitcheck_D34": {"banner": {"mem_fraction_static": 0.9}}})
             self.assertFalse(rec["passed"])
-            self.assertIn("ABORT_CARD_MISMATCH", rec["reason"])
+            self.assertIn("=CARD_MISMATCH", rec["reason"])
+            self.assertIn("[mem]", rec["reason"])
 
     def test_gate_needs_the_token_file_resolved(self):
         with tempfile.TemporaryDirectory() as td, mock.patch.dict(os.environ, {"PDMUX_MO_TOKEN_DIR": td}):

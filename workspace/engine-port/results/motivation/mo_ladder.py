@@ -224,8 +224,8 @@ def run_job(plan, card, out, make_server, replay_fn, w1_pool, resume=False, py_v
         for b in plan["boots"]:
             wl = b["runs"][0]["workload"]
             ctx["token_store"] = stores[wl]
-            res.append(MR.run_boot(b, dict(card, workload=card["workloads"][wl]), out, make_server, replay_fn, w1_pool, ctx, py_version_fn,
-                                   freeze_fn, None, warmup_s))
+            res.append(MR.boot_with_retry(lambda: MR.run_boot(b, dict(card, workload=card["workloads"][wl]), out, make_server, replay_fn,
+                                                              w1_pool, ctx, py_version_fn, freeze_fn, None, warmup_s), b, out, ctx))
     except MR.JobAbort as e:
         MR.dump({"job": plan.get("job"), "status": e.status, "reason": e.reason, "boot_id": e.boot_id, **MR.stamp()}, out / "JOB_ABORTED.json")
         raise

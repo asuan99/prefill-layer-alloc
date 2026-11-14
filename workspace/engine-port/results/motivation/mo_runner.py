@@ -87,13 +87,58 @@ def stamp():
     return {**RU.stamp(), "hostname": socket.gethostname()}
 
 
+WARMUP_RETRIES = 1      # warm-up is replayed once more iff every bad request is a client-side dropped connection
+NO_RETRY = ("done", "CARD_MISMATCH", "POOL_TOO_SMALL_FOR_WARMUP")      # same boot, same answer
+BOOT_RETRIES = 1        # a boot that ended before its first run / cell is redone once on a fresh server
+
+
+def boot_with_retry(run_one, b, out, ctx, retries=None):
+    """run_one() -> boot result.  A boot that ended before any run / cell (start failure, warm-up failure) is redone on a fresh server;
+    the failed attempt is kept under failed_boots/ and named in the result.  A card mismatch is not retried (same boot, same answer)."""
+    r, earlier = run_one(), []
+    while (r["status"] not in NO_RETRY and not r.get("runs") and not r.get("cells") and not r.get("resumed")
+           and len(earlier) < (BOOT_RETRIES if retries is None else retries)):
+        earlier.append(r["status"])
+        src = Path(out) / "boots" / b["boot_id"]
+        dst = Path(out) / "failed_boots" / f"{b['boot_id']}.attempt{len(earlier)}"
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        if src.exists():
+            src.rename(dst)
+        ctx["executed"].pop()                          # the redo takes the same place in the boot order
+        r = run_one()
+    if earlier:
+        r["failed_attempts"] = earlier
+    return r
+
+
+def card_mismatch(card, b, bad, observed, srv, bdir, collect=False):
+    """A boot that differs from the card.  The Job ends here (JobAbort) -- except in a rehearsal pass (`collect`, set by the rehearse
+    functions only): the boot is recorded as CARD_MISMATCH and the pass goes on, so one rehearsal names every differing boot."""
+    reason = MC.format_mismatches(b["boot_id"], b["arm"], bad)
+    dump({"boot_id": b["boot_id"], "arm": b["arm"], "mismatches": bad, "reason": reason, "observed": observed}, Path(bdir) / "CARD_MISMATCH.json")
+    if collect and card.get("rehearsal"):
+        dump({"boot_id": b["boot_id"], "status": "CARD_MISMATCH", "reason": reason, "server": srv.stop()}, Path(bdir) / "DONE.json")
+        return {"boot_id": b["boot_id"], "status": "CARD_MISMATCH", "reason": reason, "runs": []}
+    dump({"boot_id": b["boot_id"], "status": "ABORT_CARD_MISMATCH", "reason": reason, "server": srv.stop()}, Path(bdir) / "DONE.json")
+    raise JobAbort("ABORT_CARD_MISMATCH", reason, b["boot_id"])
+
+
 def warmup(srv, a, replay_fn, w1_pool, bdir, boot_id, duration=WARMUP_S):
     ts = T.arrivals(2.0, ("warm", boot_id), duration=duration)
     reqs = T.make_requests("W1", w1_pool, ts, ("warm", boot_id), f"{boot_id}_warm", "WARM")
-    dur, recs = replay_fn(a["api"], srv.base_url, reqs, Path(bdir) / "warmup" / "warm.jsonl")
-    bad = [q["request_id"] for q in recs if q.get("error") or q.get("observed_output_tokens") != q.get("requested_output_tokens")]
-    dump({"n": len(recs), "bad": bad[:20], "n_bad": len(bad)}, Path(bdir) / "correctness.json")
-    return (not bad), f"{len(bad)}/{len(recs)} warm-up requests wrong length or errored"
+    attempts = []
+    for k in range(WARMUP_RETRIES + 1):
+        dur, recs = replay_fn(a["api"], srv.base_url, reqs, Path(bdir) / "warmup" / ("warm.jsonl" if k == 0 else f"warm_retry{k}.jsonl"))
+        badq = [q for q in recs if q.get("error") or q.get("observed_output_tokens") != q.get("requested_output_tokens")]
+        bad = [q["request_id"] for q in badq]
+        # a dropped connection with no token received and no server-side error says nothing about the engine's output (2026-11-14: one
+        # of 142 requests cost a whole boot); a wrong length or a server error does, and is final
+        conn_only = bool(badq) and all(q.get("error_kind") == "CLIENT_EXCEPTION" and not q.get("observed_output_tokens") for q in badq)
+        attempts.append({"n": len(recs), "bad": bad[:20], "n_bad": len(bad), "client_connection_only": conn_only})
+        if not conn_only:
+            break
+    dump({"n": len(recs), "bad": bad[:20], "n_bad": len(bad), "attempts": attempts}, Path(bdir) / "correctness.json")
+    return (not bad), f"{len(bad)}/{len(recs)} warm-up requests wrong length or errored (warm-up passes: {len(attempts)})"
 
 
 def replay_segment(replay_fn, api, base_url, seg, out_dir):
@@ -157,10 +202,7 @@ def run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn=M
         return {"boot_id": b["boot_id"], "status": status, "runs": []}
     bad = MC.check_boot(card, b, observed, ctx["executed"], w1_pool)          # right after the boot, before anything is measured
     if bad:
-        reason = MC.format_mismatches(b["boot_id"], b["arm"], bad)
-        dump({"boot_id": b["boot_id"], "arm": b["arm"], "mismatches": bad, "reason": reason, "observed": observed}, bdir / "CARD_MISMATCH.json")
-        dump({"boot_id": b["boot_id"], "status": "ABORT_CARD_MISMATCH", "reason": reason, "server": srv.stop()}, bdir / "DONE.json")
-        raise JobAbort("ABORT_CARD_MISMATCH", reason, b["boot_id"])
+        return card_mismatch(card, b, bad, observed, srv, bdir, ctx.get("collect_mismatches"))
     card_check = {"mismatches": [], "observed": observed, "card_sha": card["card_sha"]}
     done = []
     try:
@@ -181,7 +223,7 @@ def run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn=M
 
 
 def run_job(plan, card, out, make_server, replay_fn, w1_pool, resume=False, gate_fn=None, py_version_fn=MC.probe_python_version,
-            freeze_fn=MC.freeze_sha, realized_fn=split_check_realized, warmup_s=WARMUP_S):
+            freeze_fn=MC.freeze_sha, realized_fn=split_check_realized, warmup_s=WARMUP_S, collect_mismatches=False):
     """-> list of boot results.  Raises JobAbort (after writing JOB_ABORTED.json) on a card mismatch / refusal."""
     out = Path(out)
     try:
@@ -207,9 +249,10 @@ def run_job(plan, card, out, make_server, replay_fn, w1_pool, resume=False, gate
             raise JobAbort("ABORT_TOKENS", str(e))
         dump(plan, out / "plan.json")
         dump(card, out / "card.json")
-        ctx, res = {"token_store": store}, []
+        ctx, res = {"token_store": store, "collect_mismatches": collect_mismatches}, []
         for b in plan["boots"]:
-            res.append(run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn, freeze_fn, realized_fn, warmup_s))
+            res.append(boot_with_retry(lambda: run_boot(b, card, out, make_server, replay_fn, w1_pool, ctx, py_version_fn, freeze_fn,
+                                                        realized_fn, warmup_s), b, out, ctx))
     except JobAbort as e:
         dump({"job": plan.get("job"), "status": e.status, "reason": e.reason, "boot_id": e.boot_id, **stamp()}, out / "JOB_ABORTED.json")
         raise

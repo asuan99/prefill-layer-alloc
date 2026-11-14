@@ -136,12 +136,13 @@ def rehearse(job, w1_pool, out, make_server, replay_fn, rmin=3.0, rehearsal_dir=
         card = MC.build_card(plan, w1_pool)
         rec["card_sha"] = card["card_sha"]
         rec["stages"]["card"] = True
-        res = MR.run_job(plan, card, out, make_server, replay_fn, w1_pool, warmup_s=kw.pop("warmup_s", 4.0), **kw)
+        res = MR.run_job(plan, card, out, make_server, replay_fn, w1_pool, warmup_s=kw.pop("warmup_s", 4.0), collect_mismatches=True, **kw)
         rec["stages"]["boots"] = all(b["status"] == "done" for b in res)
-        rec["stages"]["card_checks"] = rec["stages"]["boots"]            # a mismatch aborts the Job before this line is reached
+        rec["stages"]["card_checks"] = rec["stages"]["boots"]            # a rehearsal boot that differs from the card has status CARD_MISMATCH
         rec["stages"]["runs"] = rec["stages"]["boots"]
         if not rec["stages"]["boots"]:
-            raise RuntimeError("boot failures: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done"))
+            raise RuntimeError("boot failures: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done")
+                               + "".join(f" | {b['reason']}" for b in res if b.get("reason")))
         job_data = MA.load_job(out)
         from mo_schema import validate_run
         probs = [m for r in job_data["runs"] for m in validate_run(r)]

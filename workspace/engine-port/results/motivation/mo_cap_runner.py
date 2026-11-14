@@ -181,10 +181,7 @@ def run_fixed_boot(b, card, out, make_server, ctx, py_version_fn=MC.probe_python
         return {"boot_id": b["boot_id"], "status": status}
     bad = MC.check_arm(card, b["arm"], observed) + MC.check_order(card, ctx["executed"])          # before anything is measured
     if bad:
-        reason = MC.format_mismatches(b["boot_id"], b["arm"], bad)
-        dump({"boot_id": b["boot_id"], "arm": b["arm"], "mismatches": bad, "reason": reason, "observed": observed}, bdir / "CARD_MISMATCH.json")
-        dump({"boot_id": b["boot_id"], "status": "ABORT_CARD_MISMATCH", "reason": reason, "server": srv.stop()}, bdir / "DONE.json")
-        raise JobAbort("ABORT_CARD_MISMATCH", reason, b["boot_id"])
+        return MR.card_mismatch(card, b, bad, observed, srv, bdir, ctx.get("collect_mismatches"))
     facts = X.parse_boot_log(log_text)
     dump(facts, bdir / "facts.json")
     feas = feasibility(b, facts)
@@ -242,7 +239,7 @@ def run_fixed_boot(b, card, out, make_server, ctx, py_version_fn=MC.probe_python
 
 
 def run_fixed_job(plan, card, out, make_server, resume=False, gate_fn=None, py_version_fn=MC.probe_python_version, freeze_fn=MC.freeze_sha,
-                  variant_fn=None, variant_src=None):
+                  variant_fn=None, variant_src=None, collect_mismatches=False):
     """-> list of boot results.  Raises JobAbort (after writing JOB_ABORTED.json) on a plan / card refusal or a card mismatch."""
     out = Path(out)
     try:
@@ -266,9 +263,10 @@ def run_fixed_job(plan, card, out, make_server, resume=False, gate_fn=None, py_v
             raise JobAbort("ABORT_VARIANT_SRC", "the a31 boots need the Nano snapshot directory (--variant-src)")
         dump(plan, out / "plan.json")
         dump(card, out / "card.json")
-        ctx, res = {"variant_src": variant_src, "resume": resume}, []
+        ctx, res = {"variant_src": variant_src, "resume": resume, "collect_mismatches": collect_mismatches}, []
         for b in plan["boots"]:
-            res.append(run_fixed_boot(b, card, out, make_server, ctx, py_version_fn, freeze_fn, variant_fn))
+            res.append(MR.boot_with_retry(lambda: run_fixed_boot(b, card, out, make_server, ctx, py_version_fn, freeze_fn, variant_fn),
+                                          b, out, ctx))
     except JobAbort as e:
         dump({"job": plan.get("job"), "status": e.status, "reason": e.reason, "boot_id": e.boot_id, **stamp()}, out / "JOB_ABORTED.json")
         raise
@@ -294,11 +292,12 @@ def rehearse_fixed(job, out, make_server, rehearsal_dir=None, digest=None, **kw)
         card = fixed_card(plan)
         rec["card_sha"] = card["card_sha"]
         rec["stages"]["card"] = True
-        res = run_fixed_job(plan, card, out, make_server, **kw)
+        res = run_fixed_job(plan, card, out, make_server, collect_mismatches=True, **kw)
         ok = all(b["status"] == "done" for b in res)
-        rec["stages"]["boots"] = rec["stages"]["card_checks"] = ok      # a mismatch aborts the Job before this line is reached
+        rec["stages"]["boots"] = rec["stages"]["card_checks"] = ok      # a rehearsal boot that differs from the card has status CARD_MISMATCH
         if not ok:
-            raise RuntimeError("boot failures: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done"))
+            raise RuntimeError("boot failures: " + ",".join(f"{b['boot_id']}={b['status']}" for b in res if b["status"] != "done")
+                               + "".join(f" | {b['reason']}" for b in res if b.get("reason")))
         job_data = CA.load_fixed(out)
         cells = [c for b in job_data["boots"] for c in b["cells"]]
         rec["server_deaths"] = [c["cell_id"] for c in cells if not c["server_alive_after"]]

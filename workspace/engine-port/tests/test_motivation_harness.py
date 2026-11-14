@@ -685,7 +685,8 @@ class TestRehearsal(unittest.TestCase):
             rec = MH.rehearse("JREH", POOL, Path(td) / "raw", make_server({target: {"banner": {"mem_fraction_static": 0.9}}}), fake_replay,
                               rehearsal_dir=rd, digest="e" * 64, py_version_fn=fake_py, freeze_fn=fake_freeze)
             self.assertFalse(rec["passed"])
-            self.assertIn("ABORT_CARD_MISMATCH", rec["reason"])
+            self.assertIn("=CARD_MISMATCH", rec["reason"])
+            self.assertIn("[mem]", rec["reason"])
             self.assertFalse(rec["stages"]["verdict_table"])
 
     def test_launch_gate(self):

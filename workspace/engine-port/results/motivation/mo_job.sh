@@ -13,6 +13,8 @@
 #
 # MODE=rehearse: full pass over the real arm list (one rung, few requests) on the workload + the CPU trace/token check of every
 #   registered workload; writes the rehearsal record (results/motivation/rehearsals/<digest16>.json) that the launch gate requires.
+# PDMUX_MO_REHEARSE_FIRST=1 (MODE=run): the rehearsal pass runs first inside this Job (output rehearsal_raw/, its own budget window);
+#   the measurement starts only if it passed.  No separate rehearsal Job, and the record is of the exact code that measures.
 # MODE=run: plan -> card (refused if PDMUX_MO_EXPECT_CARD_SHA is set and differs) -> run (the runner refuses W1, placeholders in the card,
 #   and a plan without a passed rehearsal record for this harness digest) -> analysis with the Job's clock trace.
 # Preflight (rc != 0 stops the Job before any boot): exactly one GPU, engine digest 8d8f6720 (dev_tree_edits #40), pristine tree
@@ -68,6 +70,11 @@ if [[ "${mode}" == rehearse ]]; then
   timeout -k 60 "$(( budget * 60 ))" python3 "${here}/mo_runner.py" rehearse "${common[@]}" --out "${raw}" > "${out}/rehearse.json"
   rc=$?
 else
+  if [[ "${PDMUX_MO_REHEARSE_FIRST:-}" == 1 ]]; then      # same Job: rehearsal pass first, the measurement only if it passed (2026-11-14)
+    timeout -k 60 "$(( budget * 60 ))" python3 "${here}/mo_runner.py" rehearse "${common[@]}" --out "${out}/rehearsal_raw" > "${out}/rehearse.json"
+    rrc=$?
+    [[ ${rrc} -eq 0 ]] || { echo "ABORT_REHEARSAL: the in-Job rehearsal pass did not pass (rc=${rrc}; see rehearse.json)" >&2; exit 19; }
+  fi
   grid=(--rmin "${MO_RMIN}" --factor "${MO_FACTOR}" --n "${MO_N}" --n-requests "${MO_N_REQUESTS}" --role "${MO_ROLE:-base}")
   python3 "${here}/mo_runner.py" card "${common[@]}" "${grid[@]}" --out "${out}/card.json" > "${out}/card_summary.json" \
     || { echo "ABORT_CARD: card build failed" >&2; exit 16; }

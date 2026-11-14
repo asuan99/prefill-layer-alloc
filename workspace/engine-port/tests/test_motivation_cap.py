@@ -922,7 +922,8 @@ class TestRehearsal(unittest.TestCase):
                                     rehearsal_dir=Path(td) / "rec", digest="e" * 64, py_version_fn=TH.fake_py, freeze_fn=TH.fake_freeze,
                                     variant_fn=variant_fn)
             self.assertFalse(rec["passed"])
-            self.assertIn("ABORT_CARD_MISMATCH", rec["reason"])
+            self.assertIn("=CARD_MISMATCH", rec["reason"])
+            self.assertIn("[mem]", rec["reason"])
             self.assertFalse(rec["stages"]["verdict_table"])
             self.assertIn("NOT_PASSED", MH.launch_gate(plan, Path(td) / "rec", "e" * 64))
 
