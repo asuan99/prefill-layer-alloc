@@ -347,9 +347,11 @@ class TestFixedPlan(unittest.TestCase):
         try:
             with mock.patch.object(CS, "CONFIRMED", frozenset()):
                 self.assertIn("UNCONFIRMED design values", " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,)))))
-            bad = " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,))))
+            with tempfile.TemporaryDirectory() as td, mock.patch.object(MS, "REGISTERED_FILE", Path(td) / "none.json"):
+                bad = " | ".join(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,))))     # nothing registered
             self.assertNotIn("UNCONFIRMED", bad)                                # decided 2026-11-12
-            self.assertIn("PLACEHOLDER", bad)                                   # the py3.12 venv freeze digest is still unregistered
+            self.assertIn("PLACEHOLDER", bad)                                   # an unregistered py3.12 venv freeze digest blocks the plan
+            self.assertEqual(CS.fixed_plan_problems(CS.fixed_plan("JF", rounds=(1,))), [])      # registered 2026-11-15 from rehearsal 7
             self.assertNotIn("mem", re.findall(r"PLACEHOLDER[^|]*", bad)[0])    # ... but mem / cap are NOT placeholders here
             self.assertEqual(CS.fixed_plan_problems(CS.fixed_plan("JF", rehearsal=True)), [])
         finally:
@@ -983,13 +985,14 @@ class TestJobScript(unittest.TestCase):
             self.assertEqual(r.returncode, 16)
             self.assertIn("PDMUX_MOCAP_WORKLOAD", r.stderr)
 
-    def test_run_refuses_before_any_boot_while_the_card_has_a_placeholder(self):
+    def test_run_refuses_before_any_boot_without_a_rehearsal_record_of_this_digest(self):
         with tempfile.TemporaryDirectory() as td:
             r = self.run_sh({"PDMUX_MOCAP_OUT": str(Path(td) / "o"), "PDMUX_MOCAP_TEST_MODE": "1", "PDMUX_MOCAP_VARIANT_SRC": str(SRC),
                              "PDMUX_MOCAP_PART": "fixed", "PDMUX_MOCAP_MODE": "run", "PDMUX_MOCAP_JOB": "JSH", "PDMUX_MOCAP_BUDGET_MIN": "5",
                              "PDMUX_MOCAP_ROUND": "1"})
             self.assertEqual(r.returncode, 19, r.stderr[-400:])
-            self.assertIn("ABORT_PLAN", r.stderr + r.stdout)
+            # venv digest registered 2026-11-15 -> the plan is valid and the refusal is the launch gate (no rehearsal record of this digest)
+            self.assertTrue(any(x in r.stderr + r.stdout for x in ("ABORT_NO_REHEARSAL", "ABORT_PLAN")), r.stderr[-400:])
             self.assertFalse((Path(td) / "o" / "raw" / "boots").exists())
 
 

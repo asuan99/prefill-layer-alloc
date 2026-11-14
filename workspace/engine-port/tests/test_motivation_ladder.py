@@ -94,7 +94,7 @@ class TestPlan(unittest.TestCase):
         self.assertEqual(len(LD.SEEDS), 2)
 
     def test_not_blocked_by_the_cap_measurement_or_the_venv_digest(self):
-        self.assertTrue(MS.is_pending(MS.default_fixed()["mem"]) and MS.is_pending(MS.default_fixed()["sg_venv_freeze"]))
+        self.assertTrue(MS.is_pending(MS.default_fixed()["mem"]) and MS.is_pending(MS.default_fixed()["cap"]))
         self.assertEqual(LD.plan_problems(self.plan), [])
         self.assertEqual(MS.plan_problems(self.plan), [])                              # mo_spec dispatches by plan kind
         card = LD.build_card(self.plan, TH.POOL)
@@ -293,10 +293,12 @@ class TestRegisteredValues(unittest.TestCase):
         p.write_text(json.dumps({"values": values}))
         return p
 
-    def test_committed_file_registers_nothing_yet(self):
-        self.assertEqual(MS.registered_values(), {})
+    def test_committed_file_registers_the_venv_digest_only(self):
+        """2026-11-15: the py3.12 venv freeze digest read by fixed-batch rehearsal 7 (and rehearsals 4 / 5, pre-ladder run 3)."""
+        self.assertEqual(MS.registered_values(), {"sg_venv_freeze": "8a6b00442c0f761459b81d63aba5ab171b767e3f01eb4d2e2605ff8cb6ec8be3"})
         f = MS.default_fixed()
-        self.assertTrue(all(MS.is_pending(f[k]) for k in MS.REGISTERABLE))
+        self.assertTrue(all(MS.is_pending(f[k]) for k in MS.REGISTERABLE if k != "sg_venv_freeze"))
+        self.assertFalse(MS.is_pending(f["sg_venv_freeze"]))
 
     def test_a_registered_value_replaces_its_placeholder_without_touching_the_code_digest(self):
         d0 = MH.harness_digest()

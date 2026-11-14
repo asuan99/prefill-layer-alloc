@@ -1,5 +1,10 @@
 {
  "schema": "motivation.registered_fixed/v1",
  "note": "Values fixed by a measurement or a rehearsal (mo_spec.registered_values). Registerable keys: mem, cap, vllm_chunk, vllm_backend, sg_venv_freeze. Each entry is {\"value\": ..., \"source\": \"<Job name / file the value was read from>\"}. This file is data, not harness code: registering a value does not change the harness digest of a rehearsal record. Empty = every placeholder is still PENDING.",
- "values": {}
+ "values": {
+  "sg_venv_freeze": {
+   "value": "8a6b00442c0f761459b81d63aba5ab171b767e3f01eb4d2e2605ff8cb6ec8be3",
+   "source": "pdmux-motivation-cap-e6064d2-20261114143917 (fixed-batch rehearsal 7, 20 boots, rehearsals/a955f092bd16b8a8.CAP_FIXED_BATCH.json observed_venv_freeze); same value in rehearsals 4 and 5 and pre-ladder run 3"
+  }
+ }
 }
