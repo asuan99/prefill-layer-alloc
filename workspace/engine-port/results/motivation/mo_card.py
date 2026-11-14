@@ -256,6 +256,8 @@ def check_arm(card, arm_name, observed):
             bad.append({"field": f, "expected": e, "observed": o, "reason": "UNREGISTERED: card value still a placeholder"})
         elif o is None:
             bad.append({"field": f, "expected": e, "observed": None, "reason": "observed value missing (banner/stamp did not show it)"})
+        elif f == "venv_freeze" and e == MS.REHEARSAL_ANY and card.get("rehearsal"):
+            continue        # the rehearsal reads this digest (mo_rehearsal.observed_venv_freeze); a measurement card never accepts the placeholder
         elif not same(e, o):
             bad.append({"field": f, "expected": e, "observed": o, "reason": "differs from the registered value"})
     if "argv_popen" in observed and observed["argv_popen"] != exp["argv"]:

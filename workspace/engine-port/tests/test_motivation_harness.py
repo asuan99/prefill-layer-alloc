@@ -313,7 +313,8 @@ class TestCard(unittest.TestCase):
         for field, mut in MUTATIONS.items():
             obs, executed, facts = copy.deepcopy(obs0), list(executed0), None
             fn = mut(obs, executed)
-            bad = MC.check_arm(self.card, b["arm"], obs) + MC.check_order(self.card, executed)
+            card = dict(self.card, rehearsal=False) if field == "venv_freeze" else self.card   # a rehearsal card reads the digest, it does not compare it
+            bad = MC.check_arm(card, b["arm"], obs) + MC.check_order(self.card, executed)
             if field in ("trace_hash", "trace_quantiles"):
                 run = b["runs"][0]
                 f = MC.trace_facts(MR.RU.build_segments(run, POOL, []))
@@ -344,10 +345,15 @@ class TestCard(unittest.TestCase):
         plan, card = self.plan, self.card
         target = next(b for b in plan["boots"] if b["role"] == "meas" and b["arm_def"]["key"] == "SG_MIXED_2048")["arm"]
         for field, (tamper, kw) in E2E_TAMPER.items():
+            if field == "venv_freeze":                # compared on a measurement card only; the rehearsal case is TestRehearsalVenvDigest
+                plan = real_plan()
+                card = MC.build_card(plan, POOL)
+            else:
+                plan, card = self.plan, self.card
             with tempfile.TemporaryDirectory() as td:
                 with self.assertRaises(MR.JobAbort, msg=field) as cm:
                     MR.run_job(plan, card, Path(td) / "raw", make_server({target: tamper} if tamper else {}), fake_replay, POOL,
-                               py_version_fn=kw.get("py", fake_py), freeze_fn=kw.get("fr", fake_freeze), warmup_s=5.0)
+                               gate_fn=lambda p: None, py_version_fn=kw.get("py", fake_py), freeze_fn=kw.get("fr", fake_freeze), warmup_s=5.0)
                 self.assertEqual(cm.exception.status, "ABORT_CARD_MISMATCH", field)
                 self.assertIn(f"[{field}]", cm.exception.reason)
                 self.assertIn("CARD_MISMATCH", cm.exception.reason)
@@ -358,6 +364,19 @@ class TestCard(unittest.TestCase):
                 bad_idx = 0 if field in ("python_version", "venv_freeze") else plan["boot_order"].index(target)   # global fns trip the first boot
                 self.assertEqual(len(list((Path(td) / "raw" / "boots").iterdir())), bad_idx + 1, field)
                 self.assertFalse(list((Path(td) / "raw" / "runs").glob("*")) and field in ("trace_hash",), field)
+
+    def test_rehearsal_card_accepts_the_digest_the_image_has_and_a_measurement_card_does_not(self):
+        # GPU rehearsal 4 (2026-11-14) aborted at its first boot: the card held the placeholder and the image digest was compared against it
+        real = "8a6b00442c0f761459b81d63aba5ab171b767e3f01eb4d2e2605ff8cb6ec8be3"
+        b = self.boots["SG_MIXED_2048"]
+        obs = dict(observe_for(self.plan, self.card, b), venv_freeze=real)
+        self.assertEqual(MC.check_arm(self.card, b["arm"], obs), [])
+        self.assertEqual({m["field"] for m in MC.check_arm(dict(self.card, rehearsal=False), b["arm"], obs)}, {"venv_freeze"})
+        self.assertEqual({m["field"] for m in MC.check_arm(self.card, b["arm"], dict(obs, venv_freeze=None))}, {"venv_freeze"})   # still must be observed
+        with tempfile.TemporaryDirectory() as td:                                  # end to end: the whole rehearsal runs with a real digest
+            fr = lambda py: SP.VLLM_VENV_FREEZE_SHA256 if py == SP.VLLM_PY else real   # noqa: E731
+            MR.run_job(self.plan, self.card, Path(td) / "raw", make_server(), fake_replay, POOL, py_version_fn=fake_py, freeze_fn=fr, warmup_s=5.0)
+            self.assertFalse((Path(td) / "raw" / "JOB_ABORTED.json").exists())
 
     def test_e2e_boot_order_violation_aborts(self):
         plan, card = self.plan, self.card

@@ -84,8 +84,9 @@ def registered_values(path=None):
     return out
 
 
+REHEARSAL_ANY = "rehearsal-any"     # card value a rehearsal accepts any observed digest for (mo_card.check_arm); the rehearsal is where the digest is read
 REHEARSAL_FIXED = {"mem": 0.6, "cap": 48, "context": 20480, "vllm_chunk": 8192, "vllm_backend": "FLASHINFER",
-                   "sg_venv_freeze": "rehearsal-any"}   # rehearsal cards only (card["rehearsal"] = True); never a measurement value
+                   "sg_venv_freeze": REHEARSAL_ANY}   # rehearsal cards only (card["rehearsal"] = True); never a measurement value
 
 # ---- arms ---------------------------------------------------------------------------------------------------------------
 # SG baselines run piecewise OFF (user decision 2026-11-10: upstream labels the feature experimental, research systems and the public PD-mux prefill path
