@@ -47,7 +47,7 @@
 - **봉인 문서 정오·잔여 정리** / worktree `agent-a33b…`·`agent-af8a…`는 다른 세션 종료 후 삭제 · `fix/gate14-tci-analyze` 브랜치 유지 · PROPOSAL §4 배너는 달았음 · `handoff-report/claude_web_review_prompt_2026-10-28.md` 커밋 여부 · `/tmp/gate_t_*` 11개 삭제(권고) · 구판 runtime manifest 갱신(권고) · presubmit 차단 2건 범위 한정 OVERRIDE(권고) · roofline η 수식 §6 한 줄(권고) · 진단 PREREG rev2 addendum(`7af52ffb`) 문턱 그대로(권고)
 - LongBench v2·InfiniteBench 보류(결정 12′) · 기존 유지: D-10 · radix OFF · 장문 hold-out
 ## 실행 중·미회수 Job
-- **고정 배치 리허설 5차** `pdmux-motivation-cap-080ba80-20261114090258`(slug `job-l5pf9kb3aqb2`, 예산 210분, 2026-11-14 09:02Z 제출): 4차는 대기 17시간 뒤 첫 boot에서 rc 19 — ctx 131072 기동은 성공, 리허설 카드의 py3.12 환경 지문 자리표시자를 실제 지문과 비교해 중단(`080ba80d`에서 수정: 리허설 카드는 관측만). 관측 지문 `8a6b0044…c8be3`은 통과 기록에서 등록. 셀 실행·2¹⁷ 셀·분석기는 GPU 미검증
+- **고정 배치 리허설 6차** `pdmux-motivation-cap-8171cc4-20261114100856`(slug `job-8a4slxvbpov3`, 예산 210분, 2026-11-14 10:08Z 제출): 4차 = 리허설 카드의 py3.12 환경 지문 자리표시자를 실제 지문과 비교(`080ba80d` 수정, 관측 지문 `8a6b0044…c8be3`은 통과 기록에서 등록) / 5차 = Nano 첫 boot 통과, a31 boot에서 실행 명령 대조 실패 — 경로 표기 치환 순서(엔진 루트 → boot 디렉터리)가 Job 배치에서 어긋남(`8171cc47` 수정). ctx 131072 기동은 확인, 셀 실행·2¹⁷ 셀·분석기는 GPU 미검증
 - **사전 사다리 3차(측정 아님)** `pdmux-motivation-pre-ladder-6d87c99-20261114090321`(slug `job-0aa3gxjhotl1`, 예산 600분, 추정 9.1시간): 2차는 4대상 전부 격자 미확정(엄격 SLO가 최저 도착률부터 실패) → 사용자 결정 2026-11-14로 최저 도착률 1/4(sharegpt 0.5×12단, openchat 0.25×10단, 간섭 짧은 쪽 0.5×11단). arxiv 요약은 제외(기본·느슨 경계는 2차에서 잡힘, 엄격은 0.1에서 0.54–0.88로 부하 무관 추정, 넣으면 Job 22시간). 2차는 결과 파일 489개 전부 내보냈으나 SHA256SUMS·DONE만 없음(원인 미확정, staging 사본만 있음)
 - 직전 제출 2건(11-12 14:21Z)은 GPU 배정 약 7시간 50분 대기 뒤 첫 boot 전 import 오류로 실패(rc 1·16, 회수함): VESSL에서 `results/`가 심볼릭 링크라 `scripts/` 모듈을 못 찾음 → 수정 `bcbb02eb` + 배치 재현 시험 `tests/test_motivation_vessl_layout.py`. 첫 제출(옛 코드)은 미시작 상태로 종료
 ## 금지 서술 (링크만)
