@@ -37,6 +37,7 @@ import mo_spec as MS
 import mo_card as MC
 import mo_schema as SC
 import mo_analyze as MA
+import mo_clock as MK
 import ct_extract as X  # sealed; imported, not modified
 
 AT, CT = CS.AT, CS.CT
@@ -56,7 +57,8 @@ def load_fixed(raw):
         cells = [json.loads(ln) for ln in (d / "cells.jsonl").read_text().splitlines() if ln.strip()] if (d / "cells.jsonl").exists() else []
         boots.append({"boot": _j(d / "boot.json"), "done": _j(d / "DONE.json") if (d / "DONE.json").exists() else {},
                       "feasibility": _j(d / "feasibility.json") if (d / "feasibility.json").exists() else [], "cells": cells})
-    return {"raw": str(raw), "boots": sorted(boots, key=lambda b: b["boot"].get("index", 0)),
+    failed = sorted(d.name for d in (raw / "failed_boots").glob("*")) if (raw / "failed_boots").is_dir() else []
+    return {"raw": str(raw), "boots": sorted(boots, key=lambda b: b["boot"].get("index", 0)), "failed_attempts": failed,
             "plan": _j(raw / "plan.json") if (raw / "plan.json").exists() else None,
             "card": _j(raw / "card.json") if (raw / "card.json").exists() else None,
             "aborted": _j(raw / "JOB_ABORTED.json") if (raw / "JOB_ABORTED.json").exists() else None}
@@ -73,13 +75,19 @@ def cell_window(rec):
     ended by length.  Status: SERVER_DEATH > BENCH_INVALID > WINDOW_SHORT > VALID.  Label (never an exclusion): CTX_OFF_NOMINAL."""
     reqs, bs, ci, o = rec["requests"], rec["bs"], rec["c_in"], rec["O"]
     trim, win = rec["trim_iters"], rec["window_iters"]
-    base = {"cell_id": rec["cell_id"], "model": rec["model"], "bs": bs, "c": rec["c"], "round": rec["round"], "labels": []}
+    base = {"cell_id": rec["cell_id"], "model": rec["model"], "bs": bs, "c": rec["c"], "c_in": ci, "round": rec["round"], "labels": []}
     if rec.get("server_alive_after") is False:
         return dict(base, status="SERVER_DEATH", detail="the server process was gone after this cell; the cell is not re-sent")
     ok = len(reqs) == bs and all(r.get("error") is None and r.get("prompt_tokens") == ci and rec["abort_at"] <= (r.get("completion_tokens") or 0) <= o
                                  and r.get("finish") in ("abort", "length") for r in reqs)
     if not ok:
         return dict(base, status="BENCH_INVALID", detail="request error / input tokens / fewer than abort_at tokens")
+    if bs == 1:                        # unloaded first-token time (prereg R-6): any batch-1 cell that is not SERVER_DEATH / BENCH_INVALID
+        first = reqs[0]["chunks"][0]
+        if first[1] == 1:
+            base["ttft_s"] = first[0] - reqs[0]["t_send"]
+        else:
+            base["labels"].append("FIRST_CHUNK_NOT_ONE_TOKEN")
     ended = [r["chunks"][-1][0] for r in reqs if r.get("finish") == "length"]
     last = max(reqs, key=lambda r: r["chunks"][0][0])
     t_lo, t_hi = _tok_time(last["chunks"], 1 + trim), _tok_time(last["chunks"], 1 + trim + win)
@@ -121,21 +129,24 @@ def fixed_problems(job):
     if job["aborted"]:
         pr.append(f"Job aborted: {job['aborted'].get('status')}: {str(job['aborted'].get('reason'))[:200]}")
     by = {b["boot"]["boot_id"]: b for b in job["boots"]}
-    if [b["boot"]["arm"] for b in job["boots"]] != card["boot_order"]:
+    real = [b["boot"]["arm"] for b in job["boots"]]
+    if real != card["boot_order"][:len(real)]:          # a Job cut short realizes a prefix of the registered order, never another order
         pr.append("realized boot order differs from the registered order")
     for pb in plan["boots"]:
         b = by.get(pb["boot_id"])
         st = (b or {}).get("done", {}).get("status")
-        if st != "done":
-            pr.append(f"boot {pb['boot_id']} status {st}")
-            continue
-        cells = {(c["bs"], c["c"]): c for c in b["cells"]}
-        feas = {(f["bs"], f["c"]): f for f in b["feasibility"]}
-        for bs, c in (tuple(x) for x in pb["cells"]):
-            if (bs, c) not in feas:
-                pr.append(f"{pb['boot_id']}: no feasibility row for cell {bs}x{c} (written before any cell)")
-            elif feas[(bs, c)]["run"] and (bs, c) not in cells:
-                pr.append(f"{pb['boot_id']}: feasible cell {bs}x{c} has no record (incomplete block)")
+        if b is None or st != "done":                   # prereg section 5: its unrecorded cells become NOT_MEASURED rows, the other boots stand
+            fl.append(f"BOOT_NOT_DONE:{pb['boot_id']}:{st}")
+            if b is None:
+                continue
+        else:
+            cells = {(c["bs"], c["c"]): c for c in b["cells"]}
+            feas = {(f["bs"], f["c"]): f for f in b["feasibility"]}
+            for bs, c in (tuple(x) for x in pb["cells"]):
+                if (bs, c) not in feas:
+                    pr.append(f"{pb['boot_id']}: no feasibility row for cell {bs}x{c} (written before any cell)")
+                elif feas[(bs, c)]["run"] and (bs, c) not in cells:
+                    pr.append(f"{pb['boot_id']}: feasible cell {bs}x{c} has no record (incomplete block)")
         for c in b["cells"]:
             if c["card_sha"] != card["card_sha"]:
                 pr.append(f"{c['cell_id']}: card sha differs from card.json")
@@ -159,11 +170,11 @@ def fixed_anchor(job):
         if b["boot"].get("role") == "anchor":
             for c in b["cells"]:
                 w[b["boot"].get("anchor")] = (cell_window(c), c.get("gpu_uuid"))
-    if set(w) != {"start", "end"}:
-        return {"problem": "anchor cell missing at the start or the end of the Job"}
+    if set(w) != {"start", "end"}:                      # drift unknown, not a reason to lose the table (prereg R-3)
+        return {"flag": "ANCHOR_MISSING", "detail": f"anchor cells present: {sorted(w)}"}
     (s, g0), (e, g1) = w["start"], w["end"]
     if s["status"] != "VALID" or e["status"] != "VALID":
-        return {"problem": f"anchor cell not VALID (start {s['status']}, end {e['status']})"}
+        return {"flag": "ANCHOR_MISSING", "detail": f"anchor cell not VALID (start {s['status']}, end {e['status']})"}
     d = abs(math.log(e["step_ms"] / s["step_ms"]))
     out = {"start_ms": s["step_ms"], "end_ms": e["step_ms"], "abs_ln_ratio": d, "bound": CS.P("fb_anchor_drift_ln")}
     if g0 != g1:
@@ -173,16 +184,25 @@ def fixed_anchor(job):
     return out
 
 
-def cell_rows(job):
-    """One row per measured cell record of the measurement boots (anchor boots excluded), plus one row per planned cell that the
-    banner rule refused (INFEASIBLE_BY_RULE) -- a refused cell is reported, never silently absent."""
+def cell_rows(job, clk=None):
+    """One row per measured cell record of the measurement boots (anchor boots excluded), one row per planned cell that the banner
+    rule refused (INFEASIBLE_BY_RULE), and one row per planned cell with neither (NOT_MEASURED: its boot did not finish) -- a planned
+    cell is reported, never silently absent.  clk: GPU clock samples; each measured row then carries the share of samples inside
+    [first send, end] with a clock-limit reason (descriptive column, changes no label)."""
     rows = []
+    seen = set()
     for b in job["boots"]:
         if b["boot"].get("role") != "meas":
             continue
         for c in b["cells"]:
             w = cell_window(c)
+            seen.add((b["boot"]["boot_id"], c["bs"], c["c"]))
             w.update(boot_id=c["boot_id"], cap=c["cap"], mem=c["mem"], kv_tokens=c["banner"]["max_total_num_tokens"])
+            if clk is not None and c.get("clock_pair"):
+                wall, mono = c["clock_pair"]
+                s = MK.summarize(MK.window(clk, wall + c["t_first_send"] - mono, wall + c["t_end"] - mono))
+                w.update(clk_limited_frac=s["limited_frac"], clk_sm_mhz_p50=s["sm_mhz_p50"], clk_power_w_p50=s["power_w_p50"],
+                         clk_reasons=s["reasons_seen"])
             if w["status"] == "VALID":
                 w.update(traffic(w["model"], w["bs"], w["ctx_mean"], w["step_ms"]))
             rows.append(w)
@@ -191,6 +211,16 @@ def cell_rows(job):
                 rows.append({"cell_id": None, "model": b["boot"]["model"], "bs": f["bs"], "c": f["c"], "round": b["boot"]["round"],
                              "status": "INFEASIBLE_BY_RULE", "detail": "; ".join(f["reasons"]), "labels": [], "boot_id": b["boot"]["boot_id"],
                              "cap": b["boot"]["cap"], "mem": None, "kv_tokens": f.get("kv_tokens")})
+                seen.add((b["boot"]["boot_id"], f["bs"], f["c"]))
+    st = {b["boot"]["boot_id"]: b["done"].get("status") for b in job["boots"]}
+    for pb in job["plan"]["boots"]:
+        if pb["role"] != "meas":
+            continue
+        for bs, c in (tuple(x) for x in pb["cells"]):
+            if (pb["boot_id"], bs, c) not in seen:
+                rows.append({"cell_id": None, "model": pb["model"], "bs": bs, "c": c, "round": pb["round"], "status": "NOT_MEASURED",
+                             "detail": f"boot status {st.get(pb['boot_id'], 'NOT_STARTED')}", "labels": [], "boot_id": pb["boot_id"],
+                             "cap": pb["cap"], "mem": None, "kv_tokens": None})
     return sorted(rows, key=lambda r: (r["model"], r["bs"], r["c"], r["round"]))
 
 
@@ -205,8 +235,14 @@ def cell_summary(rows):
         steps = [r["step_ms"] for r in v]
         row = {"model": m, "bs": bs, "c": c, "n_rounds_valid": len(v), "statuses": sorted({r["status"] for r in rs}),
                "labels": sorted({x for r in rs for x in r["labels"]}), "step_ms": X.median(steps) if steps else None,
-               "step_ms_by_round": {r["round"]: r["step_ms"] for r in v}}
+               "step_ms_by_round": {r["round"]: r["step_ms"] for r in v},
+               "c_in": next((r["c_in"] for r in rs if r.get("c_in") is not None), None),
+               "ttft_s_by_round": {r["round"]: r["ttft_s"] for r in rs if r.get("ttft_s") is not None},
+               "clk_limited_frac_by_round": {r["round"]: r["clk_limited_frac"] for r in rs if r.get("clk_limited_frac") is not None}}
+        tt = list(row["ttft_s_by_round"].values())
+        row["ttft_s"] = max(tt) if tt else None
         if steps:
+            row.update(step_p10_ms=X.median([r["step_p10_ms"] for r in v]), step_p90_ms=X.median([r["step_p90_ms"] for r in v]))
             row.update(tokens_per_s=bs * 1000.0 / row["step_ms"], ctx_mean=sum(r["ctx_mean"] for r in v) / len(v),
                        **traffic(m, bs, sum(r["ctx_mean"] for r in v) / len(v), row["step_ms"]))
         if len(steps) >= 2:
@@ -240,41 +276,80 @@ def round_agreement(res_a, res_b):
     for k in sorted(set(a) | set(b)):
         x, y = (a.get(k) or {}).get("step_ms"), (b.get(k) or {}).get("step_ms")
         row = {"model": k[0], "bs": k[1], "c": k[2], "step_ms": {str(ra[0]): x, str(rb[0]): y}}
-        if x is None or y is None:
+        if x is None and y is None:
+            row["label"] = "NO_ROUND"
+        elif x is None or y is None:
             row["label"] = "ONE_ROUND_ONLY"
         else:
             row["abs_ln_ratio"] = abs(math.log(y / x))
             row["label"] = "ROUND_DISAGREE" if row["abs_ln_ratio"] > bound else "AGREE"
         rows.append(row)
+    lab = {(r["model"], r["bs"], r["c"]): r["label"] for r in rows}
+    ratio = []                                          # prereg R-5: a31 / Nano step ratio, one value per round, AGREE cells of both models only
+    for (m, bs, c) in sorted(lab):
+        if m == "nano" and lab[(m, bs, c)] == "AGREE" and lab.get(("a31", bs, c)) == "AGREE":
+            ratio.append({"bs": bs, "c": c, "a31_over_nano": {str(rd): res[("a31", bs, c)]["step_ms"] / res[("nano", bs, c)]["step_ms"]
+                                                              for rd, res in ((ra[0], a), (rb[0], b))}})
     return {"jobs": [res_a["job"], res_b["job"]], "rounds": [ra[0], rb[0]], "bound": bound, "rows": rows, "merged": False,
+            "model_ratio": ratio, "ttft_floor": ttft_floor(a, b, ra[0], rb[0]),
             "anchor": {str(ra[0]): res_a["anchor"], str(rb[0]): res_b["anchor"]}, "flags": {str(ra[0]): res_a["flags"], str(rb[0]): res_b["flags"]},
-            "n": {lab: sum(1 for r in rows if r["label"] == lab) for lab in ("AGREE", "ROUND_DISAGREE", "ONE_ROUND_ONLY")}}
+            "n": {lab: sum(1 for r in rows if r["label"] == lab) for lab in ("AGREE", "ROUND_DISAGREE", "ONE_ROUND_ONLY", "NO_ROUND")}}
+
+
+def ttft_floor(a, b, ra, rb, model="nano"):
+    """Prereg R-6.  Unloaded first-token time of the batch-1 cells of `model`: first chunk (one token) time minus send time, per round;
+    floor = the larger of the two rounds whatever the step agreement label; one round only -> that value, labelled ONE_ROUND.
+    x = realized input tokens c_in.  Cells that were SERVER_DEATH / BENCH_INVALID in both rounds have no point."""
+    pts = []
+    for k in sorted(set(a) | set(b)):
+        if k[0] != model or k[1] != 1:
+            continue
+        v = {str(rd): (res.get(k) or {}).get("ttft_s") for rd, res in ((ra, a), (rb, b))}
+        got = [x for x in v.values() if x is not None]
+        if got:
+            pts.append({"c": k[2], "c_in": (a.get(k) or b.get(k))["c_in"], "ttft_s": v, "floor_s": max(got),
+                        "label": "TWO_ROUNDS" if len(got) == 2 else "ONE_ROUND"})
+    return {"model": model, "x": "c_in", "rule": "max of the rounds; linear in (ln c_in, ln floor) between points; no extrapolation", "points": pts}
+
+
+def floor_at(floor, n_in):
+    """Floor at n_in input tokens by linear interpolation in (ln c_in, ln floor_s).  Outside the measured range -> None (no extrapolation)."""
+    pts = sorted((p["c_in"], p["floor_s"]) for p in floor["points"])
+    if not pts or not pts[0][0] <= n_in <= pts[-1][0]:
+        return None
+    for (x0, y0), (x1, y1) in zip(pts, pts[1:]):
+        if x0 <= n_in <= x1:
+            w = (math.log(n_in) - math.log(x0)) / (math.log(x1) - math.log(x0))
+            return math.exp(math.log(y0) + w * (math.log(y1) - math.log(y0)))
+    return pts[0][1]
 
 
 class JobInvalid(MA.JobInvalid):
     pass
 
 
-def analyze_fixed(raw):
+def analyze_fixed(raw, clk_csv=None):
     job = raw if isinstance(raw, dict) else load_fixed(raw)
     pr, fl = fixed_problems(job)
     if pr:
         raise JobInvalid(pr)
-    rows = cell_rows(job)
+    rows = cell_rows(job, MK.read_clk(clk_csv)[0] if clk_csv else None)
     summ = cell_summary(rows)
     names = sorted({c["job_name"] for b in job["boots"] for c in b["cells"]})
     return {"job": names[0] if len(names) == 1 else names, "kind": CS.KIND_FIXED, "rehearsal": job["plan"]["rehearsal"], "flags": fl,
+            "failed_attempts": job.get("failed_attempts", []), "clock_source": str(clk_csv) if clk_csv else None,
             "rounds": list(job["plan"]["rounds"]),
             "anchor": fixed_anchor(job), "cell_rows": rows, "verdict_rows": summ, "doubling_gain": doubling_gain(summ),
             "counts": {m: {"planned": sum(1 for b in job["plan"]["boots"] if b["role"] == "meas" and b["model"] == m for _ in b["cells"]),
                            "valid": sum(1 for r in rows if r["model"] == m and r["status"] == "VALID"),
                            "infeasible": sum(1 for r in rows if r["model"] == m and r["status"] == "INFEASIBLE_BY_RULE"),
-                           "server_death": sum(1 for r in rows if r["model"] == m and r["status"] == "SERVER_DEATH")} for m in CS.MODELS},
+                           "server_death": sum(1 for r in rows if r["model"] == m and r["status"] == "SERVER_DEATH"),
+                           "not_measured": sum(1 for r in rows if r["model"] == m and r["status"] == "NOT_MEASURED")} for m in CS.MODELS},
             "timing_source": CS.P("fb_timing"), "cross_job": "NOT_MERGED"}
 
 
-FIXED_COLS = ("model", "bs", "c", "n_rounds_valid", "step_ms", "tokens_per_s", "ctx_mean", "bytes_per_step", "bytes_per_s", "largest_term",
-              "roofline_ms", "step_over_roofline", "round_abs_ln_ratio", "statuses", "labels")
+FIXED_COLS = ("model", "bs", "c", "c_in", "n_rounds_valid", "step_ms", "step_p10_ms", "step_p90_ms", "ttft_s", "tokens_per_s", "ctx_mean", "bytes_per_step", "bytes_per_s", "largest_term",
+              "roofline_ms", "step_over_roofline", "round_abs_ln_ratio", "clk_limited_frac_by_round", "statuses", "labels", "job_flags")
 
 
 def write_fixed(res, out_dir):
@@ -285,7 +360,9 @@ def write_fixed(res, out_dir):
         w = csv.writer(f)
         w.writerow(FIXED_COLS)
         for r in res["verdict_rows"]:
-            w.writerow([";".join(map(str, r[c])) if isinstance(r.get(c), list) else r.get(c) for c in FIXED_COLS])
+            r = dict(r, job_flags=list(res["flags"]))
+            w.writerow([";".join(map(str, r[c])) if isinstance(r.get(c), list) else
+                        ";".join(f"{k}={v:.4f}" for k, v in sorted(r[c].items())) if isinstance(r.get(c), dict) else r.get(c) for c in FIXED_COLS])
     return out / "cell_table.csv"
 
 
@@ -496,7 +573,7 @@ def main(argv=None):
             (Path(a.out) / "round_agreement.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
             print(json.dumps(res["n"]))
         elif a.part == "fixed":
-            print(write_fixed(analyze_fixed(a.raw), a.out))
+            print(write_fixed(analyze_fixed(a.raw, a.clk), a.out))
         else:
             print(write_serving(analyze_serving(a.raw, a.clk), a.out))
     except MA.JobInvalid as e:

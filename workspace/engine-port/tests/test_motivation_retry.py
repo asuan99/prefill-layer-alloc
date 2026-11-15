@@ -158,5 +158,15 @@ class TestRehearsalInsideTheMeasurementJob(unittest.TestCase):
             self.assertIn("exit 19", blk, f)
 
 
+class TestCapJobScriptSealGuards(unittest.TestCase):
+    def test_digest_guard_rehearsal_budget_and_clock_are_wired(self):
+        sh = (Path(__file__).resolve().parent.parent / "results" / "motivation" / "mo_cap_job.sh").read_text()
+        self.assertIn("PDMUX_MOCAP_EXPECT_HARNESS_DIGEST", sh)
+        self.assertIn("ABORT_HARNESS_DIGEST", sh)
+        self.assertLess(sh.index("ABORT_HARNESS_DIGEST"), sh.index("mo_cap_runner.py\" rehearse"))      # before any boot
+        self.assertIn('PDMUX_MOCAP_REHEARSE_BUDGET_MIN:-60', sh)
+        self.assertIn('[[ -f "${clk}" ]] && an+=(--clk "${clk}")', sh)
+
+
 if __name__ == "__main__":
     unittest.main()

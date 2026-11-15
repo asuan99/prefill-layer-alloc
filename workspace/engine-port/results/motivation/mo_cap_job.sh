@@ -15,8 +15,11 @@
 # PART=serving: mem {0.6, 0.75} at cap 48 + cap {48, 128, 256} at mem 0.75, 2 arms x 4 rungs x 4 seeds; the rate grid has no default.
 # MODE=rehearse: full pass over the real boot list with one cell (fixed) / one rung and few requests (serving); writes the rehearsal
 #   record of that part, which the launch gate of MODE=run requires.
-# PDMUX_MOCAP_REHEARSE_FIRST=1 (MODE=run): the rehearsal pass runs first inside this Job (output rehearsal_raw/, its own budget window);
-#   the measurement starts only if it passed.  No separate rehearsal Job, and the record is of the exact code that measures.
+# PDMUX_MOCAP_REHEARSE_FIRST=1 (MODE=run): the rehearsal pass runs first inside this Job (output rehearsal_raw/, its own budget window
+#   PDMUX_MOCAP_REHEARSE_BUDGET_MIN, default 60); the measurement starts only if it passed.  No separate rehearsal Job, and the record
+#   is of the exact code that measures.
+# PDMUX_MOCAP_EXPECT_HARNESS_DIGEST=<sha>: the Job stops before any boot unless mo_rehearsal.harness_digest() of the code in the image
+#   is that value (a sealed preregistration names the digest; the in-Job rehearsal alone would pass whatever code is there).
 # MODE=run: plan -> card (refused if PDMUX_MOCAP_EXPECT_CARD_SHA is set and differs) -> run (the runner refuses unconfirmed design values,
 #   placeholders in the card, and a plan without a passed rehearsal record for this harness digest) -> analysis.
 # Preflight (rc != 0 stops the Job before any boot): exactly one GPU, engine digest 8d8f6720, pristine tree preserved, Nano snapshot
@@ -85,13 +88,20 @@ else
   [[ -n "${PDMUX_MOCAP_RMIN:-}" ]] && common+=(--rmin "${PDMUX_MOCAP_RMIN}")
   [[ -n "${PDMUX_MOCAP_FACTOR:-}" ]] && common+=(--factor "${PDMUX_MOCAP_FACTOR}")
 fi
+if [[ -n "${PDMUX_MOCAP_EXPECT_HARNESS_DIGEST:-}" ]]; then
+  hd="$(cd "${here}" && python3 -c 'import mo_rehearsal as m; print(m.harness_digest())')"
+  echo "harness_digest=${hd}" >> "${out}/preflight.txt"
+  [[ "${hd}" == "${PDMUX_MOCAP_EXPECT_HARNESS_DIGEST}" ]] || { echo "ABORT_HARNESS_DIGEST: ${hd:0:16} != registered ${PDMUX_MOCAP_EXPECT_HARNESS_DIGEST:0:16}" >&2; exit 16; }
+fi
 if [[ "${mode}" == rehearse ]]; then
   timeout -k 60 "$(( budget * 60 ))" python3 "${here}/mo_cap_runner.py" rehearse "${common[@]}" --out "${raw}" > "${out}/rehearse.json"
   rc=$?
 else
   if [[ "${PDMUX_MOCAP_REHEARSE_FIRST:-}" == 1 ]]; then      # same Job: rehearsal pass first, the measurement only if it passed (2026-11-14)
-    timeout -k 60 "$(( budget * 60 ))" python3 "${here}/mo_cap_runner.py" rehearse "${common[@]}" --out "${out}/rehearsal_raw" > "${out}/rehearse.json"
+    rbudget="${PDMUX_MOCAP_REHEARSE_BUDGET_MIN:-60}"
+    timeout -k 60 "$(( rbudget * 60 ))" python3 "${here}/mo_cap_runner.py" rehearse "${common[@]}" --out "${out}/rehearsal_raw" > "${out}/rehearse.json"
     rrc=$?
+    [[ ${rrc} -eq 124 || ${rrc} -eq 137 ]] && echo "{\"verdict\": \"BUDGET_CAP_KILLED\", \"stage\": \"rehearsal\", \"rc\": ${rrc}, \"budget_min\": ${rbudget}}" > "${out}/BUDGET_CAP_KILLED.json"
     [[ ${rrc} -eq 0 ]] || { echo "ABORT_REHEARSAL: the in-Job rehearsal pass did not pass (rc=${rrc}; see rehearse.json)" >&2; exit 19; }
   fi
   python3 "${here}/mo_cap_runner.py" card "${common[@]}" --out "${out}/card.json" > "${out}/card_summary.json" \
@@ -107,7 +117,7 @@ else
   if [[ -f "${raw}/plan.json" ]]; then
     clk="${data}/runs/${name}/meta/clk.csv"
     an=(python3 "${here}/mo_cap_analyze.py" "${part}" "${raw}" --out "${out}/analysis")
-    [[ "${part}" == serving && -f "${clk}" ]] && an+=(--clk "${clk}")
+    [[ -f "${clk}" ]] && an+=(--clk "${clk}")
     "${an[@]}" > "${out}/analysis.txt" 2>&1
     arc=$?
     [[ ${rc} -eq 0 && ${arc} -ne 0 ]] && rc=${arc}

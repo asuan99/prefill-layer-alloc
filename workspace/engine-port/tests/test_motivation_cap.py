@@ -555,8 +555,15 @@ class TestFixedEndToEnd(unittest.TestCase):
         with self.assertRaises(MA.JobInvalid) as cm:
             CA.analyze_fixed(job)
         self.assertIn("incomplete block", str(cm.exception))
-        job = copy.deepcopy(self.job)
-        job["boots"].pop()
+        job = copy.deepcopy(self.job)                                             # a Job cut short: the missing boot's cells are rows, not a lost table
+        gone = job["boots"].pop()
+        an = CA.analyze_fixed(job)
+        self.assertTrue(any(f.startswith("BOOT_NOT_DONE:" + gone["boot"]["boot_id"]) for f in an["flags"]))
+        if gone["boot"]["role"] == "anchor":
+            self.assertIn("ANCHOR_MISSING", an["flags"])
+        job = copy.deepcopy(self.job)                                             # another order than the registered one is still refused
+        job["boots"] = [b for b in reversed(job["boots"]) if b["boot"]["role"] == "meas"]
+        self.assertGreater(len({b["boot"]["arm"] for b in job["boots"]}), 1)
         with self.assertRaises(MA.JobInvalid):
             CA.analyze_fixed(job)
         job = copy.deepcopy(self.job)
@@ -578,15 +585,35 @@ class TestFixedFullTable(unittest.TestCase):
                     self.assertTrue(all(b["status"] == "done" for b in res))
                     ans.append(CA.analyze_fixed(out))
         an = ans[0]
-        self.assertEqual(an["counts"], {"nano": {"planned": 86, "valid": 86, "infeasible": 0, "server_death": 0},
-                                            "a31": {"planned": 71, "valid": 71, "infeasible": 0, "server_death": 0}})
+        self.assertEqual(an["counts"], {"nano": {"planned": 86, "valid": 86, "infeasible": 0, "server_death": 0, "not_measured": 0},
+                                            "a31": {"planned": 71, "valid": 71, "infeasible": 0, "server_death": 0, "not_measured": 0}})
         self.assertEqual((an["flags"], len(an["verdict_rows"]), an["rounds"]), ([], 157, [1]))
         ra = CA.round_agreement(ans[0], ans[1])
-        self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 157, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0}, False, [1, 2]))
+        self.assertEqual((ra["n"], ra["merged"], ra["rounds"]), ({"AGREE": 157, "ROUND_DISAGREE": 0, "ONE_ROUND_ONLY": 0, "NO_ROUND": 0}, False, [1, 2]))
+        # prereg R-6: 11 Nano batch-1 points on the realized input length, the larger round, no extrapolation
+        fl = ra["ttft_floor"]
+        self.assertEqual(([p["c"] for p in fl["points"]], {p["label"] for p in fl["points"]}), ([2 ** i for i in range(7, 18)], {"TWO_ROUNDS"}))
+        self.assertTrue(all(p["c_in"] < p["c"] and p["floor_s"] == max(p["ttft_s"].values()) > 0 for p in fl["points"]))
+        lo, hi = fl["points"][0], fl["points"][1]
+        mid = CA.floor_at(fl, int((lo["c_in"] * hi["c_in"]) ** 0.5))
+        self.assertTrue(min(lo["floor_s"], hi["floor_s"]) <= mid <= max(lo["floor_s"], hi["floor_s"]))
+        self.assertEqual(CA.floor_at(fl, lo["c_in"]), lo["floor_s"])
+        self.assertIsNone(CA.floor_at(fl, lo["c_in"] - 1))
+        self.assertIsNone(CA.floor_at(fl, fl["points"][-1]["c_in"] + 1))
+        # prereg R-5: one a31 / Nano ratio per round on the cells both models measured
+        self.assertEqual(len(ra["model_ratio"]), 71)
+        self.assertEqual(set(ra["model_ratio"][0]["a31_over_nano"]), {"1", "2"})
         slow = copy.deepcopy(ans[1])
         slow["verdict_rows"][0]["step_ms"] *= 1.05
         slow["verdict_rows"][1]["step_ms"] = None
-        self.assertEqual(CA.round_agreement(ans[0], slow)["n"], {"AGREE": 155, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 1})
+        self.assertEqual(CA.round_agreement(ans[0], slow)["n"], {"AGREE": 155, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 1, "NO_ROUND": 0})
+        none = copy.deepcopy(ans[0])
+        none["verdict_rows"][1]["step_ms"] = None
+        self.assertEqual(CA.round_agreement(none, slow)["n"], {"AGREE": 155, "ROUND_DISAGREE": 1, "ONE_ROUND_ONLY": 0, "NO_ROUND": 1})
+        one = copy.deepcopy(ans[1])                                              # a first-token time in one round only is used and labelled
+        k = next(i for i, r in enumerate(one["verdict_rows"]) if r["model"] == "nano" and r["bs"] == 1)
+        one["verdict_rows"][k]["ttft_s"] = None
+        self.assertEqual([p["label"] for p in CA.round_agreement(ans[0], one)["ttft_floor"]["points"]].count("ONE_ROUND"), 1)
         with self.assertRaises(ValueError):
             CA.round_agreement(ans[0], ans[0])                                   # the same round / the same Job twice
         with self.assertRaises(ValueError):
@@ -612,7 +639,7 @@ class TestFixedRunTimeRules(unittest.TestCase):
             self.assertEqual(row[(64, 32768)]["status"], "INFEASIBLE_BY_RULE")
             self.assertIn("0.95", row[(64, 32768)]["detail"])
             self.assertEqual(row[(64, 128)]["status"], "VALID")
-            self.assertEqual(an["counts"]["nano"], {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0})
+            self.assertEqual(an["counts"]["nano"], {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0, "not_measured": 0})
             cells = [c for b in CA.load_fixed(out)["boots"] for c in b["cells"]]
             self.assertFalse(any(c["c"] == 32768 for c in cells))
 
@@ -623,9 +650,13 @@ class TestFixedRunTimeRules(unittest.TestCase):
             out, _, res = run_fixed(plan, td, {target: {"status": "died"}})
             self.assertEqual([b["status"] for b in res].count("died"), 1)
             self.assertEqual(res[-1]["status"], "done")
-            with self.assertRaises(MA.JobInvalid) as cm:
-                CA.analyze_fixed(out)
-            self.assertIn("status died", str(cm.exception))
+            an = CA.analyze_fixed(out)                                           # prereg section 5: the other boots stand, its cells are NOT_MEASURED rows
+            self.assertIn(f"BOOT_NOT_DONE:{target}:died", an["flags"])
+            lost = [r for r in an["cell_rows"] if r["status"] == "NOT_MEASURED"]
+            n_plan = len(plan["boots"][2]["cells"]) if plan["boots"][2]["role"] == "meas" else 0
+            self.assertEqual((len(lost), {r["boot_id"] for r in lost} <= {target}), (n_plan, True))
+            self.assertTrue(all("died" in r["detail"] for r in lost))
+            self.assertGreater(sum(c["valid"] for c in an["counts"].values()), 0)
 
     def test_a_cell_that_kills_the_server_is_a_row_and_the_boot_goes_on(self):
         # user decision 2026-11-14: a server death inside a cell marks that cell, restarts the server and runs the remaining cells
@@ -665,8 +696,9 @@ class TestFixedRunTimeRules(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td, mock.patch.object(CR, "restart_after_death", other_pool):
             out, _, res = run_fixed(plan, td, truth={"die_on_input_ge": 100000})
             self.assertEqual(next(b for b in res if b["boot_id"] == target["boot_id"])["status"], "RESTART_BANNER_DIFFERS")
-            with self.assertRaises(MA.JobInvalid):
-                CA.analyze_fixed(out)
+            an = CA.analyze_fixed(out)
+            self.assertIn(f"BOOT_NOT_DONE:{target['boot_id']}:RESTART_BANNER_DIFFERS", an["flags"])
+            self.assertTrue(any(r["status"] == "NOT_MEASURED" and r["boot_id"] == target["boot_id"] for r in an["cell_rows"]))
 
     def test_anchor_drift_is_flagged(self):
         plan = small_fixed_plan()
@@ -1032,7 +1064,7 @@ class TestMutants(unittest.TestCase):
         with tempfile.TemporaryDirectory() as td:
             out, _, res = run_fixed(small_fixed_plan(keep=((("nano", 64), ((64, 128), (64, 32768))),)), td, budget=SMALL_BUDGET)
             an = CA.analyze_fixed(out)
-            return all(b["status"] == "done" for b in res) and an["counts"]["nano"] == {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0}
+            return all(b["status"] == "done" for b in res) and an["counts"]["nano"] == {"planned": 2, "valid": 1, "infeasible": 1, "server_death": 0, "not_measured": 0}
 
     def o_last_join(self):
         return abs(CA.cell_window(TestCellWindow().cell())["step_ms"] - 10.0) < 1e-6
