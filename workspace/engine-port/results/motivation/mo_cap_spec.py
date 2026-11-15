@@ -107,12 +107,13 @@ def open_items(confirmed=None):
     return sorted(k for k in PROPOSED if k not in c)
 
 
-# Thresholds of the cap/mem fixing rule (mo_cap_analyze.fix_cap_mem).  No document gives a value: they are the pre-registration's to set.
+# Thresholds of the cap/mem fixing rule (mo_cap_analyze.fix_cap_mem).  User decision 2026-11-15 (PREREG_CAP_MEM_SERVING): registered
+# before any serving cap/mem Job ran.
 FIX_RULE = {
-    "min_rungs_agree": MS.pend("prereg.cap_rule.min_rungs_agree"),             # rungs that must carry the same label for a direction
-    "mem_tie_break": MS.pend("prereg.cap_rule.mem_tie_break"),                 # "lower" | "higher" when the mem pair shows no difference
-    "cap_tie_break": MS.pend("prereg.cap_rule.cap_tie_break"),                 # "lower" | "higher" when a cap step shows no difference
-    "min_kv_tokens_per_slot": MS.pend("prereg.cap_rule.min_kv_tokens_per_slot"),   # banner max_total_num_tokens / cap must reach this
+    "min_rungs_agree": 2,              # rungs that must carry the same label for a direction (and none the opposite one)
+    "mem_tie_break": "higher",         # no difference in the mem pair -> 0.75 (the only mem the cap ladder was measured at)
+    "cap_tie_break": "lower",          # no difference in a cap step -> stop (more KV tokens per slot)
+    "min_kv_tokens_per_slot": 6648,    # banner max_total_num_tokens / cap must reach this (median input length of arxiv_summ)
 }
 
 
@@ -441,20 +442,32 @@ def fixed_plan_problems(plan, allow_placeholders=False, confirmed=None):
 
 
 # ---- serving cap/mem plan --------------------------------------------------------------------------------------------------------------------
-def sv_keys():
-    return [(k, mem, cap) for k in P("sv_arms") for mem, cap in SERVING_COMBOS]
+def sv_arm_keys(arm=None):
+    """Arms of one serving Job: both registered arms, or one of them (user decision 2026-11-15: one Job per arm, so that a Job stays
+    near 6 hours; every one-factor pair is inside one arm, hence inside one Job)."""
+    if arm is None:
+        return tuple(P("sv_arms"))
+    if arm not in P("sv_arms"):
+        raise ValueError(f"arm {arm!r} is not a registered serving arm {P('sv_arms')}")
+    return (arm,)
 
 
-def sv_boot_order(job):
-    keys = sv_keys()
+def sv_keys(arms=None):
+    return [(k, mem, cap) for k in (arms or P("sv_arms")) for mem, cap in SERVING_COMBOS]
+
+
+def sv_boot_order(job, arms=None):
+    keys = sv_keys(arms)
     _rng("serving_order", job).shuffle(keys)
     return keys
 
 
-def serving_plan(job, workload, rmin, factor, seeds=None, run_s=None, n_requests=None, rehearsal=False):
+def serving_plan(job, workload, rmin, factor, seeds=None, run_s=None, n_requests=None, rehearsal=False, arm=None):
     """One Job: anchor boot -> every (arm, mem, cap) once in a seeded permutation, each with all rungs x seeds in seeded cell order ->
     one split-check boot of the bundle (anchor combination; never in a table) -> anchor boot.  A cell holds round(rate x run_s) requests
-    (or n_requests when given: rehearsal)."""
+    (or n_requests when given: rehearsal).  arm: one registered arm -> the Job holds that arm's four combinations only (the anchor stays
+    the anchor arm, the split check exists only in the bundle's Job)."""
+    arms = sv_arm_keys(arm)
     if workload != "W1" and not MS.MW.is_registered(workload):
         raise ValueError(f"unregistered workload {workload!r}")
     seeds = tuple(seeds) if seeds is not None else ((MS.default_seeds(workload)[0],) if rehearsal else MS.default_seeds(workload))
@@ -474,12 +487,12 @@ def serving_plan(job, workload, rmin, factor, seeds=None, run_s=None, n_requests
         return SP.boot(f"{job}_anchor_{tag}", anchor, [r], role="anchor", anchor=tag)
 
     boots = [anchor_boot("start")]
-    for key, mem, cap in sv_boot_order(job):
+    for key, mem, cap in sv_boot_order(job, arms):
         a = sv_arm(key, mem, cap, rehearsal)
         cells = [MS.cell_run(job, a["name"], r, s, n_of(r), "GRID", workload=workload) for r in grid["rates"] for s in seeds]
         _rng("serving_cells", job, a["name"]).shuffle(cells)
         boots.append(SP.boot(f"{job}_{a['name']}", a, cells, role="meas"))
-    if MS.BUNDLE_KEY in P("sv_arms"):
+    if MS.BUNDLE_KEY in arms:
         sc = sv_arm(MS.BUNDLE_KEY, amem, acap, rehearsal, split_check=True)
         r = MS.cell_run(job, sc["name"], grid["rates"][-1], seeds[0], n_of(grid["rates"][-1]) if rehearsal else MS.ANCHOR_N, "SPLIT_CHECK",
                         kind="split_check", workload=workload)
@@ -487,7 +500,7 @@ def serving_plan(job, workload, rmin, factor, seeds=None, run_s=None, n_requests
     boots.append(anchor_boot("end"))
     return {"job": job, "kind": KIND_SERVING, "workload": workload, "grid": grid, "seeds": list(seeds), "run_s": run_s,
             "n_requests": n_requests, "rehearsal": bool(rehearsal), "fixed": dict(anchor["fixed"]), "combos": [list(c) for c in SERVING_COMBOS],
-            "boot_order": [b["arm"] for b in boots], "arm_keys": list(P("sv_arms")),
+            "boot_order": [b["arm"] for b in boots], "arm_keys": list(arms),
             "anchor": {"arm": anchor["name"], "rate": arate, "seed": seeds[0], "n": boots[0]["runs"][0]["n_requests"],
                        "positions": ["first", "last"]}, "boots": boots, "open_items": open_items(), "pending": []}
 
@@ -511,7 +524,9 @@ def serving_plan_problems(plan, allow_placeholders=False, confirmed=None):
             out.append(f"{b['boot_id']}: anchor boot is not the anchor arm at the anchor combination")
     meas = [b for b in boots if b["role"] == "meas"]
     got = [(b["arm_def"]["params"]["key"], b["arm_def"]["params"]["mem"], b["arm_def"]["params"]["cap"]) for b in meas]
-    if got != sv_boot_order(job):
+    if not plan["arm_keys"] or any(k not in P("sv_arms") for k in plan["arm_keys"]) or len(set(plan["arm_keys"])) != len(plan["arm_keys"]):
+        out.append(f"arm_keys {plan['arm_keys']} are not registered serving arms")
+    elif got != sv_boot_order(job, tuple(plan["arm_keys"])):
         out.append(f"boot order differs from the registered permutation of job '{job}' (every arm x combination exactly once)")
     rates, seeds = plan["grid"]["rates"], plan["seeds"]
     for b in meas:
@@ -614,6 +629,7 @@ def main(argv=None):
     ap.add_argument("--factor", type=float, default=1.5)
     ap.add_argument("--rule")
     ap.add_argument("--round", type=int, default=1)
+    ap.add_argument("--arm")
     a = ap.parse_args(argv)
     if a.what == "table":
         out = {"cells": cell_table_summary(), "gap_vs_user_stated": cell_count_gap(), "boots": {m: {r: len(boot_cells(m, r)) for r in ("cap_equals_batch", "min_boots")} for m in MODELS},
@@ -622,7 +638,7 @@ def main(argv=None):
         p = fixed_plan(a.job, rounds=(a.round,), rule=a.rule)
         out = {"plan_sha": MS.sha(p), "problems": fixed_plan_problems(p), "estimate": estimate_fixed(p)}
     elif a.what == "serving":
-        p = serving_plan(a.job, a.workload, a.rmin, a.factor)
+        p = serving_plan(a.job, a.workload, a.rmin, a.factor, arm=a.arm)
         out = {"plan_sha": MS.sha(p), "problems": serving_plan_problems(p), "estimate": estimate_serving(p), "boot_order": p["boot_order"]}
     else:
         out = {"open_items": {k: {"value": PROPOSED[k][0], "source": PROPOSED[k][1]} for k in open_items()},

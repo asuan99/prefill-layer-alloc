@@ -434,6 +434,8 @@ def analyze_serving(raw, clk_csv=None, thresholds=None):
     combos = [{"arm_key": k, "mem": m, "cap": c, "arm": a, "max_total_num_tokens": kv.get(a), "capacity": MA.capacity(job, a)}
               for (k, m, c), a in sorted(arm.items())]
     res = {"job": MA.job_name(job), "kind": CS.KIND_SERVING, "rehearsal": job["plan"]["rehearsal"], "flags": fl, "reading_rule": MS.READING_RULE,
+           "arm_keys": list(job["plan"]["arm_keys"]), "workload": job["plan"]["workload"], "grid_rates": list(job["plan"]["grid"]["rates"]),
+           "seeds": list(job["plan"]["seeds"]),
            "anchor": MA.anchor_check(job), "split_check": MA.split_check(job), "verdict_rows": rows, "combos": combos,
            "attainment_grid": {f"{a}|{rt}": {f"{t:g}/{i:g}": v for (t, i), v in c["grid"].items()} for (a, rt), c in sorted(tab.items())},
            "clock": MA.clock_report(job, clk_csv), "cross_job": "NOT_MERGED"}
@@ -489,6 +491,8 @@ def fix_cap_mem(res, thresholds=None):
     if pending:
         return done("PENDING_THRESHOLD", f"unregistered thresholds: {pending}")
     keys = sorted({r["arm_key"] for r in rows})
+    if set(keys) != set(CS.P("sv_arms")):               # one Job per arm: the rule reads both arms (combine_serving), never one alone
+        return done("ONE_ARM_JOB", f"arms {keys} of {sorted(CS.P('sv_arms'))}: the rule needs both arms' Jobs (mo_cap_analyze.py arms)")
 
     def direction(hi, lo):
         sel = {k: [r for r in rows if r["arm_key"] == k and r["hi"] == list(hi) and r["lo"] == list(lo)] for k in keys}
@@ -531,6 +535,27 @@ def fix_cap_mem(res, thresholds=None):
     return done("FIXED", f"mem {mem}, cap {cap}")
 
 
+def combine_serving(res_a, res_b, thresholds=None):
+    """The two one-arm Jobs side by side (user decision 2026-11-15).  No request, attainment or label is merged or recomputed: each
+    arm keeps the pair rows its own Job produced, and only the fixing rule reads both.  Refused unless the two Jobs are measurement Jobs
+    of the same workload, rate grid and seeds whose arms together are exactly the registered arms."""
+    if res_a["rehearsal"] or res_b["rehearsal"]:
+        raise ValueError("the fixing rule is read on measurement Jobs, not rehearsals")
+    if res_a["job"] == res_b["job"] or sorted(res_a["arm_keys"] + res_b["arm_keys"]) != sorted(CS.P("sv_arms")):
+        raise ValueError(f"needs two different Jobs whose arms are exactly {CS.P('sv_arms')}; got {res_a['arm_keys']} / {res_b['arm_keys']}")
+    for k in ("workload", "grid_rates", "seeds"):
+        if res_a[k] != res_b[k]:
+            raise ValueError(f"the two Jobs differ in {k}: {res_a[k]} / {res_b[k]}")
+    res = {"job": [res_a["job"], res_b["job"]], "kind": CS.KIND_SERVING, "rehearsal": False, "merged": False,
+           "flags": [f"{r['job']}:{f}" for r in (res_a, res_b) for f in r["flags"]], "arm_keys": res_a["arm_keys"] + res_b["arm_keys"],
+           "workload": res_a["workload"], "grid_rates": res_a["grid_rates"], "seeds": res_a["seeds"],
+           "verdict_rows": res_a["verdict_rows"] + res_b["verdict_rows"], "combos": res_a["combos"] + res_b["combos"],
+           "anchor": {r["job"]: r["anchor"] for r in (res_a, res_b)}, "clock": {r["job"]: r["clock"] for r in (res_a, res_b)},
+           "per_job_fix": {r["job"]: r["fix"]["status"] for r in (res_a, res_b)}}
+    res["fix"] = fix_cap_mem(res, thresholds)
+    return res
+
+
 def apply_fix(fix, fixed=None):
     """mo_spec fixed values with mem / cap taken from a FIXED result; anything else leaves the placeholders in place."""
     f = dict(fixed or MS.default_fixed())
@@ -560,7 +585,7 @@ def main(argv=None):
     """mo_cap_analyze.py fixed|serving RAW --out DIR [--clk CLK_CSV]   |   mo_cap_analyze.py rounds RAW_ROUND_A --other RAW_ROUND_B --out DIR"""
     import argparse
     ap = argparse.ArgumentParser()
-    ap.add_argument("part", choices=("fixed", "serving", "rounds"))
+    ap.add_argument("part", choices=("fixed", "serving", "rounds", "arms"))
     ap.add_argument("raw")
     ap.add_argument("--out", required=True)
     ap.add_argument("--clk")
@@ -572,6 +597,12 @@ def main(argv=None):
             Path(a.out).mkdir(parents=True, exist_ok=True)
             (Path(a.out) / "round_agreement.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
             print(json.dumps(res["n"]))
+        elif a.part == "arms":
+            res = combine_serving(analyze_serving(a.raw, a.clk), analyze_serving(a.other))
+            Path(a.out).mkdir(parents=True, exist_ok=True)
+            (Path(a.out) / "cap_mem_fix.json").write_text(json.dumps(res["fix"], indent=1, sort_keys=True, default=str) + "\n")
+            (Path(a.out) / "arms_combined.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
+            print(json.dumps({"status": res["fix"]["status"], "mem": res["fix"]["mem"], "cap": res["fix"]["cap"]}))
         elif a.part == "fixed":
             print(write_fixed(analyze_fixed(a.raw, a.clk), a.out))
         else:

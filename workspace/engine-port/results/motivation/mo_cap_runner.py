@@ -322,9 +322,9 @@ def rehearse_fixed(job, out, make_server, rehearsal_dir=None, digest=None, **kw)
     return MH.write_record(rec, out, rehearsal_dir)
 
 
-def rehearse_serving(job, w1_pool, out, make_server, replay_fn, rmin=3.0, factor=1.15, workload="W1", **kw):
+def rehearse_serving(job, w1_pool, out, make_server, replay_fn, rmin=3.0, factor=1.15, workload="W1", arm=None, **kw):
     """Full pass of the serving part: every (arm, mem, cap) boot + anchors + split check, one rung, few requests."""
-    plan = CS.serving_plan(job, workload, rmin, factor, n_requests=MH.REHEARSAL_N_REQUESTS, rehearsal=True)
+    plan = CS.serving_plan(job, workload, rmin, factor, n_requests=MH.REHEARSAL_N_REQUESTS, rehearsal=True, arm=arm)
     return MH.rehearse(job, w1_pool, out, make_server, replay_fn, workload=workload, plan=plan, analyze_fn=CA.analyze_serving,
                        write_fn=CA.write_serving, **kw)
 
@@ -336,7 +336,7 @@ def _plan(a):
             raise SystemExit("ABORT_CONFIG: the fixed-batch part needs --round (one Job per round)")
         return CS.fixed_plan(a.job, rounds=None if a.rehearsal else (a.round,), rehearsal=a.rehearsal)
     return CS.serving_plan(a.job, a.workload, a.rmin, a.factor, rehearsal=a.rehearsal,
-                           n_requests=MH.REHEARSAL_N_REQUESTS if a.rehearsal else None)
+                           n_requests=MH.REHEARSAL_N_REQUESTS if a.rehearsal else None, arm=a.arm)
 
 
 def main(argv=None):
@@ -351,6 +351,7 @@ def main(argv=None):
         p.add_argument("--rmin", type=float)
         p.add_argument("--factor", type=float)
         p.add_argument("--round", type=int)
+        p.add_argument("--arm")
         p.add_argument("--rehearsal", action="store_true")
         p.add_argument("--w1-lengths")
         p.add_argument("--variant-src")
@@ -368,7 +369,7 @@ def main(argv=None):
             rec = rehearse_fixed(a.job, a.out, lambda bdir, arm: FixedBatchServer(bdir, arm), variant_src=a.variant_src)
         else:
             rec = rehearse_serving(a.job, json.load(open(a.w1_lengths)), a.out, lambda bdir, arm: MR.MoProcessServer(bdir, arm), ML.replay,
-                                   a.rmin or 3.0, a.factor or 1.15, a.workload)
+                                   a.rmin or 3.0, a.factor or 1.15, a.workload, arm=a.arm)
         print(json.dumps({k: rec.get(k) for k in ("passed", "kind", "harness_digest", "verdict_rows", "reason", "stages")}))
         return 0 if rec["passed"] else EXIT_ABORT
     plan = _plan(a)

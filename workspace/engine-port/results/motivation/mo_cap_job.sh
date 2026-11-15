@@ -87,6 +87,7 @@ else
   [[ -n "${wl}" ]] && common+=(--workload "${wl}")
   [[ -n "${PDMUX_MOCAP_RMIN:-}" ]] && common+=(--rmin "${PDMUX_MOCAP_RMIN}")
   [[ -n "${PDMUX_MOCAP_FACTOR:-}" ]] && common+=(--factor "${PDMUX_MOCAP_FACTOR}")
+  [[ -n "${PDMUX_MOCAP_ARM:-}" ]] && common+=(--arm "${PDMUX_MOCAP_ARM}")      # one Job per arm (2026-11-15); empty = both arms in one Job
 fi
 if [[ -n "${PDMUX_MOCAP_EXPECT_HARNESS_DIGEST:-}" ]]; then
   hd="$(cd "${here}" && python3 -c 'import mo_rehearsal as m; print(m.harness_digest())')"

@@ -138,9 +138,9 @@ def perf_by_combo(capacity):
 CAPACITY = {(0.6, 48): 4.0, (0.75, 48): 4.0, (0.75, 128): 6.0, (0.75, 256): 6.0}
 
 
-def run_serving(td, job="JS", capacity=None, tamper=None, seeds=None, rehearsal=False, server=KvServer):
+def run_serving(td, job="JS", capacity=None, tamper=None, seeds=None, rehearsal=False, server=KvServer, arm=None):
     with mock.patch.object(CS, "CONFIRMED", ALL), mock.patch.object(MS, "default_fixed", lambda: dict(MS.REHEARSAL_FIXED)):
-        plan = CS.serving_plan(job, "W1", 3.0, 1.3, run_s=4.0, seeds=seeds, rehearsal=rehearsal)
+        plan = CS.serving_plan(job, "W1", 3.0, 1.3, run_s=4.0, seeds=seeds, rehearsal=rehearsal, arm=arm)
         card = MC.build_card(plan, TH.POOL)
         out = Path(td) / "raw"
         tb = tamper or {}
@@ -190,7 +190,7 @@ class TestCellTable(unittest.TestCase):
         with mock.patch.dict(CS.PROPOSED, {"new_value": (1, "no decision yet")}):
             self.assertEqual(CS.open_items(), ["new_value"])                    # listed explicitly: nothing is confirmed by default
             self.assertTrue(any("UNCONFIRMED" in x for x in CS.fixed_plan_problems(CS.fixed_plan("J", rounds=(1,)))))
-        self.assertTrue(all(MS.is_pending(v) for v in CS.FIX_RULE.values()))     # the rule thresholds stay with the pre-registration
+        self.assertFalse(any(MS.is_pending(v) for v in CS.FIX_RULE.values()))    # registered by the serving pre-registration (2026-11-15)
 
     def test_same_table_as_the_prediction_script(self):
         d = json.loads((ENG.parents[1] / "reports" / "motivation_gap_2026-11-09" / "predict_motivation_charts.json").read_text())
@@ -816,9 +816,8 @@ class TestServingEndToEnd(unittest.TestCase):
         an = CA.analyze_serving(self.out, thresholds=dict(TH_OK, cap_tie_break="higher", min_kv_tokens_per_slot=2200))
         self.assertEqual(an["fix"]["status"], "USER_DECISION")                 # 540,000 / 256 = 2,109 tokens per slot
 
-    def test_thresholds_are_pending_until_registered(self):
-        self.assertTrue(all(MS.is_pending(v) for v in CS.FIX_RULE.values()))
-        f = CA.analyze_serving(self.out)["fix"]
+    def test_a_pending_threshold_fixes_nothing(self):
+        f = CA.analyze_serving(self.out, thresholds=dict(TH_OK, mem_tie_break=MS.pend("x")))["fix"]
         self.assertEqual(f["status"], "PENDING_THRESHOLD")
         self.assertEqual((f["mem"], f["cap"]), (None, None))
         fixed = CA.apply_fix(f)
@@ -842,7 +841,8 @@ class TestServingEndToEnd(unittest.TestCase):
 
 
 class TestFixRule(unittest.TestCase):
-    """The rule on hand-built pair rows (arms K1, K2; four rungs)."""
+    """The rule on hand-built pair rows (the two registered arms; four rungs)."""
+    K1, K2 = CS.P("sv_arms")
 
     def res(self, mem=("", ""), c128=("", ""), c256=("", ""), kv=None, flags=(), rehearsal=False):
         def rows(key, hi, lo, pat):
@@ -850,11 +850,11 @@ class TestFixRule(unittest.TestCase):
             return [{"arm_key": key, "hi": hi, "lo": lo, "rate": i, "label": {"u": "A>B", "d": "A<B"}.get(ch, "SLO_DEPENDENT")}
                     for i, ch in enumerate(pat)]
         out = []
-        for k, i in (("K1", 0), ("K2", 1)):
+        for k, i in ((self.K1, 0), (self.K2, 1)):
             out += rows(k, [0.75, 48], [0.6, 48], mem[i]) + rows(k, [0.75, 128], [0.75, 48], c128[i]) + rows(k, [0.75, 256], [0.75, 128], c256[i])
         kv = kv or {(0.6, 48): 2e6, (0.75, 48): 2e6, (0.75, 128): 1.6e6, (0.75, 256): 5.4e5}
         return {"rehearsal": rehearsal, "flags": list(flags), "verdict_rows": out,
-                "combos": [{"arm_key": k, "mem": m, "cap": c, "max_total_num_tokens": v} for k in ("K1", "K2") for (m, c), v in kv.items()]}
+                "combos": [{"arm_key": k, "mem": m, "cap": c, "max_total_num_tokens": v} for k in (self.K1, self.K2) for (m, c), v in kv.items()]}
 
     def fix(self, th=None, **kw):
         f = CA.fix_cap_mem(self.res(**kw), dict(TH_OK, **(th or {})))
@@ -891,12 +891,25 @@ class TestFixRule(unittest.TestCase):
     def test_not_judgeable_and_pending(self):
         self.assertEqual(self.fix(rehearsal=True)[0], "NOT_JUDGEABLE")
         self.assertEqual(self.fix(flags=("ANCHOR_DRIFT",))[0], "NOT_JUDGEABLE")
-        self.assertEqual(CA.fix_cap_mem(self.res(mem=("uu", "uu")))["status"], "PENDING_THRESHOLD")
         self.assertEqual(CA.fix_cap_mem(self.res(), dict(TH_OK, cap_tie_break=MS.pend("x")))["status"], "PENDING_THRESHOLD")
+
+    def test_registered_thresholds_of_2026_11_15(self):
+        self.assertEqual(CS.FIX_RULE, {"min_rungs_agree": 2, "mem_tie_break": "higher", "cap_tie_break": "lower", "min_kv_tokens_per_slot": 6648})
+        f = lambda **kw: (lambda r: (r["status"], r["mem"], r["cap"]))(CA.fix_cap_mem(self.res(**kw)))       # no thresholds passed: the registered ones
+        self.assertEqual(f(), ("FIXED", 0.75, 48))                                          # no difference anywhere -> higher mem, lower cap
+        self.assertEqual(f(mem=("u", "u")), ("FIXED", 0.75, 48))                            # one rung is not a direction
+        self.assertEqual(f(mem=("dd", "dd")), ("FIXED", 0.6, 48))
+        self.assertEqual(f(c128=("uu", "uu")), ("FIXED", 0.75, 128))                        # 1.6e6 / 128 = 12500 >= 6648
+        self.assertEqual(f(c128=("uu", "uu"), c256=("uu", "uu"))[0], "USER_DECISION")       # 5.4e5 / 256 = 2109 < 6648
+
+    def test_one_arm_alone_fixes_nothing(self):
+        r = self.res(mem=("uu", "uu"))
+        r["verdict_rows"] = [x for x in r["verdict_rows"] if x["arm_key"] == self.K1]
+        self.assertEqual(CA.fix_cap_mem(r, TH_OK)["status"], "ONE_ARM_JOB")
 
     def test_missing_pair_rows_are_never_no_difference(self):
         r = self.res(mem=("uu", "uu"))
-        r["verdict_rows"] = [x for x in r["verdict_rows"] if not (x["arm_key"] == "K2" and x["hi"] == [0.75, 128])]
+        r["verdict_rows"] = [x for x in r["verdict_rows"] if not (x["arm_key"] == self.K2 and x["hi"] == [0.75, 128])]
         self.assertEqual(CA.fix_cap_mem(r, TH_OK)["status"], "USER_DECISION")
 
     def test_fewer_than_four_seeds_is_not_judgeable(self):
@@ -907,6 +920,59 @@ class TestFixRule(unittest.TestCase):
             self.assertIn("N_LT_4_SEEDS", an["flags"])
             self.assertTrue(all(r["label"] == "NOT_JUDGEABLE_N" for r in an["verdict_rows"]))
             self.assertEqual(an["fix"]["status"], "NOT_JUDGEABLE")
+
+
+class TestOneJobPerArm(unittest.TestCase):
+    """User decision 2026-11-15: the serving comparison runs as one Job per arm; the fixing rule reads the two Jobs side by side."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.td = tempfile.TemporaryDirectory()
+        cls.an, cls.plans = {}, {}
+        for k in CS.P("sv_arms"):
+            with mock.patch.dict(os.environ, {"PDMUX_JOB_NAME": f"job-{k}"}):
+                out, cls.plans[k], _, res = run_serving(Path(cls.td.name) / k, job=f"JA-{k}", arm=k)
+            assert MR.exit_code(res) == 0
+            cls.an[k] = CA.analyze_serving(out, thresholds=TH_OK)
+        cls.whole = CA.analyze_serving(run_serving(Path(cls.td.name) / "whole")[0], thresholds=TH_OK)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    def test_plan_holds_one_arm_its_four_combinations_and_the_anchor_arm(self):
+        sg, pm = CS.P("sv_arms")
+        for k, p in self.plans.items():
+            with mock.patch.object(CS, "CONFIRMED", ALL):
+                self.assertEqual(CS.serving_plan_problems(p, allow_placeholders=True), [])
+            meas = [b for b in p["boots"] if b["role"] == "meas"]
+            self.assertEqual(({b["arm_def"]["params"]["key"] for b in meas}, len(meas), p["arm_keys"]), ({k}, 4, [k]))
+            self.assertEqual([b["arm_def"]["params"]["key"] for b in p["boots"] if b["role"] == "anchor"], [MS.ANCHOR_KEY] * 2)
+            self.assertEqual(sum(b["role"] == "split_check" for b in p["boots"]), 1 if k == MS.BUNDLE_KEY else 0)
+        with self.assertRaises(ValueError):
+            CS.serving_plan("J", "W1", 3.0, 1.3, arm="NOT_AN_ARM")
+        bad = copy.deepcopy(self.plans[sg])
+        bad["arm_keys"] = list(CS.P("sv_arms"))
+        self.assertTrue(any("boot order" in m for m in CS.serving_plan_problems(bad, allow_placeholders=True)))
+
+    def test_one_arm_job_fixes_nothing_and_the_two_jobs_together_do(self):
+        a, b = (self.an[k] for k in CS.P("sv_arms"))
+        self.assertEqual((a["fix"]["status"], b["fix"]["status"]), ("ONE_ARM_JOB", "ONE_ARM_JOB"))
+        both = CA.combine_serving(a, b, TH_OK)
+        self.assertEqual((both["merged"], len(both["verdict_rows"]), len(both["combos"])), (False, len(a["verdict_rows"]) + len(b["verdict_rows"]), 8))
+        self.assertEqual(both["verdict_rows"], a["verdict_rows"] + b["verdict_rows"])       # rows are carried, never recomputed
+        w = self.whole["fix"]
+        self.assertEqual((both["fix"]["status"], both["fix"]["mem"], both["fix"]["cap"]), (w["status"], w["mem"], w["cap"]))
+        self.assertEqual(w["status"], "FIXED")
+
+    def test_combination_refusals(self):
+        a, b = (self.an[k] for k in CS.P("sv_arms"))
+        for bad in (dict(b, arm_keys=a["arm_keys"]), dict(b, job=a["job"]), dict(b, workload="other"), dict(b, grid_rates=[1.0]),
+                    dict(b, seeds=[1]), dict(b, rehearsal=True)):
+            with self.assertRaises(ValueError):
+                CA.combine_serving(a, bad, TH_OK)
+        flagged = CA.combine_serving(a, dict(b, flags=["ANCHOR_DRIFT"]), TH_OK)
+        self.assertEqual(flagged["fix"]["status"], "NOT_JUDGEABLE")                          # a flag of either Job stops the rule
 
 
 # ---- 6. rehearsal -----------------------------------------------------------------------------------------------------------------------------------
@@ -1112,7 +1178,7 @@ class TestMutants(unittest.TestCase):
         return TestFixRule().fix(mem=("dd", "dd"), c128=("uu", "uu"))[0] == "USER_DECISION"
 
     def o_pending(self):
-        return CA.fix_cap_mem(TestFixRule().res(mem=("uu", "uu")))["status"] == "PENDING_THRESHOLD"
+        return CA.fix_cap_mem(TestFixRule().res(mem=("uu", "uu")), dict(TH_OK, min_rungs_agree=MS.pend("x")))["status"] == "PENDING_THRESHOLD"
 
     def o_one_factor_pairs(self):
         return all(sum(1 for x, y in zip(hi, lo) if x != y) == 1 for hi, lo, _ in CA.serving_pairs()) and len(CA.serving_pairs()) == 4
