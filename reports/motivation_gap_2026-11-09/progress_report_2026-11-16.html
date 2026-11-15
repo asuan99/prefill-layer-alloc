@@ -1,0 +1,139 @@
+<title>Motivation 측정 진행 보고</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+KR:wght@400;500;700&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: 한 줄 기둥의 보고서. 위에서 아래로 "요약 → 무엇을 재나 → 어디까지 왔나 → 사전 점검에서 본 것 → 설계에서 바뀐 것 → 다음".
+   색은 진행 상태 네 가지(완료·진행 중·미진행·수정 중)에만 쓴다. 토큰은 저장소의 서빙 축 지도와 같은 계열. */
+:root{
+  --bg:#f5f6f4; --surface:#ffffff; --sunk:#eceeea; --fg:#1b1f1d; --muted:#5b625e; --line:#d5d9d3; --accent:#1e5a66;
+  --ok:#2f6b3a; --warn:#8a6100; --bad:#a3322a; --idle:#5b625e;
+  --ok-t:#e2efe3; --warn-t:#f5ecd3; --bad-t:#f6e0dd; --idle-t:#e8eae7;
+  --f-body:"IBM Plex Sans KR","Apple SD Gothic Neo","Noto Sans KR","Malgun Gothic",system-ui,sans-serif;
+  --f-mono:"IBM Plex Mono",ui-monospace,"SFMono-Regular",Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#141716; --surface:#1c201f; --sunk:#232826; --fg:#e4e8e5; --muted:#9aa39e; --line:#333a37; --accent:#7cc0cc;
+  --ok:#8fcf98; --warn:#e3c06a; --bad:#f0958b; --idle:#9aa39e;
+  --ok-t:#1f3022; --warn-t:#352d17; --bad-t:#3a2220; --idle-t:#262b29; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#141716; --surface:#1c201f; --sunk:#232826; --fg:#e4e8e5; --muted:#9aa39e; --line:#333a37; --accent:#7cc0cc;
+  --ok:#8fcf98; --warn:#e3c06a; --bad:#f0958b; --idle:#9aa39e;
+  --ok-t:#1f3022; --warn-t:#352d17; --bad-t:#3a2220; --idle-t:#262b29; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font-family:var(--f-body);font-size:16px;line-height:1.65;margin:0}
+.wrap{max-width:860px;margin:0 auto;padding-block:32px 64px;padding-left:max(20px,env(safe-area-inset-left,0px));padding-right:max(20px,env(safe-area-inset-right,0px));display:flex;flex-direction:column;gap:34px}
+header{display:flex;flex-direction:column;gap:10px}
+.eyebrow{font-family:var(--f-mono);font-size:.75rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+h1{font-size:1.9rem;line-height:1.3;margin:0;text-wrap:balance;letter-spacing:-.01em}
+h2{font-size:1.25rem;line-height:1.35;margin:0;text-wrap:balance}
+p{margin:0;max-width:68ch}
+section{display:flex;flex-direction:column;gap:14px}
+.lede{font-size:1.06rem}
+.sub{color:var(--muted);font-size:.92rem}
+.box{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:16px 18px;display:flex;flex-direction:column;gap:10px}
+.box ul,.plain{margin:0;padding-left:1.15rem;display:flex;flex-direction:column;gap:7px;max-width:68ch}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.92rem}
+th,td{text-align:left;vertical-align:top;padding:9px 12px;border-bottom:1px solid var(--line)}
+th{font-weight:500;color:var(--muted);font-size:.8rem;background:var(--sunk);white-space:nowrap}
+tr:last-child td{border-bottom:0}
+td.n{font-variant-numeric:tabular-nums;white-space:nowrap}
+.st{display:inline-block;font-size:.78rem;font-weight:500;padding:1px 9px;border-radius:999px;white-space:nowrap}
+.s-ok{background:var(--ok-t);color:var(--ok)} .s-run{background:var(--warn-t);color:var(--warn)}
+.s-idle{background:var(--idle-t);color:var(--idle)} .s-fix{background:var(--bad-t);color:var(--bad)}
+.legend{display:flex;flex-wrap:wrap;gap:8px}
+.note{background:var(--warn-t);border-radius:8px;padding:10px 14px;font-size:.9rem;max-width:none}
+.note b{color:var(--warn)}
+.steps{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:10px}
+@media (max-width:760px){.steps{grid-template-columns:1fr 1fr}}
+@media (max-width:440px){.steps{grid-template-columns:1fr}}
+.step{background:var(--surface);border:1px solid var(--line);border-radius:10px;padding:12px 14px;display:flex;flex-direction:column;gap:6px;min-width:0}
+.step h3{font-size:.98rem;margin:0;line-height:1.35}
+.step p{font-size:.86rem;color:var(--muted)}
+footer{border-top:1px solid var(--line);padding-top:16px;color:var(--muted);font-size:.82rem;display:flex;flex-direction:column;gap:4px}
+code{font-family:var(--f-mono);font-size:.86em}
+</style>
+
+<div class="wrap">
+<header>
+  <div class="eyebrow">Hybrid LLM PD-mux 서빙 · 2026-11-16 보고</div>
+  <h1>Motivation 측정 진행 보고</h1>
+  <p class="lede">본 측정 가운데 앞의 두 가지(고정 배치, 서빙 상한 비교)를 제출했고 GPU 배정을 기다리고 있습니다. 측정 결과는 아직 없습니다. 지난 한 주는 측정 도구를 GPU에서 끝까지 돌려 보는 점검, 도착률 범위를 정하는 사전 점검, 측정 계획의 사전 등록과 외부 검토에 썼습니다.</p>
+  <p class="sub">기판: A100 80GB 1장(VESSL). 주 모델: Nemotron-Nano-9B-v2. 엔진: SGLang v0.5.10, vLLM 0.31.0.</p>
+</header>
+
+<section>
+  <h2>무엇을 재려 하나</h2>
+  <p>제안 기법을 설계하기 전에, hybrid 모델을 한 GPU에서 서빙할 때 기존 방식이 어디에서 부족한지를 직접 재서 보이는 것이 목표입니다. 측정은 네 가지이고 앞의 것이 뒤의 것의 입력이 됩니다.</p>
+  <div class="steps">
+    <div class="step"><span class="st s-run">제출, 배정 대기</span><h3>고정 배치</h3><p>문맥 길이와 배치 크기를 바꿔 가며 decode 한 step의 시간을 잽니다. Nano와, 같은 골격을 전부 attention으로 바꾼 대조 모델을 나란히 잽니다.</p></div>
+    <div class="step"><span class="st s-run">제출, 배정 대기</span><h3>서빙 상한 비교</h3><p>메모리 비율과 동시 실행 상한을 바꿨을 때 SLO 달성률이 달라지는지 봅니다. 뒤 측정에서 쓸 설정값을 정하는 용도입니다.</p></div>
+    <div class="step"><span class="st s-idle">계획 작성 전</span><h3>1단계 비교</h3><p>SGLang 기본 방식, vLLM, PD-mux를 같은 부하에서 비교합니다. 워크로드는 짧은 대화, 여러 턴 대화, 긴 문서 요약입니다.</p></div>
+    <div class="step"><span class="st s-idle">계획 작성 전</span><h3>간섭 셀</h3><p>짧은 요청이 흐르는 중에 아주 긴 요청이 섞이면 짧은 요청의 SLO가 얼마나 무너지는지를 decode 쪽 SM 수 네 가지에서 봅니다.</p></div>
+  </div>
+  <p class="sub">간섭 셀은 지난 보고에서 주신 의견(단일 GPU는 고정 분할로 두고 보라)을 반영해, PD-mux의 decode SM 수를 16·24·34·44로 넓혀 재도록 바꿨습니다.</p>
+</section>
+
+<section>
+  <h2>어디까지 왔나</h2>
+  <div class="legend"><span class="st s-ok">완료</span><span class="st s-run">진행 중</span><span class="st s-idle">미진행</span><span class="st s-fix">오류·수정 중</span></div>
+  <div class="tbl"><table>
+    <thead><tr><th>상태</th><th>단계</th><th>내용</th></tr></thead>
+    <tbody>
+      <tr><td><span class="st s-ok">완료</span></td><td>측정 도구 구현</td><td>부팅 구성 대조, 원자료 형식 검사, 분석까지 한 묶음. CPU 시험 278개 통과</td></tr>
+      <tr><td><span class="st s-ok">완료</span></td><td>GPU 완주 점검</td><td>고정 배치 도구를 GPU에서 처음부터 끝까지 돌림. 7번째 시도에서 부팅 20개 전부 통과</td></tr>
+      <tr><td><span class="st s-ok">완료</span></td><td>도착률 사전 점검</td><td>네 워크로드에서 SLO가 깨지기 시작하는 도착률 범위를 찾음. 측정이 아니라 격자를 고르는 용도</td></tr>
+      <tr><td><span class="st s-ok">완료</span></td><td>사전 등록 2건</td><td>고정 배치(검토 1회), 서빙 상한 비교(검토 2회). 읽는 규칙과 금지 문장을 데이터 전에 고정</td></tr>
+      <tr><td><span class="st s-run">진행 중</span></td><td>고정 배치 측정</td><td>Job 2개(같은 측정을 두 번) 제출. 각 약 4시간 예상. 배정 대기</td></tr>
+      <tr><td><span class="st s-run">진행 중</span></td><td>서빙 상한 비교 측정</td><td>Job 2개(방식별 1개) 제출. 각 약 7–10시간 예상. 배정 대기</td></tr>
+      <tr><td><span class="st s-idle">미진행</span></td><td>1단계 비교, 간섭 셀</td><td>위 두 측정의 결과(설정값, 실제 소요 시간)를 받아 계획을 씁니다</td></tr>
+    </tbody>
+  </table></div>
+  <p class="note"><b>일정.</b> 제출한 Job 네 개가 아직 GPU를 배정받지 못했습니다. 배정되면 고정 배치는 반나절 안에, 서빙 상한 비교는 하루 안에 끝날 분량입니다. 배정 시점은 제가 정할 수 없어 결과 날짜를 약속드리기 어렵습니다.</p>
+</section>
+
+<section>
+  <h2>사전 점검에서 본 것</h2>
+  <p>아래는 도착률 범위를 정하려고 짧게 돌린 점검에서 나온 관찰입니다. 설정이 임시값이고 반복이 2회뿐이라 결과로 인용하지 않습니다. 계획을 바꾸게 만든 관찰만 적습니다.</p>
+  <div class="box">
+    <ul>
+      <li><b>긴 문서 요약에서는 "첫 토큰 1초" 기준이 부하와 상관없이 지켜지지 않습니다.</b> 입력이 길면(중앙값 약 6,500토큰) 요청이 하나뿐이어도 첫 토큰까지 1초가 넘습니다. 그래서 이 워크로드의 가장 엄격한 기준만 "요청 하나일 때 걸리는 시간의 3·5·10배 이내"로 바꿔 읽기로 했습니다. Splitwise, Mooncake, LoongServe가 쓰는 방식과 같은 형태입니다. 기준이 되는 시간은 고정 배치 측정에서 함께 얻습니다.</li>
+      <li><b>여러 턴 대화에서 PD-mux는 가장 엄격한 기준을 가장 낮은 부하에서도 맞추지 못했습니다.</b> 원인은 토큰 간격이 아니라 첫 토큰 시간 쪽이었습니다. 도착률을 더 낮춰 맞추지 않고, 그대로 "최저 부하부터 미달"로 기록하기로 했습니다.</li>
+      <li><b>방식마다 버티는 도착률 범위가 몇 배씩 다릅니다.</b> 한 격자로 여러 방식을 비교할 때 어느 한쪽은 "전부 통과"나 "전부 실패"만 나오기 쉽다는 뜻이어서, 격자를 고를 때 방식별로 정보가 남는 단이 몇 개인지를 먼저 계산하게 됐습니다.</li>
+    </ul>
+  </div>
+</section>
+
+<section>
+  <h2>계획을 검토하며 바뀐 것</h2>
+  <p>두 측정 계획 모두 데이터를 보기 전에 독립 검토를 받았습니다. 검토에서 나온 지적 가운데 결과 해석에 영향을 주는 것만 적습니다.</p>
+  <ul class="plain">
+    <li><b>두 방식은 같은 도착률에서 잽니다.</b> 방식마다 다른 격자를 쓰면 정보는 늘지만 "두 방식이 같은 방향인가"를 서로 다른 부하에서 묻게 되어, 공통 격자(초당 1.66·3.03·5.52·10.05 요청)를 유지했습니다.</li>
+    <li><b>설정값은 두 방식이 같은 방향을 가리킬 때만 자동으로 정해집니다.</b> 한쪽만 좋아지거나, 첫 토큰 시간과 토큰 간격이 엇갈리면 표를 보고 직접 고릅니다.</li>
+    <li><b>서빙 상한 비교는 "차이를 보지 못함"으로 끝날 가능성이 높습니다.</b> 그 경우 "설정이 SLO에 영향이 없다"가 아니라 "이 측정으로는 차이를 보지 못했다"로만 씁니다. 이 한계를 계획서에 미리 적어 두었습니다.</li>
+    <li><b>일부가 실패해도 나머지는 읽습니다.</b> 부팅 하나가 실패하면 그 칸만 "미측정"으로 남기고 표를 버리지 않습니다. 첫 계획 초안은 긴 측정 전체를 무효로 처리하게 되어 있었습니다.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>다음 순서와 여쭙고 싶은 점</h2>
+  <ul class="plain">
+    <li>Job이 끝나는 대로 회수해 고정 배치 표(문맥·배치별 step 시간, Nano 대 대조 모델)와 서빙 상한 비교 표를 만듭니다. 결과 문장은 독립 검토를 거친 뒤에 보고드리겠습니다.</li>
+    <li>그 결과로 1단계 비교와 간섭 셀의 계획을 씁니다. 두 계획은 설정값과 실제 소요 시간을 입력으로 받기 때문에 지금 쓰면 대부분 다시 써야 합니다.</li>
+  </ul>
+  <div class="box">
+    <p><b>의견을 듣고 싶은 두 가지</b></p>
+    <ul>
+      <li><b>간섭 셀의 짧은 요청 도착률 세 점.</b> 긴 요청이 없을 때 모든 방식이 SLO를 지키는 범위(초당 0.5–1.23 요청) 안에서 고릅니다. 넓게 벌린 세 점(0.5·0.91·1.23)과 위쪽에 모은 세 점(0.68·0.91·1.23) 중 무엇이 주장에 더 맞을지입니다. 긴 요청을 얹은 쪽은 아직 돌려 본 적이 없습니다.</li>
+      <li><b>1단계 비교의 도착률 단 수.</b> 4단이면 워크로드당 약 9시간, 5단이면 약 12시간, 6단이면 약 14시간의 부하 시간이 듭니다. 방식 일곱 가지가 한 Job 안에 있어야 비교가 성립해 Job을 나눌 수 없습니다.</li>
+    </ul>
+  </div>
+</section>
+
+<footer>
+  <span>이 보고서의 수치 가운데 측정 결과는 없습니다. 사전 점검 값은 격자 선택용이며 인용하지 않습니다.</span>
+  <span>세부: 저장소 <code>results/motivation/PREREG_CAP_FIXED_BATCH_rev1_2026-11-15.md</code>, <code>PREREG_CAP_MEM_SERVING_rev1_2026-11-15.md</code>, 측정 로드맵 페이지.</span>
+</footer>
+</div>
