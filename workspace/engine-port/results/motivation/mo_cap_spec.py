@@ -625,7 +625,9 @@ def estimate_serving(plan):
     tot = load_min + drain_min + boot_min + JOB_START_MIN
     return {"boots": len(plan["boots"]), "runs": len(runs), "load_h": round(load_min / 60.0, 2), "drain_min": round(drain_min, 1),
             "boot_min": boot_min, "start_min": JOB_START_MIN, "total_h": round(tot / 60.0, 2),
-            "basis": "load = sum n / rate, drain 0.6 min per run (sb_spec.DRAIN_MIN), boot 6 min, start 20 min"}
+            "basis": "load = sum n / rate, drain 0.6 min per run (sb_spec.DRAIN_MIN), boot 6 min, start 20 min.  NOT modelled: a rung above "
+                     "the arm's capacity drains its backlog after the 300 s of arrivals (up to the 600 s client timeout per cell); the Job "
+                     "budget must cover it (PREREG_CAP_MEM_SERVING section 6)"}
 
 
 def main(argv=None):

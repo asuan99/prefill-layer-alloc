@@ -398,6 +398,21 @@ def banner_tokens(job):
     return out
 
 
+def unresolved_error(req):
+    """A failed request whose SLO outcome is NOT certain (prereg R-7).  A request without a first token after more than the largest TTFT
+    of the SLO grid, or with a first token later than that, misses every SLO pair whatever ended it (the 600 s client timeout of an
+    overloaded rung is this case): it is an SLO miss, not an error.  Anything else that failed -- a dropped connection, a server death
+    early in the request -- could have met an SLO and is counted here."""
+    failed = bool(req.get("error")) or req.get("ttft_ms") is None
+    if not failed:
+        return False
+    worst = max(MS.TTFT_GRID_MS)
+    if req.get("ttft_ms") is not None:
+        return req["ttft_ms"] <= worst
+    t0, t1 = req.get("t_sent_mono"), req.get("t_finished_mono")
+    return t0 is None or t1 is None or (t1 - t0) * 1000.0 < worst
+
+
 def pair_rows(job, tab=None):
     """One row per arm, registered pair and rung.  A pair with a combination whose boot did not finish gives no row (the fixing rule
     never reads a missing pair as 'no difference')."""
@@ -417,7 +432,8 @@ def pair_rows(job, tab=None):
                              "diff_pp_primary": tab[(ah, rt)]["grid"][MS.PRIMARY_SLO] - tab[(al, rt)]["grid"][MS.PRIMARY_SLO],
                              "good_rps_hi": tab[(ah, rt)]["good_rps"], "good_rps_lo": tab[(al, rt)]["good_rps"],
                              "seed_att_hi": tab[(ah, rt)]["seed_att"], "seed_att_lo": tab[(al, rt)]["seed_att"],
-                             "n_error_hi": tab[(ah, rt)]["n_error"], "n_error_lo": tab[(al, rt)]["n_error"]})
+                             "n_error_hi": tab[(ah, rt)]["n_error"], "n_error_lo": tab[(al, rt)]["n_error"],
+                             "n_failed_hi": tab[(ah, rt)].get("n_failed"), "n_failed_lo": tab[(al, rt)].get("n_failed")})
     return rows
 
 
@@ -431,6 +447,11 @@ def analyze_serving(raw, clk_csv=None, thresholds=None):
     tab = MA.rung_table(job)
     whole = {b["arm"] for b in job["plan"]["boots"] if b["role"] == "meas" and job["done"].get(b["boot_id"], {}).get("status") == "done"}
     tab = {k: v for k, v in tab.items() if k[0] in whole}           # a boot that did not finish gives no rung, not a partial one
+    for k, runs in MA.by_arm_rate(job).items():
+        if k in tab:
+            reqs = [x for r in runs for x in MA.reqs_of(r)]
+            tab[k]["n_failed"] = tab[k]["n_error"]                    # every failed request (all are SLO misses)
+            tab[k]["n_error"] = sum(1 for x in reqs if unresolved_error(x))     # R-7 counts only the failures whose SLO outcome is uncertain
     rows = pair_rows(job, tab)
     mark = "REHEARSAL" if job["plan"]["rehearsal"] else ("NOT_JUDGEABLE_N" if any(f.startswith("N_LT") for f in fl) else "")
     for r in rows:
@@ -566,8 +587,11 @@ def combine_serving(res_a, res_b, thresholds=None):
         raise ValueError("the fixing rule is read on measurement Jobs, not rehearsals")
     if res_a["job"] == res_b["job"] or sorted(res_a["arm_keys"] + res_b["arm_keys"]) != sorted(CS.P("sv_arms")):
         raise ValueError(f"needs two different Jobs whose arms are exactly {CS.P('sv_arms')}; got {res_a['arm_keys']} / {res_b['arm_keys']}")
-    for k in ("workload", "grid_rates", "seeds", "n_requests_by_rate"):
+    for k in ("workload", "grid_rates", "seeds"):
         if res_a[k] != res_b[k]:
+            raise ValueError(f"the two Jobs differ in {k}: {res_a[k]} / {res_b[k]}")
+    for k in ("n_requests_by_rate",):                   # a Job whose boots all failed has no count to compare (its pairs go to the user)
+        if any(x and y and x != y for x, y in ((res_a[k].get(rt), res_b[k].get(rt)) for rt in set(res_a[k]) | set(res_b[k]))):
             raise ValueError(f"the two Jobs differ in {k}: {res_a[k]} / {res_b[k]}")
     res = {"job": [res_a["job"], res_b["job"]], "kind": CS.KIND_SERVING, "rehearsal": False, "merged": False,
            "flags": [f"{r['job']}:{f}" for r in (res_a, res_b) for f in r["flags"]], "arm_keys": res_a["arm_keys"] + res_b["arm_keys"],
@@ -590,7 +614,7 @@ def apply_fix(fix, fixed=None):
 
 
 SERVING_COLS = ("arm_key", "factor", "hi", "lo", "rate", "label", "n_informative_pairs", "att_hi_primary", "att_lo_primary", "diff_pp_primary",
-                "good_rps_hi", "good_rps_lo", "seed_att_hi", "seed_att_lo", "n_error_hi", "n_error_lo")
+                "good_rps_hi", "good_rps_lo", "seed_att_hi", "seed_att_lo", "n_error_hi", "n_error_lo", "n_failed_hi", "n_failed_lo")
 
 
 def write_serving(res, out_dir):

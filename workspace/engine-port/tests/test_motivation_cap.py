@@ -1071,6 +1071,40 @@ class TestServingAuditRepairs(unittest.TestCase):
         rows = [r for r in an["verdict_rows"] if r["rate"] == top and r["arm_key"] == CS.P("sv_arms")[0] and [0.75, 128] in (r["hi"], r["lo"])]
         self.assertTrue(rows and all((r["n_error_hi"] if r["hi"] == [0.75, 128] else r["n_error_lo"]) == len(self.plan["seeds"]) for r in rows))
         self.assertEqual(sum(r["n_error_hi"] + r["n_error_lo"] for r in an["verdict_rows"] if r not in rows), 0)
+        clean = CA.analyze_serving(self.out, thresholds=TH_OK)                               # a failed request is an SLO miss, never a good one
+        key = lambda r: (r["arm_key"], tuple(r["hi"]), tuple(r["lo"]), r["rate"])
+        was = {key(r): r for r in clean["verdict_rows"]}
+        for r in rows:
+            side = "hi" if r["hi"] == [0.75, 128] else "lo"
+            self.assertLess(r[f"good_rps_{side}"], was[key(r)][f"good_rps_{side}"] + 1e-12)
+            self.assertLessEqual(r[f"att_{side}_primary"], was[key(r)][f"att_{side}_primary"])
+
+    def test_timeout_past_every_slo_is_a_miss_not_an_error(self):
+        # audit round 2: the 600 s client timeout of an overloaded rung must not turn "no difference" into USER_DECISION
+        base = {"error": "TimeoutError", "error_kind": "CLIENT_EXCEPTION", "ttft_ms": None, "t_sent_mono": 10.0}
+        self.assertFalse(CA.unresolved_error(dict(base, t_finished_mono=610.0)))                # no first token for 600 s
+        self.assertFalse(CA.unresolved_error(dict(base, t_finished_mono=15.001)))               # ... or for just over the largest TTFT
+        self.assertTrue(CA.unresolved_error(dict(base, t_finished_mono=14.0)))                  # failed after 4 s: it could have met an SLO
+        self.assertTrue(CA.unresolved_error(dict(base, t_finished_mono=None)))
+        self.assertFalse(CA.unresolved_error(dict(base, ttft_ms=6000.0, t_finished_mono=30.0)))  # first token already later than every TTFT
+        self.assertTrue(CA.unresolved_error(dict(base, ttft_ms=800.0, t_finished_mono=30.0)))    # cut mid-stream after a timely first token
+        self.assertFalse(CA.unresolved_error({"error": "", "ttft_ms": 800.0}))
+        b = self.boot(0.75, 48)
+        top = self.plan["grid"]["rates"][-1]
+
+        def timeouts(d):
+            for r in b["runs"]:
+                if r["rate"] == top:
+                    p = d / "runs" / f"{r['run_id']}.json"
+                    j = json.loads(p.read_text())
+                    for q in j["segments"][0]["requests"][:3]:
+                        q.update(error="TimeoutError", error_kind="CLIENT_EXCEPTION", ttft_ms=None, token_itl_ms=[], token_t_mono=[],
+                                 chunk_delta=[], observed_output_tokens=0, t_finished_mono=q["t_sent_mono"] + 600.0)
+                    p.write_text(json.dumps(j))
+        an = CA.analyze_serving(self.broken(timeouts), thresholds=TH_OK)
+        rows = [r for r in an["verdict_rows"] if r["rate"] == top and r["arm_key"] == CS.P("sv_arms")[0] and [0.75, 48] in (r["hi"], r["lo"])]
+        side = lambda r: "hi" if r["hi"] == [0.75, 48] else "lo"
+        self.assertTrue(rows and all(r[f"n_error_{side(r)}"] == 0 and r[f"n_failed_{side(r)}"] == 3 * len(self.plan["seeds"]) for r in rows))
 
     def test_goodput_duration_is_the_sum_over_seeds(self):
         an = CA.analyze_serving(self.out, thresholds=TH_OK)
