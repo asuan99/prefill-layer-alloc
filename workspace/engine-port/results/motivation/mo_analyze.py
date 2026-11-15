@@ -120,8 +120,11 @@ def by_arm_rate(job):
 
 
 # ---- Job validity ----------------------------------------------------------------------------------------------------------------
-def job_problems(job, cell_key=None, split_fn=None):
+def job_problems(job, cell_key=None, split_fn=None, partial=False):
     """-> (problems, flags).  problems are fatal (no verdict table); flags are reported next to every table.
+    partial=True (serving cap/mem comparison, its pre-registration section 5-b): a boot that did not finish, its missing runs, a Job
+    cut short (a prefix of the registered boot order) and a missing anchor are flags (BOOT_NOT_DONE:<boot>:<status>, ANCHOR_MISSING),
+    not problems -- the finished boots keep their rows.  Default False: every other plan keeps the all-or-nothing rule.
     cell_key(run) = identity of a cell across arms (default (rate, seed); a plan with several workloads per arm adds the workload);
     split_fn(job) replaces split_check for plans with more than one split-check boot."""
     pr, fl = [], []
@@ -137,12 +140,14 @@ def job_problems(job, cell_key=None, split_fn=None):
         pr.append("card.json is not the card of plan.json")
     if job["aborted"]:
         pr.append(f"Job aborted: {job['aborted'].get('status')}: {str(job['aborted'].get('reason'))[:200]}")
+    not_done = set()
     for b in plan["boots"]:
         st = job["done"].get(b["boot_id"], {}).get("status")
         if st != "done":
-            pr.append(f"boot {b['boot_id']} status {st}")
+            not_done.add(b["boot_id"])
+            (fl if partial else pr).append(f"BOOT_NOT_DONE:{b['boot_id']}:{st}" if partial else f"boot {b['boot_id']} status {st}")
     observed = [b["arm"] for b in job["boots"]]
-    if observed != card["boot_order"]:
+    if observed != (card["boot_order"][:len(observed)] if partial else card["boot_order"]):
         pr.append("realized boot order differs from the registered order")
     for r in job["runs"]:
         for m in SC.validate_run(r)[:3]:
@@ -151,6 +156,8 @@ def job_problems(job, cell_key=None, split_fn=None):
     for b in plan["boots"]:
         for run in b["runs"]:
             r = have.get(run["run_id"])
+            if r is None and partial and b["boot_id"] in not_done:
+                continue
             if r is None:
                 pr.append(f"missing run {run['run_id']} (incomplete block)")
             elif len(reqs_of(r)) != run["n_requests"]:
@@ -173,7 +180,10 @@ def job_problems(job, cell_key=None, split_fn=None):
     if sc.get("flag"):
         fl.append(sc["flag"])
     if an.get("problem"):
-        pr.append(an["problem"])
+        if partial and "missing" in an["problem"]:
+            fl.append("ANCHOR_MISSING")
+        else:
+            pr.append(an["problem"])
     return pr, fl
 
 
@@ -285,7 +295,8 @@ def rung_table(job):
     out = {}
     for (arm, rt), runs in by_arm_rate(job).items():
         reqs = [x for r in runs for x in reqs_of(r)]
-        out[(arm, rt)] = {"grid": attainment_grid(reqs), "n": len(reqs), "seed_att": [attain(reqs_of(r), *MS.PRIMARY_SLO) for r in runs],
+        out[(arm, rt)] = {"grid": attainment_grid(reqs), "n": len(reqs), "n_error": sum(1 for x in reqs if x.get("error") or x.get("ttft_ms") is None),
+                          "n_runs": len(runs), "seed_att": [attain(reqs_of(r), *MS.PRIMARY_SLO) for r in runs],
                           "good_rps": sum(1 for x in reqs if V.req_good(x, *MS.PRIMARY_SLO)) / duration(runs)}
     return out
 

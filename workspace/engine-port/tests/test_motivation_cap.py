@@ -844,16 +844,17 @@ class TestFixRule(unittest.TestCase):
     """The rule on hand-built pair rows (the two registered arms; four rungs)."""
     K1, K2 = CS.P("sv_arms")
 
-    def res(self, mem=("", ""), c128=("", ""), c256=("", ""), kv=None, flags=(), rehearsal=False):
+    def res(self, mem=("", ""), c128=("", ""), c256=("", ""), kv=None, flags=(), rehearsal=False, top=()):
         def rows(key, hi, lo, pat):
             pat = (pat + "....")[:4]
-            return [{"arm_key": key, "hi": hi, "lo": lo, "rate": i, "label": {"u": "A>B", "d": "A<B"}.get(ch, "SLO_DEPENDENT")}
-                    for i, ch in enumerate(pat)]
+            # u / d = the higher / lower setting is better, s = sign depends on the SLO pair, E = a rung with failed requests, . = no information
+            return [{"arm_key": key, "hi": hi, "lo": lo, "rate": i, "label": {"u": "A>B", "d": "A<B", "s": "SLO_DEPENDENT"}.get(ch, "UNINFORMATIVE"),
+                     "n_error_hi": int(ch == "E"), "n_error_lo": 0} for i, ch in enumerate(pat)]
         out = []
         for k, i in ((self.K1, 0), (self.K2, 1)):
             out += rows(k, [0.75, 48], [0.6, 48], mem[i]) + rows(k, [0.75, 128], [0.75, 48], c128[i]) + rows(k, [0.75, 256], [0.75, 128], c256[i])
         kv = kv or {(0.6, 48): 2e6, (0.75, 48): 2e6, (0.75, 128): 1.6e6, (0.75, 256): 5.4e5}
-        return {"rehearsal": rehearsal, "flags": list(flags), "verdict_rows": out,
+        return {"rehearsal": rehearsal, "flags": list(flags), "verdict_rows": out, "unsaturated_top": list(top),
                 "combos": [{"arm_key": k, "mem": m, "cap": c, "max_total_num_tokens": v} for k in (self.K1, self.K2) for (m, c), v in kv.items()]}
 
     def fix(self, th=None, **kw):
@@ -861,8 +862,8 @@ class TestFixRule(unittest.TestCase):
         return f["status"], f["mem"], f["cap"]
 
     def test_directions(self):
-        self.assertEqual(self.fix(mem=("uu", "uu"), c128=("uu", "uu"), c256=("uu", "")), ("FIXED", 0.75, 256))
-        self.assertEqual(self.fix(mem=("uu", ""), c128=("uu", "uu"), c256=("dd", "")), ("FIXED", 0.75, 128))
+        self.assertEqual(self.fix(mem=("uu", "uu"), c128=("uu", "uu"), c256=("uu", "uu")), ("FIXED", 0.75, 256))
+        self.assertEqual(self.fix(mem=("uu", "uu"), c128=("uu", "uu"), c256=("dd", "dd")), ("FIXED", 0.75, 128))
         self.assertEqual(self.fix(mem=("dd", "dd")), ("FIXED", 0.6, 48))
         self.assertEqual(self.fix(mem=("uu", "uu"), c128=("dd", "dd"), c256=("uu", "uu")), ("FIXED", 0.75, 48))     # the ladder stops
 
@@ -879,6 +880,33 @@ class TestFixRule(unittest.TestCase):
         self.assertEqual(self.fix(mem=("ud", ""))[0], "USER_DECISION")                      # rungs disagree within an arm
         self.assertEqual(self.fix(mem=("uu", "uu"), c128=("uu", "dd"))[0], "USER_DECISION")
 
+    def test_one_arm_alone_does_not_move_the_value(self):
+        # user decision 2026-11-15: a direction needs every arm; "better" in one arm and "no difference" in the other goes to the user
+        self.assertEqual(self.fix(c128=("uu", ""))[0], "USER_DECISION")
+        self.assertEqual(self.fix(mem=("", "dd"))[0], "USER_DECISION")
+        self.assertEqual(self.fix(c128=("uu", "uu"), c256=("uu", ""))[0], "USER_DECISION")
+
+    def test_slo_tradeoff_goes_to_the_user(self):
+        self.assertEqual(self.fix(mem=("ss", "ss"))[0], "USER_DECISION")                    # sign depends on the SLO pair at >= 2 rungs
+        self.assertEqual(self.fix(mem=("s", "s")), ("FIXED", 0.6, 48))                      # one such rung is below min_rungs_agree
+        self.assertEqual(self.fix(mem=("ssss", "")), ("USER_DECISION", None, None))
+
+    def test_a_rung_with_failed_requests_counts_for_nothing(self):
+        self.assertEqual(self.fix(mem=("uuE", "uu")), ("FIXED", 0.75, 48))                   # two clean rungs still make the direction
+        self.assertEqual(self.fix(mem=("uE", "uu"))[0], "USER_DECISION")                    # one clean rung does not, and it is not "no difference"
+        self.assertEqual(self.fix(mem=("E", ""))[0], "USER_DECISION")
+
+    def test_unsaturated_top_rung_shows_the_choice_without_fixing_it(self):
+        f = CA.fix_cap_mem(self.res(mem=("uu", "uu"), top=("armX",)), TH_OK)
+        self.assertEqual((f["status"], f["mem"], f["cap"]), ("USER_DECISION", 0.75, 48))
+
+    def test_unfinished_boot_removes_its_pairs_not_the_job(self):
+        r = self.res(c128=("uu", "uu"), flags=("BOOT_NOT_DONE:b:died",))
+        self.assertEqual(CA.fix_cap_mem(r, TH_OK)["status"], "FIXED")                        # every pair is there: the flag alone decides nothing
+        r["verdict_rows"] = [x for x in r["verdict_rows"] if x["hi"] != [0.75, 256]]         # the cap-256 boot's pairs are gone
+        self.assertEqual(CA.fix_cap_mem(r, TH_OK)["status"], "USER_DECISION")
+        self.assertEqual(CA.fix_cap_mem(self.res(flags=("ANCHOR_MISSING",)), TH_OK)["status"], "NOT_JUDGEABLE")
+
     def test_unmeasured_pair_goes_to_the_user(self):
         self.assertEqual(self.fix(mem=("dd", "dd"), c128=("uu", "uu")), ("USER_DECISION", 0.6, 128))
 
@@ -894,13 +922,13 @@ class TestFixRule(unittest.TestCase):
         self.assertEqual(CA.fix_cap_mem(self.res(), dict(TH_OK, cap_tie_break=MS.pend("x")))["status"], "PENDING_THRESHOLD")
 
     def test_registered_thresholds_of_2026_11_15(self):
-        self.assertEqual(CS.FIX_RULE, {"min_rungs_agree": 2, "mem_tie_break": "higher", "cap_tie_break": "lower", "min_kv_tokens_per_slot": 6648})
+        self.assertEqual(CS.FIX_RULE, {"min_rungs_agree": 2, "mem_tie_break": "higher", "cap_tie_break": "lower", "min_kv_tokens_per_slot": 6484})
         f = lambda **kw: (lambda r: (r["status"], r["mem"], r["cap"]))(CA.fix_cap_mem(self.res(**kw)))       # no thresholds passed: the registered ones
         self.assertEqual(f(), ("FIXED", 0.75, 48))                                          # no difference anywhere -> higher mem, lower cap
         self.assertEqual(f(mem=("u", "u")), ("FIXED", 0.75, 48))                            # one rung is not a direction
         self.assertEqual(f(mem=("dd", "dd")), ("FIXED", 0.6, 48))
         self.assertEqual(f(c128=("uu", "uu")), ("FIXED", 0.75, 128))                        # 1.6e6 / 128 = 12500 >= 6648
-        self.assertEqual(f(c128=("uu", "uu"), c256=("uu", "uu"))[0], "USER_DECISION")       # 5.4e5 / 256 = 2109 < 6648
+        self.assertEqual(f(c128=("uu", "uu"), c256=("uu", "uu"))[0], "USER_DECISION")       # 5.4e5 / 256 = 2109 < 6484
 
     def test_one_arm_alone_fixes_nothing(self):
         r = self.res(mem=("uu", "uu"))
@@ -973,6 +1001,112 @@ class TestOneJobPerArm(unittest.TestCase):
                 CA.combine_serving(a, bad, TH_OK)
         flagged = CA.combine_serving(a, dict(b, flags=["ANCHOR_DRIFT"]), TH_OK)
         self.assertEqual(flagged["fix"]["status"], "NOT_JUDGEABLE")                          # a flag of either Job stops the rule
+
+
+class TestServingAuditRepairs(unittest.TestCase):
+    """Repairs of the serving pre-registration audit (2026-11-15), on one fake Job copied and broken in the ways a real Job can break."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.td = tempfile.TemporaryDirectory()
+        cls.out, cls.plan, _, _ = run_serving(cls.td.name)
+
+    @classmethod
+    def tearDownClass(cls):
+        cls.td.cleanup()
+
+    def broken(self, fn):
+        import shutil
+        d = Path(tempfile.mkdtemp(dir=self.td.name)) / "raw"
+        shutil.copytree(self.out, d)
+        fn(d)
+        return d
+
+    def boot(self, mem, cap, key=None):
+        key = key or CS.P("sv_arms")[0]
+        return next(b for b in self.plan["boots"] if b["role"] == "meas" and
+                    (b["arm_def"]["params"]["key"], b["arm_def"]["params"]["mem"], b["arm_def"]["params"]["cap"]) == (key, mem, cap))
+
+    def test_unfinished_boot_keeps_the_other_rows_and_sends_its_pairs_to_the_user(self):
+        b = self.boot(0.75, 256)
+
+        def die(d):
+            p = d / "boots" / b["boot_id"] / "DONE.json"
+            p.write_text(json.dumps(dict(json.loads(p.read_text()), status="died")))
+            for r in b["runs"][5:]:
+                (d / "runs" / f"{r['run_id']}.json").unlink()
+        an = CA.analyze_serving(self.broken(die), thresholds=TH_OK)
+        self.assertIn(f"BOOT_NOT_DONE:{b['boot_id']}:died", an["flags"])
+        self.assertEqual(an["not_measured"], [b["arm"]])
+        key = CS.P("sv_arms")[0]
+        gone = [r for r in an["verdict_rows"] if r["arm_key"] == key and [0.75, 256] in (r["hi"], r["lo"])]
+        kept = [r for r in an["verdict_rows"] if r["arm_key"] == key and [0.75, 256] not in (r["hi"], r["lo"])]
+        self.assertEqual((len(gone), len(kept)), (0, 2 * CS.SERVING_RUNGS))                  # no partial rung of the dead boot is read
+        self.assertEqual(an["fix"]["status"], "USER_DECISION")
+
+    def test_job_cut_short_is_not_judged_but_keeps_its_rows(self):
+        last = self.plan["boots"][-1]
+
+        def cut(d):
+            import shutil
+            shutil.rmtree(d / "boots" / last["boot_id"])
+            for r in last["runs"]:
+                (d / "runs" / f"{r['run_id']}.json").unlink()
+        an = CA.analyze_serving(self.broken(cut), thresholds=TH_OK)
+        self.assertIn("ANCHOR_MISSING", an["flags"])
+        self.assertEqual((len(an["verdict_rows"]), an["fix"]["status"]), (2 * 4 * CS.SERVING_RUNGS, "NOT_JUDGEABLE"))
+
+    def test_failed_requests_are_counted_and_their_rung_is_not_a_vote(self):
+        b = self.boot(0.75, 128)
+        top = self.plan["grid"]["rates"][-1]
+
+        def fail(d):
+            for r in b["runs"]:
+                if r["rate"] == top:
+                    p = d / "runs" / f"{r['run_id']}.json"
+                    j = json.loads(p.read_text())
+                    j["segments"][0]["requests"][0].update(error="ConnectionError", error_kind="CLIENT_EXCEPTION")
+                    p.write_text(json.dumps(j))
+        an = CA.analyze_serving(self.broken(fail), thresholds=TH_OK)
+        rows = [r for r in an["verdict_rows"] if r["rate"] == top and r["arm_key"] == CS.P("sv_arms")[0] and [0.75, 128] in (r["hi"], r["lo"])]
+        self.assertTrue(rows and all((r["n_error_hi"] if r["hi"] == [0.75, 128] else r["n_error_lo"]) == len(self.plan["seeds"]) for r in rows))
+        self.assertEqual(sum(r["n_error_hi"] + r["n_error_lo"] for r in an["verdict_rows"] if r not in rows), 0)
+
+    def test_goodput_duration_is_the_sum_over_seeds(self):
+        an = CA.analyze_serving(self.out, thresholds=TH_OK)
+        with mock.patch.object(MA, "duration", lambda runs: max(float(s["duration_s"]) for r in runs for s in r["segments"])):
+            bad = CA.analyze_serving(self.out, thresholds=TH_OK)
+        r0, r1 = an["verdict_rows"][0], bad["verdict_rows"][0]
+        self.assertGreater(r1["good_rps_hi"], 2.0 * r0["good_rps_hi"] - 1e-9 if r0["good_rps_hi"] else -1)       # gate 7: max() inflates by the seed count
+        self.assertLessEqual(max(r["good_rps_hi"] for r in an["verdict_rows"]), max(self.plan["grid"]["rates"]) * 1.2)
+
+    def test_unsaturated_top_rung_is_reported(self):
+        an = CA.analyze_serving(self.out, thresholds=TH_OK)
+        tab = MA.rung_table(MA.load_job(self.out))
+        top = self.plan["grid"]["rates"][-1]
+        self.assertEqual(an["unsaturated_top"], sorted(a for (a, rt), v in tab.items() if rt == top and v["grid"][MS.PRIMARY_SLO] >= 0.9))
+        with mock.patch.object(CS, "SV_TOP_SATURATED_BELOW", 0.0):
+            f = CA.analyze_serving(self.out, thresholds=TH_OK)
+        self.assertEqual((len(f["unsaturated_top"]), f["fix"]["status"]), (8, "USER_DECISION"))
+
+    def test_anchor_runs_at_the_second_rung_and_one_arm_orders_mirror_each_other(self):
+        self.assertEqual(self.plan["anchor"]["rate"], self.plan["grid"]["rates"][1])
+        sg, pm = CS.P("sv_arms")
+        o = {k: [(m, c) for _, m, c in CS.sv_boot_order("any-job", (k,))] for k in (sg, pm)}
+        self.assertEqual((o[pm], sorted(o[sg])), (o[sg][::-1], sorted(CS.SERVING_COMBOS)))
+        self.assertEqual(o[sg], [(m, c) for _, m, c in CS.sv_boot_order("another-job", (sg,))])          # registered, not seeded by the Job name
+
+    def test_rehearsal_fails_when_the_split_check_cannot_be_read(self):
+        def no_split(job_data):
+            res = real(job_data)
+            res["split_check"] = {"status": "UNAVAILABLE"}
+            return res
+        real = CA.analyze_serving
+        with tempfile.TemporaryDirectory() as td, mock.patch.object(CA, "analyze_serving", no_split):
+            rec = CR.rehearse_serving("JRS", TH.POOL, Path(td) / "raw", lambda bdir, a: KvServer(bdir, a), TH.fake_replay,
+                                      rehearsal_dir=Path(td) / "rec", digest="f" * 64, py_version_fn=TH.fake_py, freeze_fn=TH.fake_freeze)
+        self.assertFalse(rec["passed"])
+        self.assertIn("split check UNAVAILABLE", rec["reason"])
 
 
 # ---- 6. rehearsal -----------------------------------------------------------------------------------------------------------------------------------

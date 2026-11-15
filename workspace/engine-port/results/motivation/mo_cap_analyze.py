@@ -399,30 +399,38 @@ def banner_tokens(job):
 
 
 def pair_rows(job, tab=None):
+    """One row per arm, registered pair and rung.  A pair with a combination whose boot did not finish gives no row (the fixing rule
+    never reads a missing pair as 'no difference')."""
     tab = tab or MA.rung_table(job)
     arm = _arm_of(job)
     rows = []
     for key in job["plan"]["arm_keys"]:
         for hi, lo, factor in serving_pairs():
             ah, al = arm[(key, hi[0], hi[1])], arm[(key, lo[0], lo[1])]
+            if any((a, rt) not in tab for a in (ah, al) for rt in MA.rates_of(job)):
+                continue
             for rt in MA.rates_of(job):
                 lab, ninf = MA.read_label(tab[(ah, rt)]["grid"], tab[(al, rt)]["grid"])
                 rows.append({"arm_key": key, "factor": factor, "hi": list(hi), "lo": list(lo), "rate": rt, "label": lab,
                              "n_informative_pairs": ninf, "att_hi_primary": tab[(ah, rt)]["grid"][MS.PRIMARY_SLO],
                              "att_lo_primary": tab[(al, rt)]["grid"][MS.PRIMARY_SLO],
                              "diff_pp_primary": tab[(ah, rt)]["grid"][MS.PRIMARY_SLO] - tab[(al, rt)]["grid"][MS.PRIMARY_SLO],
-                             "good_rps_hi": tab[(ah, rt)]["good_rps"], "good_rps_lo": tab[(al, rt)]["good_rps"]})
+                             "good_rps_hi": tab[(ah, rt)]["good_rps"], "good_rps_lo": tab[(al, rt)]["good_rps"],
+                             "seed_att_hi": tab[(ah, rt)]["seed_att"], "seed_att_lo": tab[(al, rt)]["seed_att"],
+                             "n_error_hi": tab[(ah, rt)]["n_error"], "n_error_lo": tab[(al, rt)]["n_error"]})
     return rows
 
 
 def analyze_serving(raw, clk_csv=None, thresholds=None):
     job = raw if isinstance(raw, dict) else MA.load_job(raw)
-    pr, fl = MA.job_problems(job)
+    pr, fl = MA.job_problems(job, partial=True)
     if job["plan"] is not None and job["plan"].get("kind") != CS.KIND_SERVING:
         pr.append("not a serving cap/mem plan")
     if pr:
         raise MA.JobInvalid(pr)
     tab = MA.rung_table(job)
+    whole = {b["arm"] for b in job["plan"]["boots"] if b["role"] == "meas" and job["done"].get(b["boot_id"], {}).get("status") == "done"}
+    tab = {k: v for k, v in tab.items() if k[0] in whole}           # a boot that did not finish gives no rung, not a partial one
     rows = pair_rows(job, tab)
     mark = "REHEARSAL" if job["plan"]["rehearsal"] else ("NOT_JUDGEABLE_N" if any(f.startswith("N_LT") for f in fl) else "")
     for r in rows:
@@ -435,7 +443,11 @@ def analyze_serving(raw, clk_csv=None, thresholds=None):
               for (k, m, c), a in sorted(arm.items())]
     res = {"job": MA.job_name(job), "kind": CS.KIND_SERVING, "rehearsal": job["plan"]["rehearsal"], "flags": fl, "reading_rule": MS.READING_RULE,
            "arm_keys": list(job["plan"]["arm_keys"]), "workload": job["plan"]["workload"], "grid_rates": list(job["plan"]["grid"]["rates"]),
-           "seeds": list(job["plan"]["seeds"]),
+           "seeds": list(job["plan"]["seeds"]), "n_requests_by_rate": {f"{rt:g}": sorted({v["n"] for (a, r), v in tab.items() if r == rt})
+                                                                    for rt in MA.rates_of(job)},
+           "not_measured": sorted(a for a in arm.values() if a not in whole),
+           "unsaturated_top": sorted(a for (a, rt), v in tab.items() if rt == MA.rates_of(job)[-1] and v["grid"][MS.PRIMARY_SLO] >= CS.SV_TOP_SATURATED_BELOW),
+           "failed_attempts": sorted(d.name for d in (Path(job["raw"]) / "failed_boots").glob("*")) if job.get("raw") and (Path(job["raw"]) / "failed_boots").is_dir() else [],
            "anchor": MA.anchor_check(job), "split_check": MA.split_check(job), "verdict_rows": rows, "combos": combos,
            "attainment_grid": {f"{a}|{rt}": {f"{t:g}/{i:g}": v for (t, i), v in c["grid"].items()} for (a, rt), c in sorted(tab.items())},
            "clock": MA.clock_report(job, clk_csv), "cross_job": "NOT_MERGED"}
@@ -445,11 +457,19 @@ def analyze_serving(raw, clk_csv=None, thresholds=None):
 
 # ---- the fixing rule ----------------------------------------------------------------------------------------------------------------------
 def _pair_direction(rows, min_rungs):
-    """One arm, one pair: UP (the higher setting is better) / DOWN / NO_DIFFERENCE / MIXED from the per-rung reading-rule labels."""
-    up = sum(1 for r in rows if r["label"] == "A>B")
-    dn = sum(1 for r in rows if r["label"] == "A<B")
+    """One arm, one pair, from the per-rung reading-rule labels: UP (the higher setting is better) / DOWN / NO_DIFFERENCE, or one of
+    the outcomes the rule does not resolve: MIXED (rungs point both ways), TRADEOFF (>= min_rungs rungs are SLO_DEPENDENT: the sign
+    depends on the SLO pair), ERRORS (no direction, and a rung had failed requests on either side -- such a rung counts for nothing,
+    because a failed request is an SLO miss whatever its cause)."""
+    clean = [r for r in rows if not (r.get("n_error_hi") or r.get("n_error_lo"))]
+    up = sum(1 for r in clean if r["label"] == "A>B")
+    dn = sum(1 for r in clean if r["label"] == "A<B")
     if up and dn:
         return "MIXED"
+    if sum(1 for r in clean if r["label"] == "SLO_DEPENDENT") >= min_rungs:
+        return "TRADEOFF"
+    if len(clean) < len(rows) and up < min_rungs and dn < min_rungs:
+        return "ERRORS"
     if up >= min_rungs:
         return "UP"
     if dn >= min_rungs:
@@ -458,11 +478,11 @@ def _pair_direction(rows, min_rungs):
 
 
 def _combine(dirs):
-    """Across arms: one direction if no arm contradicts it; arms that disagree (or a MIXED arm) are not resolved by the rule."""
+    """Across arms: a direction only when EVERY arm shows it (user decision 2026-11-15: the fixed value serves both arms, so one arm
+    alone does not move it).  Anything else -- arms that differ, including UP next to NO_DIFFERENCE, or an unresolved arm -- goes to
+    the user."""
     s = set(dirs)
-    if "MIXED" in s or {"UP", "DOWN"} <= s:
-        return "ARM_OR_RUNG_DEPENDENT"
-    return "UP" if "UP" in s else "DOWN" if "DOWN" in s else "NO_DIFFERENCE"
+    return s.pop() if len(s) == 1 and s <= {"UP", "DOWN", "NO_DIFFERENCE"} else "ARM_OR_RUNG_DEPENDENT"
 
 
 def fix_cap_mem(res, thresholds=None):
@@ -485,7 +505,8 @@ def fix_cap_mem(res, thresholds=None):
         return out
 
     rows = res["verdict_rows"]
-    if res["rehearsal"] or res["flags"] or any(r["label"] in ("REHEARSAL", "NOT_JUDGEABLE_N") for r in rows):
+    stop = [f for f in res["flags"] if "BOOT_NOT_DONE:" not in f]        # an unfinished boot removes its pairs (-> USER_DECISION below), not the Job
+    if res["rehearsal"] or stop or any(r["label"] in ("REHEARSAL", "NOT_JUDGEABLE_N") for r in rows):
         return done("NOT_JUDGEABLE", f"rehearsal {res['rehearsal']}, flags {res['flags']}")
     pending = sorted(k for k, v in th.items() if MS.is_pending(v))
     if pending:
@@ -532,6 +553,8 @@ def fix_cap_mem(res, thresholds=None):
     low = {k: v / cap for k, v in pools.items() if v / cap < th["min_kv_tokens_per_slot"]}
     if low:
         return done("USER_DECISION", f"banner pool per slot below {th['min_kv_tokens_per_slot']}: {low}")
+    if res.get("unsaturated_top"):                      # the grid did not reach the capacity of some combination: the choice is shown, not fixed
+        return done("USER_DECISION", f"rule choice mem {mem}, cap {cap}, but the top rung is not saturated for {res['unsaturated_top']}")
     return done("FIXED", f"mem {mem}, cap {cap}")
 
 
@@ -543,13 +566,15 @@ def combine_serving(res_a, res_b, thresholds=None):
         raise ValueError("the fixing rule is read on measurement Jobs, not rehearsals")
     if res_a["job"] == res_b["job"] or sorted(res_a["arm_keys"] + res_b["arm_keys"]) != sorted(CS.P("sv_arms")):
         raise ValueError(f"needs two different Jobs whose arms are exactly {CS.P('sv_arms')}; got {res_a['arm_keys']} / {res_b['arm_keys']}")
-    for k in ("workload", "grid_rates", "seeds"):
+    for k in ("workload", "grid_rates", "seeds", "n_requests_by_rate"):
         if res_a[k] != res_b[k]:
             raise ValueError(f"the two Jobs differ in {k}: {res_a[k]} / {res_b[k]}")
     res = {"job": [res_a["job"], res_b["job"]], "kind": CS.KIND_SERVING, "rehearsal": False, "merged": False,
            "flags": [f"{r['job']}:{f}" for r in (res_a, res_b) for f in r["flags"]], "arm_keys": res_a["arm_keys"] + res_b["arm_keys"],
            "workload": res_a["workload"], "grid_rates": res_a["grid_rates"], "seeds": res_a["seeds"],
            "verdict_rows": res_a["verdict_rows"] + res_b["verdict_rows"], "combos": res_a["combos"] + res_b["combos"],
+           "unsaturated_top": res_a["unsaturated_top"] + res_b["unsaturated_top"], "not_measured": res_a["not_measured"] + res_b["not_measured"],
+           "failed_attempts": res_a["failed_attempts"] + res_b["failed_attempts"],
            "anchor": {r["job"]: r["anchor"] for r in (res_a, res_b)}, "clock": {r["job"]: r["clock"] for r in (res_a, res_b)},
            "per_job_fix": {r["job"]: r["fix"]["status"] for r in (res_a, res_b)}}
     res["fix"] = fix_cap_mem(res, thresholds)
@@ -565,7 +590,7 @@ def apply_fix(fix, fixed=None):
 
 
 SERVING_COLS = ("arm_key", "factor", "hi", "lo", "rate", "label", "n_informative_pairs", "att_hi_primary", "att_lo_primary", "diff_pp_primary",
-                "good_rps_hi", "good_rps_lo")
+                "good_rps_hi", "good_rps_lo", "seed_att_hi", "seed_att_lo", "n_error_hi", "n_error_lo")
 
 
 def write_serving(res, out_dir):
@@ -590,6 +615,7 @@ def main(argv=None):
     ap.add_argument("--out", required=True)
     ap.add_argument("--clk")
     ap.add_argument("--other")
+    ap.add_argument("--clk-other")
     a = ap.parse_args(argv)
     try:
         if a.part == "rounds":
@@ -598,7 +624,7 @@ def main(argv=None):
             (Path(a.out) / "round_agreement.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")
             print(json.dumps(res["n"]))
         elif a.part == "arms":
-            res = combine_serving(analyze_serving(a.raw, a.clk), analyze_serving(a.other))
+            res = combine_serving(analyze_serving(a.raw, a.clk), analyze_serving(a.other, a.clk_other))
             Path(a.out).mkdir(parents=True, exist_ok=True)
             (Path(a.out) / "cap_mem_fix.json").write_text(json.dumps(res["fix"], indent=1, sort_keys=True, default=str) + "\n")
             (Path(a.out) / "arms_combined.json").write_text(json.dumps(res, indent=1, sort_keys=True, default=str) + "\n")

@@ -325,7 +325,13 @@ def rehearse_fixed(job, out, make_server, rehearsal_dir=None, digest=None, **kw)
 def rehearse_serving(job, w1_pool, out, make_server, replay_fn, rmin=3.0, factor=1.15, workload="W1", arm=None, **kw):
     """Full pass of the serving part: every (arm, mem, cap) boot + anchors + split check, one rung, few requests."""
     plan = CS.serving_plan(job, workload, rmin, factor, n_requests=MH.REHEARSAL_N_REQUESTS, rehearsal=True, arm=arm)
-    return MH.rehearse(job, w1_pool, out, make_server, replay_fn, workload=workload, plan=plan, analyze_fn=CA.analyze_serving,
+    def analyze(job_data):
+        res = CA.analyze_serving(job_data)
+        sc = res["split_check"]["status"]
+        if sc in ("MISSING", "UNAVAILABLE"):             # a 7 h Job must not learn at its end that the split check cannot be read
+            raise RuntimeError(f"split check {sc}: the split-check boot gave no realized split record")
+        return res
+    return MH.rehearse(job, w1_pool, out, make_server, replay_fn, workload=workload, plan=plan, analyze_fn=analyze,
                        write_fn=CA.write_serving, **kw)
 
 

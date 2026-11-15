@@ -52,6 +52,9 @@ if [[ "${part}" == serving && "${mode}" == run ]]; then
     [[ -n "${!v:-}" ]] || { echo "ABORT_CONFIG: ${v} required for the serving part (the rate grid comes from the pre-ladder)" >&2; exit 16; }
   done
 fi
+if [[ "${part}" == serving && "${mode}" == run && "${PDMUX_MOCAP_TEST_MODE:-}" != 1 ]]; then
+  [[ -n "${PDMUX_MOCAP_EXPECT_HARNESS_DIGEST:-}" ]] || { echo "ABORT_CONFIG: PDMUX_MOCAP_EXPECT_HARNESS_DIGEST required for a serving measurement Job" >&2; exit 16; }
+fi
 mkdir -p "${out}" || { echo "ERROR: cannot create ${out}" >&2; exit 2; }
 
 snap="${HF_HOME:-${data}/hf}/hub/models--nvidia--NVIDIA-Nemotron-Nano-9B-v2-Base/snapshots/dc0661c829b14e5b9246c05cfa89094a0875e052"

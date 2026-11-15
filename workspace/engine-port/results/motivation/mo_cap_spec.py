@@ -54,6 +54,8 @@ USER_STATED_CELLS = {"nano": 75, "a31": 60}             # record only: the first
 #                                                         the documented rule; the user decided the rule's table (2026-11-12; 86 / 71 on the 2^7..2^17 grid).  See cell_count_gap.
 SERVING_COMBOS = ((0.6, 48), (0.75, 48), (0.75, 128), (0.75, 256))      # (mem, cap)
 SERVING_RUNGS, SERVING_SEEDS_MIN = 4, MS.MIN_SEEDS
+SV_TOP_SATURATED_BELOW = 0.9        # primary-SLO attainment at the top rung at or above this -> the grid did not saturate that combination
+SV_ANCHOR_RATE_INDEX = 1            # the anchor cell runs at the SECOND rung: the lowest one is expected to pass everywhere and shows no drift
 # memory budget of the pre-data cell table: the boot-log values reports/motivation_gap_2026-11-09/predict_motivation_charts.py used when
 # the 75 / 60 counts were derived (GPU memory visible to the server, Nano weight usage)
 AVAIL_BYTES = 78.74 * GIB
@@ -113,7 +115,7 @@ FIX_RULE = {
     "min_rungs_agree": 2,              # rungs that must carry the same label for a direction (and none the opposite one)
     "mem_tie_break": "higher",         # no difference in the mem pair -> 0.75 (the only mem the cap ladder was measured at)
     "cap_tie_break": "lower",          # no difference in a cap step -> stop (more KV tokens per slot)
-    "min_kv_tokens_per_slot": 6648,    # banner max_total_num_tokens / cap must reach this (median input length of arxiv_summ)
+    "min_kv_tokens_per_slot": 6484,    # banner max_total_num_tokens / cap must reach this (workloads/manifest_parts/arxiv_summ.json input p50)
 }
 
 
@@ -457,6 +459,14 @@ def sv_keys(arms=None):
 
 
 def sv_boot_order(job, arms=None):
+    """Both arms in one Job: a permutation seeded by the Job name.  One arm per Job: ONE registered permutation of the four combinations
+    for the first arm and its reverse for the bundle, so that a monotone drift inside a Job cannot push both arms the same way."""
+    if arms is not None and len(arms) == 1:
+        combos = list(SERVING_COMBOS)
+        _rng("serving_order_one_arm").shuffle(combos)
+        if arms[0] == MS.BUNDLE_KEY:
+            combos.reverse()
+        return [(arms[0], mem, cap) for mem, cap in combos]
     keys = sv_keys(arms)
     _rng("serving_order", job).shuffle(keys)
     return keys
@@ -479,7 +489,7 @@ def serving_plan(job, workload, rmin, factor, seeds=None, run_s=None, n_requests
 
     amem, acap = P("sv_anchor_combo")
     anchor = sv_arm(MS.ANCHOR_KEY, amem, acap, rehearsal)
-    arate = grid["rates"][MS.ANCHOR_RATE_INDEX]
+    arate = grid["rates"][min(SV_ANCHOR_RATE_INDEX, len(grid["rates"]) - 1)]
 
     def anchor_boot(tag):
         r = MS.cell_run(job, anchor["name"], arate, seeds[0], n_of(arate) if rehearsal else MS.ANCHOR_N, f"ANCHOR_{tag}", kind="anchor",
