@@ -1,0 +1,11 @@
+2026-11-16 main 세션의 CPU 재분석 스크립트(측정 아님, 새 판정 0, 미감사, 인용 불가).
+입력: 사전 사다리 원자료(results/motivation_pre_ladder_runs/<job>/raw, 2차는 ~/Experiments/KISTI/_vessl_fetch 의 불완전 staging 사본)와
+      2026-10-29 긴 입력 용량 사다리(results/cap_char/policy_runs/pdmux-policy-cap2-e90e233-20261029023336/raw).
+fail_axis.py  경계 단의 SLO 실패를 TTFT 쪽/ITL 쪽으로 분리 (간섭 짧은 쪽은 D16·D44가 한 줄로 합쳐지는 결함 있음 — 미수정)
+arxiv.py      arXiv 요약 arm별 실패 축, 입력 길이 구간별 무부하 TTFT
+lit_slo.py    문헌식 SLO(평균 TPOT, 짧은 TTFT, 토큰당 정규화)로 재채점
+abs_times.py  TTFT·요청 ITL p95·평균 TPOT·최대 간격의 평균±표준편차와 통과 비율
+stall_fig.py  요청 하나의 토큰 수신 타임라인 3 arm (reports/motivation_gap_2026-11-09/figures/stall_timeline_arxiv_preladder.png)
+cap2_times.py 긴 입력 D16–D64의 시간 지표와 입력 1k토큰당 TTFT
+cap2_fig.py   D별 시간 분해 막대 (reports/motivation_gap_2026-11-09/figures/d_sweep_time_split_longinput_cap2.png)
+실행: python3 -I <script> <인자>  (각 파일 상단의 sys.argv 사용 참조)
